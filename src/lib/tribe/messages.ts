@@ -38,7 +38,9 @@ export type MessageType =
   | 10 // CHANNEL_JOIN
   | 11 // CHANNEL_LEAVE
   | 14 // BOOKMARK_ADD
-  | 15; // BOOKMARK_REMOVE
+  | 15 // BOOKMARK_REMOVE
+  | 16 // POLL_ADD
+  | 17; // POLL_VOTE
 
 interface BuildOptions {
   type: MessageType;
@@ -135,6 +137,66 @@ export async function signAndPublishChannelOp(
     throw new Error(`Channel op failed: ${res.status} ${errBody}`);
   }
 
+  return res.json();
+}
+
+export async function signAndPublishPoll(
+  tid: number,
+  pollId: string,
+  question: string,
+  options: string[],
+  signingKeySecret: Uint8Array,
+  opts: { expiresAtUnix?: number; channelId?: string } = {}
+): Promise<{ hash: string }> {
+  const body: Record<string, unknown> = {
+    poll_id: pollId,
+    question,
+    options,
+  };
+  if (opts.expiresAtUnix) body.expires_at = opts.expiresAtUnix;
+  if (opts.channelId) body.channel_id = opts.channelId;
+
+  const message = await buildSignedMessage({
+    type: 16,
+    tid,
+    body,
+    signingKeySecret,
+  });
+
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Poll create failed: ${res.status} ${errBody}`);
+  }
+  return res.json();
+}
+
+export async function signAndPublishPollVote(
+  tid: number,
+  pollId: string,
+  optionIndex: number,
+  signingKeySecret: Uint8Array
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type: 17,
+    tid,
+    body: { poll_id: pollId, option_index: optionIndex },
+    signingKeySecret,
+  });
+
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Poll vote failed: ${res.status} ${errBody}`);
+  }
   return res.json();
 }
 

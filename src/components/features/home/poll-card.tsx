@@ -6,6 +6,7 @@ import { BarChart3, CheckCircle2 } from "lucide-react";
 import type { Poll } from "@/types";
 import { cn } from "@/lib/utils";
 import { useTribeStore } from "@/store/use-tribe-store";
+import { useTribePoll } from "@/hooks/use-tribe-poll";
 
 interface PollCardProps {
   poll: Poll;
@@ -13,6 +14,7 @@ interface PollCardProps {
 
 export function PollCard({ poll }: PollCardProps) {
   const { votePoll } = useTribeStore();
+  const { vote: voteOnHub, ready: pollReady } = useTribePoll();
   const totalVotes = Object.values(poll.votes).reduce((a, b) => a + b, 0);
   const hasVoted = !!poll.userVote;
 
@@ -48,7 +50,7 @@ export function PollCard({ poll }: PollCardProps) {
 
       {/* Options */}
       <div className="space-y-2.5">
-        {poll.options.map((opt) => {
+        {poll.options.map((opt, index) => {
           const votes = poll.votes[opt.id] || 0;
           const pct = totalVotes > 0 ? (votes / totalVotes) * 100 : 0;
           const isSelected = poll.userVote === opt.id;
@@ -58,7 +60,12 @@ export function PollCard({ poll }: PollCardProps) {
               key={opt.id}
               whileTap={{ scale: 0.98 }}
               disabled={hasVoted}
-              onClick={() => votePoll(poll.id, opt.id)}
+              onClick={async () => {
+                votePoll(poll.id, opt.id);
+                if (pollReady) {
+                  try { await voteOnHub(poll.id, index); } catch {}
+                }
+              }}
               className={cn(
                 "relative w-full overflow-hidden rounded-2xl px-5 py-4 text-left transition-all border",
                 isSelected
