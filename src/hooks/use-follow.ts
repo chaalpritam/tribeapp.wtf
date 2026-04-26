@@ -2,6 +2,18 @@
 
 import { useState, useCallback } from "react";
 import { useAuth } from "./use-auth";
+import { useTribeFollow } from "./use-tribe-follow";
+
+interface UseFollowOptions {
+  /**
+   * Numeric TID of the target. When supplied and the caller is signed
+   * in with a wallet, the toggle calls the on-chain follow / unfollow
+   * via tribe-protocol's social-graph program. Without it the hook
+   * just flips local state (used by seed profile cards that don't have
+   * a real TID).
+   */
+  targetTid?: number;
+}
 
 interface UseFollowReturn {
   isFollowing: boolean;
@@ -9,14 +21,12 @@ interface UseFollowReturn {
   toggleFollow: () => Promise<void>;
 }
 
-/**
- * Optimistic follow state for a profile. The on-chain follow lives in
- * tribe-protocol's social-graph program (see useTribeFollow); this
- * hook is the lightweight UI shim used by demo pages working off seed
- * data, so it just flips local state.
- */
-export function useFollow(targetProfileId: string | null): UseFollowReturn {
+export function useFollow(
+  targetProfileId: string | null,
+  options: UseFollowOptions = {}
+): UseFollowReturn {
   const { isAuthenticated, profile } = useAuth();
+  const tribe = useTribeFollow();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
@@ -30,10 +40,32 @@ export function useFollow(targetProfileId: string | null): UseFollowReturn {
     ) {
       return;
     }
+    const wasFollowing = isFollowing;
     setIsLoading(true);
-    setIsFollowing((prev) => !prev);
-    setIsLoading(false);
-  }, [isAuthenticated, profile?.id, targetProfileId, isLoading]);
+    setIsFollowing(!wasFollowing);
+
+    try {
+      if (options.targetTid && tribe.ready) {
+        if (wasFollowing) {
+          await tribe.unfollow(options.targetTid);
+        } else {
+          await tribe.follow(options.targetTid);
+        }
+      }
+    } catch {
+      setIsFollowing(wasFollowing);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [
+    isAuthenticated,
+    profile?.id,
+    targetProfileId,
+    isLoading,
+    isFollowing,
+    options.targetTid,
+    tribe,
+  ]);
 
   return { isFollowing, isLoading, toggleFollow };
 }

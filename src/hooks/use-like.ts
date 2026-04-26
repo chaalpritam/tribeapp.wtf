@@ -1,6 +1,18 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { signAndPublishReaction } from "@/lib/tribe";
+import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
+
+interface UseLikeOptions {
+  /**
+   * Hash of a real on-chain tweet to react against. When supplied and
+   * the caller is signed in, the toggle publishes a REACTION_ADD /
+   * REACTION_REMOVE envelope to the hub. Without it the hook stays
+   * optimistic-only (used by seed cards that have no protocol hash).
+   */
+  targetHash?: string;
+}
 
 interface UseLikeReturn {
   isLiked: boolean;
@@ -9,17 +21,17 @@ interface UseLikeReturn {
   toggleLike: () => Promise<void>;
 }
 
-/**
- * Optimistic like state for a piece of seed content. The tribeapp.wtf
- * demo doesn't persist likes server-side; the on-chain reaction message
- * type lives on the protocol roadmap. Until then this just toggles
- * local state.
- */
+function fromBase64(b64: string): Uint8Array {
+  return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
+}
+
 export function useLike(
   contentId: string | null,
   initialLiked: boolean,
-  initialCount: number
+  initialCount: number,
+  options: UseLikeOptions = {}
 ): UseLikeReturn {
+  const identity = useTribeIdentityStore((s) => s.identity);
   const [isLiked, setIsLiked] = useState(initialLiked);
   const [likeCount, setLikeCount] = useState(initialCount);
   const [isLoading, setIsLoading] = useState(false);
@@ -31,13 +43,31 @@ export function useLike(
 
   const toggleLike = useCallback(async () => {
     if (!contentId || isLoading) return;
+
+    const wasLiked = isLiked;
+    setIsLiked(!wasLiked);
+    setLikeCount((c) => (wasLiked ? c - 1 : c + 1));
     setIsLoading(true);
-    setIsLiked((wasLiked) => {
-      setLikeCount((c) => (wasLiked ? c - 1 : c + 1));
-      return !wasLiked;
-    });
-    setIsLoading(false);
-  }, [contentId, isLoading]);
+
+    try {
+      if (options.targetHash && identity) {
+        const secret = fromBase64(identity.appKeySecret);
+        await signAndPublishReaction(
+          identity.tid,
+          options.targetHash,
+          "like",
+          secret,
+          wasLiked
+        );
+      }
+    } catch {
+      // Roll back on protocol failure.
+      setIsLiked(wasLiked);
+      setLikeCount((c) => (wasLiked ? c + 1 : c - 1));
+    } finally {
+      setIsLoading(false);
+    }
+  }, [contentId, isLoading, isLiked, identity, options.targetHash]);
 
   return { isLiked, likeCount, isLoading, toggleLike };
 }
