@@ -2,7 +2,16 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { Calendar, MapPin, Users, Ticket, Loader2, CheckCircle2 } from "lucide-react";
+import { PublicKey } from "@solana/web3.js";
+import {
+  Calendar,
+  MapPin,
+  Users,
+  Ticket,
+  Loader2,
+  CheckCircle2,
+  Zap,
+} from "lucide-react";
 import type { ExploreItem } from "@/types";
 import { formatNumber } from "@/lib/utils";
 import { useTribeEvent } from "@/hooks/use-tribe-event";
@@ -12,17 +21,23 @@ interface EventCardProps {
 }
 
 export function EventCard({ event }: EventCardProps) {
-  const { rsvp, pending, ready } = useTribeEvent();
+  const { rsvp, rsvpOnchain, pending, ready, walletReady } = useTribeEvent();
   const [rsvped, setRsvped] = useState(false);
+
+  const onchainPda = event.onchainEventPda;
+  const canRsvpOnchain = !!onchainPda && walletReady;
 
   const handleRsvp = async () => {
     setRsvped(true);
-    if (ready) {
-      try {
+    if (!ready) return;
+    try {
+      if (canRsvpOnchain && onchainPda) {
+        await rsvpOnchain(new PublicKey(onchainPda), "yes");
+      } else {
         await rsvp(event.id, "yes");
-      } catch {
-        setRsvped(false);
       }
+    } catch {
+      setRsvped(false);
     }
   };
 
@@ -34,11 +49,22 @@ export function EventCard({ event }: EventCardProps) {
           <Calendar className="h-4 w-4" />
           <span className="text-[11px] uppercase tracking-widest">Local Event</span>
         </div>
-        {event.isTrending && (
-          <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold text-rose-500 uppercase tracking-wider">
-            Trending
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {onchainPda && (
+            <span
+              className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1"
+              title="This event is anchored on Solana"
+            >
+              <Zap className="h-3 w-3 fill-current" />
+              On chain
+            </span>
+          )}
+          {event.isTrending && (
+            <span className="rounded-full bg-rose-50 px-2.5 py-0.5 text-[10px] font-bold text-rose-500 uppercase tracking-wider">
+              Trending
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Content */}
@@ -77,6 +103,13 @@ export function EventCard({ event }: EventCardProps) {
       <button
         onClick={handleRsvp}
         disabled={pending || rsvped}
+        title={
+          canRsvpOnchain
+            ? "RSVP — settles on Solana"
+            : onchainPda
+            ? "RSVP — connect wallet to settle on chain"
+            : "RSVP"
+        }
         className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-black text-white font-bold text-[14px] transition-all active:scale-[0.98] hover:bg-black/90 disabled:opacity-60"
       >
         {pending ? (

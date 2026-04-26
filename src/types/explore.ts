@@ -16,4 +16,11 @@ export interface ExploreItem {
   isTrending: boolean;
   cityId: string;
   coordinates?: Coordinates;
+  /**
+   * On-chain Event PDA (base58) when this item is mirrored from
+   * event-registry. When set, RSVP buttons settle on chain; when
+   * absent, they fall back to the off-chain envelope path so seed
+   * data and unanchored events still work.
+   */
+  onchainEventPda?: string;
 }
