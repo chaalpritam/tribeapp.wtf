@@ -20,7 +20,11 @@ import {
   Eye,
   Mail,
   MapPin,
+  Key,
+  Loader2,
 } from "lucide-react";
+import { useTribeRotateAppKey } from "@/hooks/use-tribe-rotate-key";
+import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 
 type ExpandedSection = null | "notifications" | "privacy" | "help" | "about";
 
@@ -227,6 +231,8 @@ export default function SettingsPage() {
           )}
         </div>
 
+        <RotateDeviceKey />
+
         {/* Sign Out */}
         <button
           onClick={() => router.push("/")}
@@ -236,6 +242,59 @@ export default function SettingsPage() {
           <span className="text-[14px] font-bold">Sign Out</span>
         </button>
       </div>
+    </div>
+  );
+}
+
+function RotateDeviceKey() {
+  const identity = useTribeIdentityStore((s) => s.identity);
+  const { rotate, pending, ready } = useTribeRotateAppKey();
+  const [done, setDone] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  if (!identity) return null;
+
+  return (
+    <div className="rounded-2xl border border-[#f0f0f0] bg-white p-5">
+      <div className="flex items-start gap-3 mb-3">
+        <div className="rounded-xl bg-amber-50 p-2 text-amber-600">
+          <Key className="h-5 w-5" />
+        </div>
+        <div className="flex-1">
+          <p className="text-[14px] font-bold">Rotate device key</p>
+          <p className="text-[12px] text-muted-foreground mt-1">
+            Generates a fresh ed25519 signing key on this device, registers
+            it on Solana against your TID, and re-publishes your DM key.
+            Old keys stay valid until you explicitly revoke them.
+          </p>
+        </div>
+      </div>
+      <button
+        onClick={async () => {
+          setError(null);
+          try {
+            await rotate();
+            setDone(true);
+          } catch (err) {
+            setError(err instanceof Error ? err.message : String(err));
+          }
+        }}
+        disabled={pending || !ready}
+        className="w-full flex items-center justify-center gap-2 rounded-2xl bg-black text-white py-3 text-[13px] font-bold disabled:opacity-50"
+      >
+        {pending && <Loader2 className="h-4 w-4 animate-spin" />}
+        {pending ? "Rotating…" : done ? "Key rotated" : "Rotate key"}
+      </button>
+      {!ready && (
+        <p className="text-[11px] text-muted-foreground mt-2 text-center">
+          Connect your Solana wallet to rotate.
+        </p>
+      )}
+      {error && (
+        <p className="text-[11px] text-red-500 font-bold mt-2 text-center">
+          {error}
+        </p>
+      )}
     </div>
   );
 }
