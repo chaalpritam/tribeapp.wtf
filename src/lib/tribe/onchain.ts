@@ -44,6 +44,9 @@ const DISC = {
   // tip-registry
   initSenderTipState: Buffer.from([ 71, 192, 153, 221, 140, 136, 155, 192]),
   sendTip:            Buffer.from([231,  88,  56, 242, 241,   6,  31,  59]),
+  // karma-registry
+  initKarmaAccount:   Buffer.from([  0, 123,  22, 226, 115,  30, 193, 246]),
+  recordTipReceived:  Buffer.from([ 25, 115, 185,  32, 204, 249, 253, 223]),
 };
 
 // ── PDA Helpers ──────────────────────────────────────────────────────
@@ -444,4 +447,90 @@ export async function sendTipOnchain(
 
   const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
   return { txSig, tipId, tipRecord };
+}
+
+// ── Karma ────────────────────────────────────────────────────────────
+
+function getKarmaAccountPda(tid: number): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("karma"), tidToBuffer(tid)],
+    PROGRAM_IDS.karmaRegistry
+  )[0];
+}
+
+function getKarmaProofPda(sourceRecord: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("karma-proof"), sourceRecord.toBuffer()],
+    PROGRAM_IDS.karmaRegistry
+  )[0];
+}
+
+export async function hasKarmaAccount(
+  connection: Connection,
+  tid: number
+): Promise<boolean> {
+  const info = await connection.getAccountInfo(getKarmaAccountPda(tid));
+  return info !== null;
+}
+
+/**
+ * Credit a TID's karma for a tip they received. Bundles
+ * `init_karma_account` (when the recipient has none yet) +
+ * `record_tip_received` into a single transaction so the auto-claim
+ * UX is one wallet prompt. The signer pays the small KarmaProof and
+ * (optionally) KarmaAccount rent.
+ *
+ * Idempotent: the per-tip KarmaProof PDA's `init` constraint causes
+ * a re-run for the same tip to fail — surface the failure as
+ * "already claimed" at the call site rather than throwing further.
+ */
+export async function recordTipReceivedOnchain(
+  provider: AnchorProvider,
+  args: {
+    recipientTid: number;
+    /** TipRecord PDA produced by sendTipOnchain. */
+    tipRecord: PublicKey;
+  }
+): Promise<{ txSig: string; karmaAccount: PublicKey; karmaProof: PublicKey }> {
+  const karmaAccount = getKarmaAccountPda(args.recipientTid);
+  const karmaProof = getKarmaProofPda(args.tipRecord);
+  const payer = provider.wallet.publicKey;
+
+  const txn = new Transaction();
+
+  // Lazy-init the KarmaAccount on first credit.
+  if (!(await hasKarmaAccount(provider.connection, args.recipientTid))) {
+    const initData = Buffer.concat([
+      DISC.initKarmaAccount,
+      bnToLeBuffer(args.recipientTid, 8),
+    ]);
+    txn.add(
+      new TransactionInstruction({
+        programId: PROGRAM_IDS.karmaRegistry,
+        keys: [
+          { pubkey: karmaAccount, isSigner: false, isWritable: true },
+          { pubkey: payer, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: initData,
+      })
+    );
+  }
+
+  txn.add(
+    new TransactionInstruction({
+      programId: PROGRAM_IDS.karmaRegistry,
+      keys: [
+        { pubkey: karmaAccount, isSigner: false, isWritable: true },
+        { pubkey: args.tipRecord, isSigner: false, isWritable: false },
+        { pubkey: karmaProof, isSigner: false, isWritable: true },
+        { pubkey: payer, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: DISC.recordTipReceived,
+    })
+  );
+
+  const txSig = await provider.sendAndConfirm(txn);
+  return { txSig, karmaAccount, karmaProof };
 }

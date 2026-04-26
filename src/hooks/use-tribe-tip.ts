@@ -6,6 +6,7 @@ import { AnchorProvider } from "@coral-xyz/anchor";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import {
   getCustodyByTid,
+  recordTipReceivedOnchain,
   sendTipOnchain,
   signAndPublishTip,
 } from "@/lib/tribe";
@@ -88,6 +89,24 @@ export function useTribeTip() {
             });
             txSignature = result.txSig;
             tipRecordPda = result.tipRecord.toBase58();
+
+            // Auto-claim karma for the recipient. Best-effort: a
+            // failure here doesn't undo the tip — the recipient can
+            // re-claim later (or someone else can pay the rent for
+            // them). One signature prompt is acceptable; sender pays
+            // the small KarmaProof PDA rent so the recipient sees
+            // their karma counter tick up immediately.
+            try {
+              await recordTipReceivedOnchain(provider, {
+                recipientTid,
+                tipRecord: result.tipRecord,
+              });
+            } catch (claimErr) {
+              console.warn(
+                "Karma auto-claim failed (tip succeeded, recipient can claim later):",
+                claimErr
+              );
+            }
           }
         }
 
