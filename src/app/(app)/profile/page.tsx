@@ -9,6 +9,7 @@ import { TweetCard } from "@/components/features/home/tweet-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { useTribeUser } from "@/hooks/use-tribe-user";
+import { useTribeKarma } from "@/hooks/use-tribe-karma";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -102,6 +103,7 @@ export default function ProfilePage() {
   const { isAuthenticated, profile, tid } = useAuth();
   const { setFields: publishUserData, error: publishError } = useTribeUserData();
   const { user: hubUser } = useTribeUser(tid ?? null);
+  const { karma: hubKarma } = useTribeKarma(tid ?? null);
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Posts");
   const [isEditing, setIsEditing] = useState(false);
@@ -133,7 +135,35 @@ export default function ProfilePage() {
     );
   }
 
-  const karma = currentUser?.karma;
+  // Map the hub's numeric level (1-5) onto the seed's named scale.
+  const KARMA_LEVELS: Array<
+    "newcomer" | "neighbor" | "local" | "trusted" | "pillar" | "legend"
+  > = ["newcomer", "neighbor", "local", "trusted", "pillar", "legend"];
+  const hubLevelName = hubKarma
+    ? KARMA_LEVELS[Math.min(hubKarma.level, KARMA_LEVELS.length - 1)]
+    : null;
+
+  // Hub karma wins when available; falls back to seed user karma.
+  const karma = hubKarma && hubLevelName
+    ? {
+        totalKarma: hubKarma.total,
+        level: hubLevelName,
+        breakdown: {
+          tweetKarma: hubKarma.breakdown.tweets * (hubKarma.weights.tweet ?? 1),
+          reactionKarma:
+            hubKarma.breakdown.reactions_received *
+            (hubKarma.weights.reactionReceived ?? 2),
+          followerKarma:
+            hubKarma.breakdown.followers * (hubKarma.weights.follower ?? 5),
+          tipKarma:
+            hubKarma.breakdown.tips_received *
+            (hubKarma.weights.tipReceived ?? 10),
+          taskKarma:
+            hubKarma.breakdown.tasks_completed *
+            (hubKarma.weights.taskCompleted ?? 20),
+        },
+      }
+    : currentUser?.karma;
   const levelConfig = karma ? karmaLevelConfig[karma.level] : null;
   const progress = karma ? getKarmaProgress(karma.totalKarma, karma.level) : 0;
 
