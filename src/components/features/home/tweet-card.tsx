@@ -10,6 +10,7 @@ import {
   Send,
   Loader2,
   Trash2,
+  Zap,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tweet } from "@/types";
@@ -21,6 +22,14 @@ import { useShare } from "@/hooks/use-share";
 import { useAuth } from "@/hooks/use-auth";
 import { useComments } from "@/hooks/use-comments";
 import { useTribeBookmark } from "@/hooks/use-tribe-bookmark";
+import { useTribeTip } from "@/hooks/use-tribe-tip";
+
+const DEFAULT_TIP_AMOUNT = 1;
+
+function tidFromUserId(id: string): number | null {
+  const match = id.match(/^tid-(\d+)$/);
+  return match ? parseInt(match[1], 10) : null;
+}
 
 interface TweetCardProps {
   tweet: Tweet;
@@ -170,6 +179,9 @@ export function TweetCard({ tweet }: TweetCardProps) {
     tweet.likes
   );
   const { setBookmarked, ready: bookmarkReady } = useTribeBookmark();
+  const { tip, pending: tipPending, ready: tipReady } = useTribeTip();
+  const [tipped, setTipped] = useState(false);
+  const recipientTid = tidFromUserId(tweet.user.id);
   const { showToast: showShareToast } = useShare();
   const {
     comments,
@@ -340,6 +352,37 @@ export function TweetCard({ tweet }: TweetCardProps) {
         </div>
 
         <div className="flex items-center gap-2">
+          {recipientTid !== null && (
+            <button
+              onClick={async () => {
+                if (tipped) return;
+                setTipped(true);
+                if (tipReady) {
+                  try {
+                    await tip(recipientTid, DEFAULT_TIP_AMOUNT, {
+                      targetHash: tweet.id,
+                    });
+                  } catch {
+                    setTipped(false);
+                  }
+                }
+              }}
+              disabled={tipPending || tipped}
+              title={`Tip $${DEFAULT_TIP_AMOUNT} to tid:${recipientTid}`}
+              className={cn(
+                "p-2 rounded-full transition-all active:scale-90",
+                tipped
+                  ? "bg-amber-50 text-amber-500"
+                  : "hover:bg-[#f5f5f5] text-[#666]"
+              )}
+            >
+              {tipPending ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Zap className={cn("h-5 w-5", tipped && "fill-current")} />
+              )}
+            </button>
+          )}
           <button
             onClick={async () => {
               const wasSaved = !!tweet.isSaved;

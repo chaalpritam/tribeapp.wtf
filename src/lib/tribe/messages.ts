@@ -47,7 +47,8 @@ export type MessageType =
   | 21 // TASK_CLAIM
   | 22 // TASK_COMPLETE
   | 23 // CROWDFUND_ADD
-  | 24; // CROWDFUND_PLEDGE
+  | 24 // CROWDFUND_PLEDGE
+  | 25; // TIP_ADD
 
 interface BuildOptions {
   type: MessageType;
@@ -144,6 +145,43 @@ export async function signAndPublishChannelOp(
     throw new Error(`Channel op failed: ${res.status} ${errBody}`);
   }
 
+  return res.json();
+}
+
+export async function signAndPublishTip(
+  tid: number,
+  recipientTid: number,
+  amount: number,
+  signingKeySecret: Uint8Array,
+  opts: {
+    currency?: string;
+    targetHash?: string;
+    txSignature?: string;
+  } = {}
+): Promise<{ hash: string }> {
+  const body: Record<string, unknown> = {
+    recipient_tid: recipientTid.toString(),
+    amount,
+    currency: opts.currency ?? "USD",
+  };
+  if (opts.targetHash) body.target_hash = opts.targetHash;
+  if (opts.txSignature) body.tx_signature = opts.txSignature;
+
+  const message = await buildSignedMessage({
+    type: 25,
+    tid,
+    body,
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Tip failed: ${res.status} ${errBody}`);
+  }
   return res.json();
 }
 
