@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
-import { Plus } from "lucide-react";
+import { useMemo, useState } from "react";
+import { Plus, Loader2 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
+import { useTribeFeed } from "@/hooks/use-tribe-feed";
+import { tribeTweetToTweet } from "@/lib/tribe";
 import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
 import { EventCard } from "./event-card";
@@ -47,9 +49,27 @@ export function HomeFeed() {
     useTribeStore();
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<FeedTab>("city");
+  const { tweets: hubTweets, loading: hubLoading } = useTribeFeed({
+    enabled: activeTab === "all",
+  });
 
-  // Build mixed feed from seed data.
+  const adaptedHubTweets = useMemo(
+    () =>
+      hubTweets.map((t) =>
+        tribeTweetToTweet(t, { cityId: currentCity?.id ?? "" })
+      ),
+    [hubTweets, currentCity?.id]
+  );
+
+  // Build mixed feed: real hub tweets first (when on the All tab),
+  // then seed content interleaved.
   const feedItems: { type: string; data: FeedItemData; key: string }[] = [];
+
+  if (activeTab === "all") {
+    adaptedHubTweets.forEach((tweet) => {
+      feedItems.push({ type: "tweet", data: tweet, key: `hub-${tweet.id}` });
+    });
+  }
 
   tweets.forEach((tweet) => {
     feedItems.push({ type: "tweet", data: tweet, key: tweet.id });
@@ -152,6 +172,13 @@ export function HomeFeed() {
       </div>
 
       <div className="px-3 sm:px-6 max-w-2xl mx-auto">
+        {activeTab === "all" && hubLoading && adaptedHubTweets.length === 0 && (
+          <div className="flex items-center gap-2 mb-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+            <Loader2 className="h-3 w-3 animate-spin" />
+            loading from hub…
+          </div>
+        )}
+
         <div className="flex flex-col gap-4 sm:gap-6">
           {feedItems.map((item) => (
             <div key={item.key} className="w-full">

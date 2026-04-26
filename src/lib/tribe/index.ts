@@ -4,3 +4,4 @@ export * from "./api";
 export * from "./onchain";
 export * from "./messages";
 export * from "./dm";
+export * from "./adapters";
