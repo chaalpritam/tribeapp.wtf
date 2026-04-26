@@ -12,7 +12,6 @@ export interface CommentData {
   profile?: {
     id: string;
     username: string;
-    bio?: string;
     image?: string;
   };
   replies?: CommentData[];
@@ -77,7 +76,6 @@ export function useComments(contentId: string | null): UseCommentsReturn {
         profile: {
           id: profile.id,
           username: profile.username,
-          bio: profile.bio,
           image: profile.image,
         },
       };
@@ -131,7 +129,6 @@ export function useComments(contentId: string | null): UseCommentsReturn {
         profile: {
           id: profile.id,
           username: profile.username,
-          bio: profile.bio,
           image: profile.image,
         },
       };

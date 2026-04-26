@@ -10,14 +10,11 @@ vi.mock("@/hooks/use-auth", () => ({
 import { useAuth } from "@/hooks/use-auth";
 
 const mockAuth = {
-  profile: { id: "user-1", username: "testuser" },
+  profile: { id: "user-1", username: "testuser", tid: 1 },
   isAuthenticated: true,
   status: "authenticated" as const,
   error: null,
-  fid: null,
-  signerUuid: null,
-  updateProfile: vi.fn(),
-  loginWithNeynar: vi.fn(),
+  tid: 1,
   logout: vi.fn(),
 };
 

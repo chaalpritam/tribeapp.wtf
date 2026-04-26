@@ -19,7 +19,6 @@ import {
 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
-import { usePublishCast } from "@/hooks/use-publish-cast";
 import type { Cast } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
@@ -77,13 +76,12 @@ const createOptions = [
 
 type Mode = "menu" | "cast" | "event" | "poll" | "task" | "crowdfund" | "channel";
 
-const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, isPublishing, currentCity, setMode }: {
+const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, currentCity, setMode }: {
   title: string;
   children: React.ReactNode;
   onSubmit: () => void;
   canSubmit: boolean;
   isSubmitting: boolean;
-  isPublishing: boolean;
   currentCity: { id: string; name: string } | null;
   setMode: (mode: Mode) => void;
 }) => (
@@ -111,10 +109,10 @@ const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, isPubl
       </div>
       <button
         onClick={onSubmit}
-        disabled={!canSubmit || isSubmitting || isPublishing}
+        disabled={!canSubmit || isSubmitting}
         className="flex items-center gap-2 h-11 px-6 rounded-full bg-black text-white text-[13px] font-bold disabled:opacity-30 transition-all active:scale-95 shadow-xl shadow-black/10"
       >
-        {(isSubmitting || isPublishing) ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+        {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
         Share
       </button>
     </div>
@@ -129,8 +127,7 @@ const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, isPubl
 export default function CreatePage() {
   const router = useRouter();
   const { currentCity } = useTribeStore();
-  const { isAuthenticated, signerUuid } = useAuth();
-  const { publish, isPublishing, error: publishError } = usePublishCast();
+  const { isAuthenticated } = useAuth();
   const [mode, setMode] = useState<Mode>("menu");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -144,18 +141,7 @@ export default function CreatePage() {
     const handleCastSubmit = async () => {
       if (!caption.trim() || !currentCity) return;
       setIsSubmitting(true);
-
-      if (isAuthenticated && signerUuid) {
-        // Publish to Farcaster
-        const result = await publish({
-          text: caption.trim(),
-          channelId: channelId || undefined,
-        });
-        if (result) {
-          // Success
-        }
-      }
-
+      // TODO: publish via tribe-sdk TweetClient once wired in.
       setIsSubmitting(false);
       router.push("/home");
     };
@@ -166,7 +152,6 @@ export default function CreatePage() {
         onSubmit={handleCastSubmit}
         canSubmit={!!caption.trim()}
         isSubmitting={isSubmitting}
-        isPublishing={isPublishing}
         currentCity={currentCity}
         setMode={setMode}
       >
@@ -180,35 +165,28 @@ export default function CreatePage() {
             className="w-full resize-none bg-transparent text-xl font-bold outline-none placeholder:text-[#ccc] border-none p-0"
           />
 
-          {isAuthenticated && signerUuid ? (
+          {isAuthenticated ? (
             <div className="space-y-2">
               <label className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2">
-                Farcaster Channel (optional)
+                Channel (optional)
               </label>
               <input
                 type="text"
-                placeholder="e.g. farcaster, base, degen"
+                placeholder="e.g. tribe, base, degen"
                 value={channelId}
                 onChange={(e) => setChannelId(e.target.value)}
                 className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-6 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
               />
-              <p className="text-[11px] text-purple-500 font-bold px-2">
-                This cast will be published to Farcaster
-              </p>
             </div>
           ) : (
             <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
               <p className="text-[13px] font-bold text-amber-800">
-                Sign in with Farcaster to publish casts
+                Sign in with Tribe to publish casts
               </p>
               <a href="/onboarding/connect" className="text-[12px] font-bold text-amber-600 underline mt-1 inline-block">
                 Sign in now
               </a>
             </div>
-          )}
-
-          {publishError && (
-            <p className="text-[12px] text-red-500 font-bold px-2">{publishError}</p>
           )}
 
           <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => {
@@ -246,7 +224,6 @@ export default function CreatePage() {
         onSubmit={() => setMode("menu")}
         canSubmit={true}
         isSubmitting={isSubmitting}
-        isPublishing={isPublishing}
         currentCity={currentCity}
         setMode={setMode}
       >

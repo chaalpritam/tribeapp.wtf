@@ -10,7 +10,6 @@ import {
   Send,
   Loader2,
   Trash2,
-  Repeat2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Cast } from "@/types";
@@ -21,7 +20,6 @@ import { useLike } from "@/hooks/use-like";
 import { useShare } from "@/hooks/use-share";
 import { useAuth } from "@/hooks/use-auth";
 import { useComments } from "@/hooks/use-comments";
-import { useFarcasterReaction } from "@/hooks/use-farcaster-reaction";
 
 interface CastCardProps {
   cast: Cast;
@@ -166,10 +164,9 @@ export function CastCard({ cast }: CastCardProps) {
   const { likeCast, bookmarkCast } = useTribeStore();
   const { isAuthenticated, profile } = useAuth();
   const { isLiked, likeCount, toggleLike } = useLike(
-    cast.castHash ?? null,
+    cast.id,
     cast.isLiked,
-    cast.likes,
-    cast.castHash
+    cast.likes
   );
   const { showToast: showShareToast } = useShare();
   const {
@@ -180,13 +177,9 @@ export function CastCard({ cast }: CastCardProps) {
     deleteComment,
     addReply,
   } = useComments(null);
-  const { react: farcasterReact, isLoading: isRecasting } =
-    useFarcasterReaction(cast.castHash);
   const [showInput, setShowInput] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
-  const [recastCount, setRecastCount] = useState(cast.recasts ?? 0);
-  const [hasRecasted, setHasRecasted] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -200,24 +193,11 @@ export function CastCard({ cast }: CastCardProps) {
   }, [showInput]);
 
   const handleLike = async () => {
-    if (!cast.castHash) {
-      likeCast(cast.id);
-    }
+    likeCast(cast.id);
     if (isAuthenticated) {
       await toggleLike();
     }
   };
-
-  const handleRecast = useCallback(async () => {
-    if (!cast.castHash || !isAuthenticated || isRecasting || hasRecasted) return;
-    setHasRecasted(true);
-    setRecastCount((c) => c + 1);
-    const ok = await farcasterReact("recast");
-    if (!ok) {
-      setHasRecasted(false);
-      setRecastCount((c) => c - 1);
-    }
-  }, [cast.castHash, isAuthenticated, isRecasting, hasRecasted, farcasterReact]);
 
   const handleCommentSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -243,7 +223,6 @@ export function CastCard({ cast }: CastCardProps) {
 
   const displayCount = comments.length || cast.comments.length;
   const isShortCaption = cast.caption.length < 60;
-  const isFarcasterCast = !!cast.castHash;
 
   return (
     <div className="group relative bg-white rounded-[20px] sm:rounded-[32px] border border-[#f0f0f0] p-4 sm:p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03] overflow-hidden">
@@ -251,7 +230,7 @@ export function CastCard({ cast }: CastCardProps) {
       <div className="flex items-center justify-between mb-3 sm:mb-5">
         <div className="flex items-center gap-2.5 sm:gap-3">
           <Link
-            href={cast.user.farcasterFid ? `/profile/${cast.user.farcasterFid}` : "/profile"}
+            href="/profile"
             className="group/avatar flex items-center gap-2.5 sm:gap-3 transition-opacity hover:opacity-80"
           >
             <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-muted overflow-hidden relative border border-[#f0f0f0] group-hover/avatar:ring-2 group-hover/avatar:ring-primary/20 transition-all">
@@ -283,7 +262,7 @@ export function CastCard({ cast }: CastCardProps) {
               {cast.channel.name}
             </>
           ) : (
-            isFarcasterCast ? "Farcaster" : "Local"
+            "Local"
           )}
         </div>
       </div>
@@ -339,24 +318,6 @@ export function CastCard({ cast }: CastCardProps) {
               {formatNumber(likeCount)}
             </span>
           </button>
-
-          {isFarcasterCast && (
-            <button
-              onClick={handleRecast}
-              disabled={isRecasting || hasRecasted}
-              className={cn(
-                "flex items-center gap-1.5 px-3 py-2 rounded-full transition-all active:scale-90",
-                hasRecasted
-                  ? "bg-green-50 text-green-500"
-                  : "hover:bg-[#f5f5f5] text-[#666]"
-              )}
-            >
-              <Repeat2 className={cn("h-5 w-5", hasRecasted && "stroke-[2.5px]")} />
-              <span className="text-[13px] font-bold">
-                {formatNumber(recastCount)}
-              </span>
-            </button>
-          )}
 
           <button
             onClick={toggleInput}

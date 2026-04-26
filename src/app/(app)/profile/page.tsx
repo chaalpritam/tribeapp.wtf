@@ -7,8 +7,6 @@ import Link from "next/link";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { CastCard } from "@/components/features/home/cast-card";
 import { useAuth } from "@/hooks/use-auth";
-import { useFarcasterUser } from "@/hooks/use-farcaster-user";
-import { useFarcasterFeed } from "@/hooks/use-farcaster-feed";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -99,7 +97,7 @@ function PostsFeed({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean })
 
 export default function ProfilePage() {
   const { currentUser, updateCurrentUser, casts } = useTribeStore();
-  const { isAuthenticated, profile, fid, updateProfile } = useAuth();
+  const { isAuthenticated, profile, tid } = useAuth();
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Posts");
   const [isEditing, setIsEditing] = useState(false);
@@ -107,31 +105,6 @@ export default function ProfilePage() {
   const [editBio, setEditBio] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [isSaving, setIsSaving] = useState(false);
-
-  // Fetch real Farcaster profile data when authenticated
-  const { user: farcasterUser, isLoading: fcUserLoading } = useFarcasterUser(fid);
-
-  // Fetch user's Farcaster casts
-  const {
-    casts: farcasterCasts,
-    isLoading: fcCastsLoading,
-    error: fcCastsError,
-    fetchFeed: fetchFarcasterCasts,
-    loadMore,
-    hasMore,
-  } = useFarcasterFeed({
-    feedType: "filter",
-    filterType: "fids",
-    fid: fid ?? undefined,
-    viewerFid: fid ?? undefined,
-    limit: 20,
-  });
-
-  useEffect(() => {
-    if (fid && farcasterCasts.length === 0 && !fcCastsLoading && !fcCastsError) {
-      fetchFarcasterCasts(true);
-    }
-  }, [fid, farcasterCasts.length, fcCastsLoading, fcCastsError, fetchFarcasterCasts]);
 
   if (!isAuthenticated) {
     return (
@@ -143,26 +116,14 @@ export default function ProfilePage() {
           </div>
           <h2 className="text-2xl font-black tracking-tighter text-black mb-2">Sign in to view your profile</h2>
           <p className="text-sm font-medium text-muted-foreground mb-8 max-w-sm">
-            Connect your Farcaster account to see your profile, followers, and casts.
+            Connect your Solana wallet to claim a Tribe ID, then view your profile, followers, and casts.
           </p>
           <a
             href="/onboarding/connect"
             className="flex items-center gap-2 px-8 py-4 rounded-full bg-black text-white text-[14px] font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-black/10"
           >
-            Sign in with Farcaster
+            Sign in with Tribe
           </a>
-        </div>
-      </div>
-    );
-  }
-
-  // Show loading only while fetching Farcaster data for the first time
-  if (fcUserLoading && !farcasterUser) {
-    return (
-      <div className="bg-[#fcfcfc] min-h-screen">
-        <AppHeader title="Profile" />
-        <div className="flex h-[60vh] items-center justify-center text-muted-foreground">
-          <Loader2 className="h-6 w-6 animate-spin" />
         </div>
       </div>
     );
@@ -172,45 +133,26 @@ export default function ProfilePage() {
   const levelConfig = karma ? karmaLevelConfig[karma.level] : null;
   const progress = karma ? getKarmaProgress(karma.totalKarma, karma.level) : 0;
 
-  // Use Farcaster data as primary source, fall back to auth profile / local data
-  const displayName = farcasterUser?.displayName
-    || profile?.displayName
-    || profile?.username
-    || "Unknown";
+  const displayName =
+    profile?.displayName || profile?.username || currentUser?.displayName || `tid:${tid ?? "?"}`;
 
-  const displayBio = farcasterUser?.bio
-    || profile?.bio
-    || currentUser?.bio
-    || "";
+  const displayBio = currentUser?.bio || "";
 
-  const displayAvatar = farcasterUser?.pfpUrl
-    || profile?.pfpUrl
-    || currentUser?.avatarUrl
-    || "/default-avatar.png";
+  const displayAvatar = profile?.image || currentUser?.avatarUrl || "/default-avatar.png";
 
-  const displayHandle = farcasterUser
-    ? `@${farcasterUser.username}`
-    : profile
-      ? `@${profile.username}`
-      : currentUser
-        ? `@${currentUser.username}`
+  const displayHandle = profile?.username
+    ? `@${profile.username}`
+    : currentUser?.username
+      ? `@${currentUser.username}`
+      : tid
+        ? `tid:${tid}`
         : "";
 
-  const socialCounts = farcasterUser
-    ? {
-      followers: farcasterUser.followerCount,
-      following: farcasterUser.followingCount,
-      posts: farcasterCasts.length || 0,
-    }
-    : { followers: 0, following: 0, posts: 0 };
+  const socialCounts = { followers: 0, following: 0, posts: 0 };
 
-  // Merge local casts with Farcaster casts for the profile
-  const userCasts = currentUser
+  const allPosts = currentUser
     ? casts.filter((c) => c.user.id === currentUser.id)
     : [];
-  const allPosts = fid
-    ? [...farcasterCasts, ...userCasts.filter((c) => !c.castHash)]
-    : userCasts;
 
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
@@ -274,9 +216,9 @@ export default function ProfilePage() {
                 <MapPin className="h-4 w-4 text-primary" />
                 <span className="text-[13px] font-bold">{currentUser?.location || "Earth"}</span>
               </div>
-              {farcasterUser && (
-                <div className="flex items-center gap-2 px-5 py-3 rounded-[20px] bg-purple-50 border border-purple-100">
-                  <span className="text-[13px] font-bold text-purple-600">FID #{farcasterUser.fid}</span>
+              {tid !== null && (
+                <div className="flex items-center gap-2 px-5 py-3 rounded-[20px] bg-indigo-50 border border-indigo-100">
+                  <span className="text-[13px] font-bold text-indigo-600">TID #{tid}</span>
                 </div>
               )}
             </div>
@@ -358,33 +300,10 @@ export default function ProfilePage() {
         {/* Content Area */}
         {activeTab === "Posts" && (
           <div className="flex flex-col gap-4 px-3 sm:px-6 pb-24">
-            {fcCastsError ? (
-              <div className="flex flex-col items-center justify-center py-20 text-center">
-                <p className="text-sm font-medium text-red-500 mb-4">{fcCastsError}</p>
-                <button
-                  onClick={() => fetchFarcasterCasts(true)}
-                  className="px-6 py-2 rounded-full bg-black text-white text-xs font-bold"
-                >
-                  Retry Pulse
-                </button>
-              </div>
-            ) : (
-              <>
-                <PostsFeed casts={allPosts} isLoading={fcCastsLoading && farcasterCasts.length === 0} />
-                {hasMore && allPosts.length > 0 && (
-                  <button
-                    onClick={loadMore}
-                    disabled={fcCastsLoading}
-                    className="mx-auto flex items-center gap-2 px-6 py-3 rounded-full bg-white border border-[#f0f0f0] text-[13px] font-bold text-muted-foreground hover:bg-muted/30 transition-all active:scale-95 disabled:opacity-50"
-                  >
-                    {fcCastsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : "Load older pulses"}
-                  </button>
-                )}
-              </>
-            )}
+            <PostsFeed casts={allPosts} />
           </div>
         )}
-        {activeTab === "Media" && <ActivityGrid casts={allPosts} isLoading={fcCastsLoading && farcasterCasts.length === 0} />}
+        {activeTab === "Media" && <ActivityGrid casts={allPosts} />}
 
         {activeTab === "Badges" && (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 px-3 sm:px-6 pb-24">
@@ -447,14 +366,7 @@ export default function ProfilePage() {
                       if (currentUser) {
                         updateCurrentUser({ displayName: editName, bio: editBio });
                       }
-
-                      if (profile?.id) {
-                        await updateProfile({ bio: editBio });
-                      }
-
                       setIsEditing(false);
-                    } catch {
-                      // keep modal open
                     } finally {
                       setIsSaving(false);
                     }

@@ -63,19 +63,11 @@ export default function WalletPage() {
               <span className="text-sm text-muted-foreground">Username</span>
               <span className="text-sm font-medium">@{profile.username}</span>
             </div>
-            {profile.bio && (
+            {profile.tid !== undefined && (
               <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">Bio</span>
-                <span className="text-sm font-medium truncate ml-4">
-                  {profile.bio}
-                </span>
-              </div>
-            )}
-            {profile.fid && (
-              <div className="flex justify-between">
-                <span className="text-sm text-muted-foreground">FID</span>
-                <span className="text-sm font-bold text-purple-600">
-                  #{profile.fid}
+                <span className="text-sm text-muted-foreground">TID</span>
+                <span className="text-sm font-bold text-indigo-600">
+                  #{profile.tid}
                 </span>
               </div>
             )}

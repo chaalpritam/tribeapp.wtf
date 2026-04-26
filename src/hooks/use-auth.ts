@@ -1,68 +1,46 @@
 "use client";
 
 import { useCallback } from "react";
-import { useAuthStore } from "@/store/use-auth-store";
+import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
+import { clearDmKeypair } from "@/lib/tribe";
 
+export interface AuthProfile {
+  id: string;
+  tid: number;
+  username: string;
+  displayName?: string;
+  image?: string;
+}
+
+/**
+ * Auth surface for the app. Backed by the Tribe identity store —
+ * "authenticated" means the caller has a TID + app key registered.
+ */
 export function useAuth() {
-  const {
-    status,
-    profile,
-    error,
-    setProfile,
-    setError,
-    setFarcasterAuth,
-    reset,
-  } = useAuthStore();
+  const identity = useTribeIdentityStore((s) => s.identity);
+  const error = useTribeIdentityStore((s) => s.error);
+  const reset = useTribeIdentityStore((s) => s.reset);
 
-  const updateProfile = useCallback(
-    async (updates: { username?: string; bio?: string; image?: string }) => {
-      if (!profile?.id) {
-        setError("No profile to update");
-        return;
+  const profile: AuthProfile | null = identity
+    ? {
+        id: `tid-${identity.tid}`,
+        tid: identity.tid,
+        username: identity.username ?? `tid:${identity.tid}`,
+        displayName: identity.username ?? undefined,
       }
-
-      try {
-        setProfile({
-          ...profile,
-          ...updates,
-        });
-      } catch (err) {
-        setError(
-          err instanceof Error ? err.message : "Failed to update profile"
-        );
-        throw err;
-      }
-    },
-    [profile, setProfile, setError]
-  );
-
-  const loginWithNeynar = useCallback(
-    (data: {
-      fid: number;
-      signerUuid: string;
-      username: string;
-      displayName: string;
-      pfpUrl?: string;
-      bio?: string;
-    }) => {
-      setFarcasterAuth(data);
-    },
-    [setFarcasterAuth]
-  );
+    : null;
 
   const logout = useCallback(async () => {
+    clearDmKeypair();
     reset();
   }, [reset]);
 
   return {
-    status,
+    status: identity ? ("authenticated" as const) : ("disconnected" as const),
     profile,
+    isAuthenticated: profile !== null,
     error,
-    fid: profile?.fid ?? null,
-    signerUuid: profile?.signerUuid ?? null,
-    isAuthenticated: status === "authenticated",
-    updateProfile,
-    loginWithNeynar,
+    tid: identity?.tid ?? null,
     logout,
   };
 }

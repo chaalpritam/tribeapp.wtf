@@ -1,13 +1,13 @@
 "use client";
 
-import { useAuthStore } from "@/store/use-auth-store";
+import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 
 export function useCurrentWallet() {
-  const { status, profile } = useAuthStore();
-
+  const identity = useTribeIdentityStore((s) => s.identity);
   return {
-    isConnected: status === "authenticated",
-    mainUsername: profile?.username ?? null,
+    isConnected: identity !== null,
+    mainUsername: identity?.username ?? null,
+    walletAddress: identity?.custodyWallet ?? null,
     loading: false,
   };
 }

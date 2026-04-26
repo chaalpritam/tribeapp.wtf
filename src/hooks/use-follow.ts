@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { useAuth } from "./use-auth";
 
 interface UseFollowReturn {
@@ -9,55 +9,31 @@ interface UseFollowReturn {
   toggleFollow: () => Promise<void>;
 }
 
+/**
+ * Optimistic follow state for a profile. The on-chain follow lives in
+ * tribe-protocol's social-graph program (see useTribeFollow); this
+ * hook is the lightweight UI shim used by demo pages working off seed
+ * data, so it just flips local state.
+ */
 export function useFollow(targetProfileId: string | null): UseFollowReturn {
-  const { profile, isAuthenticated } = useAuth();
+  const { isAuthenticated, profile } = useAuth();
   const [isFollowing, setIsFollowing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check initial follow status
-  useEffect(() => {
-    if (!isAuthenticated || !profile?.id || !targetProfileId) return;
-    if (profile.id === targetProfileId) return;
-
-    fetch(
-      `/api/followers/state?startId=${encodeURIComponent(profile.id)}&endId=${encodeURIComponent(targetProfileId)}`
-    )
-      .then((res) => {
-        if (!res.ok) throw new Error("Failed");
-        return res.json();
-      })
-      .then((result) => setIsFollowing(result.isFollowing))
-      .catch(() => {});
-  }, [isAuthenticated, profile?.id, targetProfileId]);
-
   const toggleFollow = useCallback(async () => {
-    if (!isAuthenticated || !profile?.id || !targetProfileId || isLoading) return;
-
-    const wasFollowing = isFollowing;
-    // Optimistic update
-    setIsFollowing(!wasFollowing);
-    setIsLoading(true);
-
-    try {
-      const endpoint = wasFollowing
-        ? "/api/followers/remove"
-        : "/api/followers/add";
-      const res = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          startId: profile.id,
-          endId: targetProfileId,
-        }),
-      });
-      if (!res.ok) throw new Error("Failed");
-    } catch {
-      // Rollback on failure
-      setIsFollowing(wasFollowing);
-    } finally {
-      setIsLoading(false);
+    if (
+      !isAuthenticated ||
+      !profile?.id ||
+      !targetProfileId ||
+      isLoading ||
+      profile.id === targetProfileId
+    ) {
+      return;
     }
-  }, [isAuthenticated, profile?.id, targetProfileId, isFollowing, isLoading]);
+    setIsLoading(true);
+    setIsFollowing((prev) => !prev);
+    setIsLoading(false);
+  }, [isAuthenticated, profile?.id, targetProfileId, isLoading]);
 
   return { isFollowing, isLoading, toggleFollow };
 }
