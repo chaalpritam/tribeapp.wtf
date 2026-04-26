@@ -6,7 +6,6 @@ import Link from "next/link";
 import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { NeynarSignIn } from "@/components/auth/neynar-sign-in";
 import { TribeSignIn } from "@/components/auth/tribe-sign-in";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 
@@ -28,7 +27,7 @@ export default function ConnectPage() {
     }
   }, [signedIn, router, hasHydrated]);
 
-  const handleSIWNSuccess = () => {
+  const handleSignInSuccess = () => {
     router.push("/onboarding/city");
   };
 
@@ -64,12 +63,12 @@ export default function ConnectPage() {
         </div>
 
         <h1 className="mb-3 text-3xl font-black tracking-tighter">
-          {signedIn ? "Welcome Back!" : "Choose your sign-in"}
+          {signedIn ? "Welcome Back!" : "Sign in with Tribe"}
         </h1>
         <p className="mb-10 text-[15px] font-medium text-muted-foreground leading-relaxed">
           {signedIn
             ? "You're already authenticated. Continue to explore your neighborhood and connect with your tribes."
-            : "Bring your Farcaster identity, or claim a Tribe ID on Solana. Your identity travels with you across the decentralized social web."}
+            : "Connect your Solana wallet to claim a Tribe ID. Your identity travels with you across the decentralized social web."}
         </p>
 
         {signedIn ? (
@@ -83,23 +82,12 @@ export default function ConnectPage() {
             Continue with Tribe
           </motion.button>
         ) : (
-          <div className="space-y-5">
-            <TribeSignIn onSuccess={handleSIWNSuccess} />
-            <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
-              <div className="h-px flex-1 bg-border" />
-              <span>or</span>
-              <div className="h-px flex-1 bg-border" />
-            </div>
-            <NeynarSignIn
-              onSuccess={handleSIWNSuccess}
-              className="flex justify-center"
-            />
-          </div>
+          <TribeSignIn onSuccess={handleSignInSuccess} />
         )}
 
         <div className="mt-8 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#999]">
           <Shield className="h-3.5 w-3.5" />
-          <span>Tribe protocol on Solana · Farcaster via Neynar</span>
+          <span>Tribe protocol on Solana</span>
         </div>
 
         <Link
