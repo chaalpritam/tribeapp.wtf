@@ -64,6 +64,12 @@ const DISC = {
   cfPledge:              Buffer.from([235,  47, 156, 254,   0,  88, 212, 142]),
   cfClaimFunds:          Buffer.from([145,  36, 143, 242, 168,  66, 200, 155]),
   cfRefund:              Buffer.from([  2,  96, 183, 251,  63, 208,  46,  46]),
+  // task-registry — same init_creator_state collision
+  taskInitCreatorState:  Buffer.from([105,  60,   2,  31,  14, 151, 165,  18]),
+  taskCreate:            Buffer.from([194,  80,   6, 180, 232, 127,  48, 171]),
+  taskClaim:             Buffer.from([ 49, 222, 219, 238, 155,  68, 221, 136]),
+  taskComplete:          Buffer.from([109, 167, 192,  41, 129, 108, 220, 196]),
+  taskCancel:            Buffer.from([ 69, 228, 134, 187, 134, 105, 238,  48]),
 };
 
 // ── PDA Helpers ──────────────────────────────────────────────────────
@@ -1128,4 +1134,191 @@ export async function refundCrowdfundOnchain(
   });
   const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
   return { txSig, pledgePda };
+}
+
+// ── Tasks ────────────────────────────────────────────────────────────
+
+function getTaskCreatorStatePda(creator: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("task-creator"), creator.toBuffer()],
+    PROGRAM_IDS.taskRegistry
+  )[0];
+}
+
+function getTaskPda(creator: PublicKey, taskId: bigint): PublicKey {
+  const idBuf = Buffer.alloc(8);
+  idBuf.writeBigUInt64LE(taskId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("task"), creator.toBuffer(), idBuf],
+    PROGRAM_IDS.taskRegistry
+  )[0];
+}
+
+export async function hasTaskCreatorState(
+  connection: Connection,
+  creator: PublicKey
+): Promise<boolean> {
+  const info = await connection.getAccountInfo(getTaskCreatorStatePda(creator));
+  return info !== null;
+}
+
+/** CreatorTaskState.next_task_id sits at offset 48 (8 disc + 32 creator + 8 tid). */
+async function getNextTaskId(
+  connection: Connection,
+  creator: PublicKey
+): Promise<bigint> {
+  const info = await connection.getAccountInfo(getTaskCreatorStatePda(creator));
+  if (!info) throw new Error("CreatorTaskState not initialized");
+  return info.data.readBigUInt64LE(48);
+}
+
+/**
+ * Create an on-chain Task. Lazy-inits the per-creator counter PDA
+ * on first use. When `rewardLamports > 0`, the creator escrows that
+ * amount into the Task PDA — released to the claimer on
+ * complete_task or refunded on cancel_task.
+ *
+ * `metadataHash` should be the BLAKE3 hash of the off-chain
+ * TASK_ADD envelope so the on-chain Task PDA points back to title /
+ * description / reward_text.
+ */
+export async function createTaskOnchain(
+  provider: AnchorProvider,
+  args: {
+    creatorTid: number;
+    /** Reward in lamports. Pass 0 for no escrow. */
+    rewardLamports: bigint;
+    metadataHash: Uint8Array;
+  }
+): Promise<{ txSig: string; taskPda: PublicKey; taskId: bigint }> {
+  if (args.metadataHash.length !== 32) {
+    throw new Error("metadataHash must be exactly 32 bytes");
+  }
+  if (args.rewardLamports < BigInt(0)) {
+    throw new Error("rewardLamports must be >= 0");
+  }
+
+  const creator = provider.wallet.publicKey;
+  const creatorState = getTaskCreatorStatePda(creator);
+
+  const txn = new Transaction();
+
+  if (!(await hasTaskCreatorState(provider.connection, creator))) {
+    const initData = Buffer.concat([
+      DISC.taskInitCreatorState,
+      bnToLeBuffer(args.creatorTid, 8),
+    ]);
+    txn.add(
+      new TransactionInstruction({
+        programId: PROGRAM_IDS.taskRegistry,
+        keys: [
+          { pubkey: creatorState, isSigner: false, isWritable: true },
+          { pubkey: creator, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: initData,
+      })
+    );
+  }
+
+  let taskId: bigint;
+  if (txn.instructions.length === 0) {
+    taskId = await getNextTaskId(provider.connection, creator);
+  } else {
+    taskId = BigInt(0);
+  }
+  const taskPda = getTaskPda(creator, taskId);
+
+  // Args: reward_amount u64 | metadata_hash [u8;32]
+  const createData = Buffer.concat([
+    DISC.taskCreate,
+    new BN(args.rewardLamports.toString()).toArrayLike(Buffer, "le", 8),
+    Buffer.from(args.metadataHash),
+  ]);
+  txn.add(
+    new TransactionInstruction({
+      programId: PROGRAM_IDS.taskRegistry,
+      keys: [
+        { pubkey: creatorState, isSigner: false, isWritable: true },
+        { pubkey: taskPda, isSigner: false, isWritable: true },
+        { pubkey: creator, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: createData,
+    })
+  );
+
+  const txSig = await provider.sendAndConfirm(txn);
+  return { txSig, taskPda, taskId };
+}
+
+/** Claim an Open task. Locks it to the signer until complete or cancel.
+ *  Cannot be the creator (program rejects self-claim). */
+export async function claimTaskOnchain(
+  provider: AnchorProvider,
+  args: {
+    taskPda: PublicKey;
+    claimerTid: number;
+  }
+): Promise<{ txSig: string }> {
+  const claimer = provider.wallet.publicKey;
+  // Args: claimer_tid u64
+  const data = Buffer.concat([
+    DISC.taskClaim,
+    bnToLeBuffer(args.claimerTid, 8),
+  ]);
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.taskRegistry,
+    keys: [
+      { pubkey: args.taskPda, isSigner: false, isWritable: true },
+      { pubkey: claimer, isSigner: true, isWritable: false },
+    ],
+    data,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig };
+}
+
+/** Creator-only. Releases any escrowed reward to the claimer of
+ *  record. The claimer pubkey is required because the program's
+ *  has_one constraint verifies it against task.claimer. */
+export async function completeTaskOnchain(
+  provider: AnchorProvider,
+  args: {
+    taskPda: PublicKey;
+    claimer: PublicKey;
+  }
+): Promise<{ txSig: string }> {
+  const creator = provider.wallet.publicKey;
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.taskRegistry,
+    keys: [
+      { pubkey: args.taskPda, isSigner: false, isWritable: true },
+      { pubkey: args.claimer, isSigner: false, isWritable: true },
+      { pubkey: creator, isSigner: true, isWritable: true },
+    ],
+    data: DISC.taskComplete,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig };
+}
+
+/** Creator-only. Refunds any escrowed reward and marks the task
+ *  Cancelled. Only valid while the task is still Open (the program
+ *  rejects cancel after a claim). */
+export async function cancelTaskOnchain(
+  provider: AnchorProvider,
+  taskPda: PublicKey
+): Promise<{ txSig: string }> {
+  const creator = provider.wallet.publicKey;
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.taskRegistry,
+    keys: [
+      { pubkey: taskPda, isSigner: false, isWritable: true },
+      { pubkey: creator, isSigner: true, isWritable: true },
+    ],
+    data: DISC.taskCancel,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig };
 }

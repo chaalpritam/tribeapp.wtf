@@ -65,6 +65,15 @@ export interface Task {
   timeAgo: string;
   reward?: string;
   isUrgent: boolean;
+  /**
+   * On-chain Task PDA (base58) when this task is anchored in
+   * task-registry. When set, claim actions lock the on-chain task
+   * to the signer (and release any escrowed reward on completion);
+   * absent → off-chain envelope claim (social signal only).
+   */
+  onchainTaskPda?: string;
+  /** Reward amount in lamports — populated when onchainTaskPda is set. */
+  onchainRewardLamports?: string;
 }
 
 export interface Crowdfund {

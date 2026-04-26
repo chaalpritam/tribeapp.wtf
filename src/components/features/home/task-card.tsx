@@ -2,7 +2,15 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import { MapPin, Users, Clock, AlertTriangle, Coins, Loader2, CheckCircle2 } from "lucide-react";
+import {
+  Clock,
+  AlertTriangle,
+  Coins,
+  Loader2,
+  CheckCircle2,
+  Zap,
+} from "lucide-react";
+import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import type { Task } from "@/types";
 import { useTribeTask } from "@/hooks/use-tribe-task";
 
@@ -11,17 +19,30 @@ interface TaskCardProps {
 }
 
 export function TaskCard({ task }: TaskCardProps) {
-  const { claim, pending, ready } = useTribeTask();
+  const { claim, claimOnchain, pending, ready, walletReady } = useTribeTask();
   const [claimed, setClaimed] = useState(false);
+
+  const onchainPda = task.onchainTaskPda;
+  const canClaimOnchain = !!onchainPda && walletReady;
+
+  // Pretty-print the escrowed reward when present, e.g. "0.05 SOL".
+  // Falls back to the off-chain reward string ('5 USD') when there's
+  // no on-chain escrow.
+  const rewardLabel = onchainPda && task.onchainRewardLamports
+    ? `${(Number(task.onchainRewardLamports) / LAMPORTS_PER_SOL).toFixed(4)} SOL`
+    : task.reward || "Gratitude";
 
   const handleClaim = async () => {
     setClaimed(true);
-    if (ready) {
-      try {
+    if (!ready) return;
+    try {
+      if (canClaimOnchain && onchainPda) {
+        await claimOnchain(new PublicKey(onchainPda));
+      } else {
         await claim(task.id);
-      } catch {
-        setClaimed(false);
       }
+    } catch {
+      setClaimed(false);
     }
   };
 
@@ -33,11 +54,22 @@ export function TaskCard({ task }: TaskCardProps) {
           <AlertTriangle className="h-4 w-4" />
           <span className="text-[11px] uppercase tracking-widest">Neighborhood Task</span>
         </div>
-        {task.isUrgent && (
-          <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-[10px] font-bold text-red-500 uppercase tracking-wider">
-            Urgent
-          </span>
-        )}
+        <div className="flex items-center gap-2">
+          {onchainPda && (
+            <span
+              className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1"
+              title="Reward escrowed on Solana — released to claimer on completion"
+            >
+              <Zap className="h-3 w-3 fill-current" />
+              On chain
+            </span>
+          )}
+          {task.isUrgent && (
+            <span className="rounded-full bg-red-50 px-2.5 py-0.5 text-[10px] font-bold text-red-500 uppercase tracking-wider">
+              Urgent
+            </span>
+          )}
+        </div>
       </div>
 
       {/* Title */}
@@ -52,7 +84,7 @@ export function TaskCard({ task }: TaskCardProps) {
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-green-50 text-green-600 border border-green-100">
           <Coins className="h-4 w-4" />
-          <span className="text-[12px] font-bold">{task.reward || "Gratitude"}</span>
+          <span className="text-[12px] font-bold">{rewardLabel}</span>
         </div>
         <div className="flex items-center gap-1.5 text-[11px] font-bold text-[#999] uppercase tracking-widest">
           <Clock className="h-3.5 w-3.5" />
@@ -83,6 +115,13 @@ export function TaskCard({ task }: TaskCardProps) {
         <button
           onClick={handleClaim}
           disabled={pending || claimed}
+          title={
+            canClaimOnchain
+              ? "Claim — locks the on-chain task to you"
+              : onchainPda
+              ? "Connect wallet to claim the on-chain task"
+              : "Help out"
+          }
           className="px-5 py-2.5 rounded-full bg-black text-white font-bold text-[13px] hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-black/10 disabled:opacity-60 flex items-center gap-1.5"
         >
           {pending ? (
