@@ -1,4 +1,5 @@
 export * from "./constants";
+export * from "./message-types";
 export * from "./failover";
 export * from "./api";
 export * from "./onchain";

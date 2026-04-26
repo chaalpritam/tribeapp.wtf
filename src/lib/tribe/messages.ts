@@ -26,29 +26,8 @@ function toBase64(bytes: Uint8Array): string {
   return btoa(binary);
 }
 
-export type MessageType =
-  | 1 // TWEET_ADD
-  | 2 // TWEET_REMOVE
-  | 3 // REACTION_ADD
-  | 4 // REACTION_REMOVE
-  | 5 // LINK_ADD
-  | 6 // LINK_REMOVE
-  | 7 // USER_DATA_ADD
-  | 9 // CHANNEL_ADD
-  | 10 // CHANNEL_JOIN
-  | 11 // CHANNEL_LEAVE
-  | 14 // BOOKMARK_ADD
-  | 15 // BOOKMARK_REMOVE
-  | 16 // POLL_ADD
-  | 17 // POLL_VOTE
-  | 18 // EVENT_ADD
-  | 19 // EVENT_RSVP
-  | 20 // TASK_ADD
-  | 21 // TASK_CLAIM
-  | 22 // TASK_COMPLETE
-  | 23 // CROWDFUND_ADD
-  | 24 // CROWDFUND_PLEDGE
-  | 25; // TIP_ADD
+import type { MessageTypeId } from "./message-types";
+type MessageType = MessageTypeId;
 
 interface BuildOptions {
   type: MessageType;
