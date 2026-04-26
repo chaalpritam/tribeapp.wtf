@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Users, Lock, Shield, Hash, Share2, MapPin, Calendar, Crown, MessageSquare } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
+import { useTribeChannels } from "@/hooks/use-tribe-channels";
 import { useShare } from "@/hooks/use-share";
 import { formatNumber, cn } from "@/lib/utils";
 import { TweetCard } from "@/components/features/home/tweet-card";
@@ -17,6 +18,8 @@ const tabs = ["Feed", "Events", "Members", "About"];
 export default function TribeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const { tribes, joinTribe, leaveTribe, tweets, events } = useTribeStore();
+  const { join: joinChannel, leave: leaveChannel, ready: chReady } =
+    useTribeChannels();
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Feed");
   const [members, setMembers] = useState<User[]>([]);
@@ -79,7 +82,15 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
 
               <div className="flex gap-3">
                 <button
-                  onClick={() => (tribe.isJoined ? leaveTribe(tribe.id) : joinTribe(tribe.id))}
+                  onClick={async () => {
+                    if (tribe.isJoined) {
+                      leaveTribe(tribe.id);
+                      if (chReady) { try { await leaveChannel(tribe.id); } catch {} }
+                    } else {
+                      joinTribe(tribe.id);
+                      if (chReady) { try { await joinChannel(tribe.id); } catch {} }
+                    }
+                  }}
                   className={cn(
                     "flex-1 h-14 rounded-2xl text-[14px] font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-black/5",
                     tribe.isJoined ? "bg-[#f5f5f5] text-[#666]" : "bg-black text-white"

@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { Search, Users, Lock, ArrowRight, MapPin, Globe } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
+import { useTribeChannels } from "@/hooks/use-tribe-channels";
 import { tribeCategoryConfig } from "@/lib/theme";
 import { formatNumber } from "@/lib/utils";
 import type { TribeCategory, Tribe, City } from "@/types";
@@ -168,6 +169,7 @@ function DiscoverTribesSection(tribes: Tribe[]) {
 
 function TribeCard({ tribe }: { tribe: Tribe }) {
   const { joinTribe, leaveTribe } = useTribeStore();
+  const { join: joinChannel, leave: leaveChannel, ready } = useTribeChannels();
 
   return (
     <Link
@@ -200,13 +202,19 @@ function TribeCard({ tribe }: { tribe: Tribe }) {
       </div>
 
       <button
-        onClick={(e) => {
+        onClick={async (e) => {
           e.preventDefault();
           e.stopPropagation();
           if (tribe.isJoined) {
             leaveTribe(tribe.id);
+            if (ready) {
+              try { await leaveChannel(tribe.id); } catch {}
+            }
           } else {
             joinTribe(tribe.id);
+            if (ready) {
+              try { await joinChannel(tribe.id); } catch {}
+            }
           }
         }}
         className={cn(

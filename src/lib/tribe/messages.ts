@@ -33,7 +33,10 @@ export type MessageType =
   | 4 // REACTION_REMOVE
   | 5 // LINK_ADD
   | 6 // LINK_REMOVE
-  | 7; // USER_DATA_ADD
+  | 7 // USER_DATA_ADD
+  | 9 // CHANNEL_ADD
+  | 10 // CHANNEL_JOIN
+  | 11; // CHANNEL_LEAVE
 
 interface BuildOptions {
   type: MessageType;
@@ -101,6 +104,33 @@ export async function signAndPublishTweet(
   if (!res.ok) {
     const errBody = await res.text();
     throw new Error(`Tweet failed: ${res.status} ${errBody}`);
+  }
+
+  return res.json();
+}
+
+export async function signAndPublishChannelOp(
+  type: 9 | 10 | 11,
+  tid: number,
+  body: { channel_id: string; name?: string; description?: string },
+  signingKeySecret: Uint8Array
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type,
+    tid,
+    body,
+    signingKeySecret,
+  });
+
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Channel op failed: ${res.status} ${errBody}`);
   }
 
   return res.json();
