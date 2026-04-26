@@ -1,17 +1,34 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { MapPin, Users, Heart, Target } from "lucide-react";
+import { MapPin, Users, Heart, Target, Loader2, CheckCircle2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import type { Crowdfund } from "@/types";
 import { formatNumber } from "@/lib/utils";
+import { useTribeCrowdfund } from "@/hooks/use-tribe-crowdfund";
 
 interface CrowdfundCardProps {
   crowdfund: Crowdfund;
 }
 
+const DEFAULT_PLEDGE_AMOUNT = 5;
+
 export function CrowdfundCard({ crowdfund }: CrowdfundCardProps) {
   const progress = Math.min((crowdfund.raised / crowdfund.goal) * 100, 100);
+  const { pledge, pending, ready } = useTribeCrowdfund();
+  const [pledged, setPledged] = useState(false);
+
+  const handlePledge = async () => {
+    setPledged(true);
+    if (ready) {
+      try {
+        await pledge(crowdfund.id, DEFAULT_PLEDGE_AMOUNT);
+      } catch {
+        setPledged(false);
+      }
+    }
+  };
 
   return (
     <div className="group bg-white rounded-[32px] border border-[#f0f0f0] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03]">
@@ -66,8 +83,17 @@ export function CrowdfundCard({ crowdfund }: CrowdfundCardProps) {
           <Users className="h-4 w-4" />
           {crowdfund.contributors} Backers
         </div>
-        <button className="px-6 py-3 rounded-full bg-rose-500 text-white font-bold text-[13px] hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-rose-500/20">
-          Fund Cause
+        <button
+          onClick={handlePledge}
+          disabled={pending || pledged}
+          className="px-6 py-3 rounded-full bg-rose-500 text-white font-bold text-[13px] hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-rose-500/20 disabled:opacity-60 flex items-center gap-1.5"
+        >
+          {pending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : pledged ? (
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          ) : null}
+          {pledged ? "Pledged" : "Fund Cause"}
         </button>
       </div>
     </div>

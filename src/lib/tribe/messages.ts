@@ -45,7 +45,9 @@ export type MessageType =
   | 19 // EVENT_RSVP
   | 20 // TASK_ADD
   | 21 // TASK_CLAIM
-  | 22; // TASK_COMPLETE
+  | 22 // TASK_COMPLETE
+  | 23 // CROWDFUND_ADD
+  | 24; // CROWDFUND_PLEDGE
 
 interface BuildOptions {
   type: MessageType;
@@ -142,6 +144,74 @@ export async function signAndPublishChannelOp(
     throw new Error(`Channel op failed: ${res.status} ${errBody}`);
   }
 
+  return res.json();
+}
+
+export async function signAndPublishCrowdfund(
+  tid: number,
+  crowdfundId: string,
+  title: string,
+  goalAmount: number,
+  signingKeySecret: Uint8Array,
+  opts: {
+    description?: string;
+    currency?: string;
+    deadlineAtUnix?: number;
+    imageUrl?: string;
+    channelId?: string;
+  } = {}
+): Promise<{ hash: string }> {
+  const body: Record<string, unknown> = {
+    crowdfund_id: crowdfundId,
+    title,
+    goal_amount: goalAmount,
+  };
+  if (opts.description) body.description = opts.description;
+  if (opts.currency) body.currency = opts.currency;
+  if (opts.deadlineAtUnix) body.deadline_at = opts.deadlineAtUnix;
+  if (opts.imageUrl) body.image_url = opts.imageUrl;
+  if (opts.channelId) body.channel_id = opts.channelId;
+
+  const message = await buildSignedMessage({
+    type: 23,
+    tid,
+    body,
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Crowdfund create failed: ${res.status} ${errBody}`);
+  }
+  return res.json();
+}
+
+export async function signAndPublishPledge(
+  tid: number,
+  crowdfundId: string,
+  amount: number,
+  signingKeySecret: Uint8Array,
+  currency = "USD"
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type: 24,
+    tid,
+    body: { crowdfund_id: crowdfundId, amount, currency },
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Pledge failed: ${res.status} ${errBody}`);
+  }
   return res.json();
 }
 
