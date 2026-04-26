@@ -41,6 +41,9 @@ const DISC = {
   follow:           Buffer.from([161,  61, 150, 122, 164, 153,   0,  18]),
   unfollow:         Buffer.from([122,  47,  24, 161,  12,  85, 224,  68]),
   registerUsername: Buffer.from([134,  54, 123, 181,  28, 151,  36,   0]),
+  // tip-registry
+  initSenderTipState: Buffer.from([ 71, 192, 153, 221, 140, 136, 155, 192]),
+  sendTip:            Buffer.from([231,  88,  56, 242, 241,   6,  31,  59]),
 };
 
 // ── PDA Helpers ──────────────────────────────────────────────────────
@@ -309,4 +312,136 @@ export async function unfollow(
   });
 
   return provider.sendAndConfirm(new Transaction().add(ix));
+}
+
+// ── Tips ─────────────────────────────────────────────────────────────
+
+function getSenderTipStatePda(sender: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("tip-sender"), sender.toBuffer()],
+    PROGRAM_IDS.tipRegistry
+  )[0];
+}
+
+function getTipRecordPda(sender: PublicKey, tipId: bigint): PublicKey {
+  const idBuf = Buffer.alloc(8);
+  idBuf.writeBigUInt64LE(tipId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("tip"), sender.toBuffer(), idBuf],
+    PROGRAM_IDS.tipRegistry
+  )[0];
+}
+
+/**
+ * Resolve a TID to its current custody wallet by reading the on-chain
+ * TidRecord. Layout: 8-byte Anchor disc + tid(8) + custody(32) + ...
+ */
+export async function getCustodyByTid(
+  connection: Connection,
+  tid: number
+): Promise<PublicKey | null> {
+  const pda = getTidRecordPda(tid);
+  const info = await connection.getAccountInfo(pda);
+  if (!info || info.data.length < 48) return null;
+  return new PublicKey(info.data.slice(16, 48));
+}
+
+export async function hasSenderTipState(
+  connection: Connection,
+  sender: PublicKey
+): Promise<boolean> {
+  const pda = getSenderTipStatePda(sender);
+  const info = await connection.getAccountInfo(pda);
+  return info !== null;
+}
+
+/** SenderTipState.next_tip_id sits at offset 48 (8 disc + 32 sender + 8 tid). */
+async function getNextTipId(
+  connection: Connection,
+  sender: PublicKey
+): Promise<bigint> {
+  const pda = getSenderTipStatePda(sender);
+  const info = await connection.getAccountInfo(pda);
+  if (!info) throw new Error("SenderTipState not initialized");
+  return info.data.readBigUInt64LE(48);
+}
+
+export async function initSenderTipState(
+  provider: AnchorProvider,
+  senderTid: number
+): Promise<string | null> {
+  if (await hasSenderTipState(provider.connection, provider.wallet.publicKey)) {
+    return null;
+  }
+  const senderState = getSenderTipStatePda(provider.wallet.publicKey);
+  const data = Buffer.concat([
+    DISC.initSenderTipState,
+    bnToLeBuffer(senderTid, 8),
+  ]);
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.tipRegistry,
+    keys: [
+      { pubkey: senderState, isSigner: false, isWritable: true },
+      { pubkey: provider.wallet.publicKey, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+  return provider.sendAndConfirm(new Transaction().add(ix));
+}
+
+/**
+ * Send a tip on chain. Lazy-inits the SenderTipState PDA on first
+ * use so callers don't need a separate setup step. `targetHash`
+ * optionally anchors the tip to a piece of content (32-byte blake3
+ * hash of a tweet, etc.).
+ */
+export async function sendTipOnchain(
+  provider: AnchorProvider,
+  args: {
+    senderTid: number;
+    recipient: PublicKey;
+    recipientTid: number;
+    amountLamports: bigint;
+    targetHash?: Uint8Array;
+  }
+): Promise<{ txSig: string; tipId: bigint; tipRecord: PublicKey }> {
+  await initSenderTipState(provider, args.senderTid);
+
+  const sender = provider.wallet.publicKey;
+  const senderState = getSenderTipStatePda(sender);
+  const tipId = await getNextTipId(provider.connection, sender);
+  const tipRecord = getTipRecordPda(sender, tipId);
+
+  const hasTarget = !!args.targetHash;
+  const targetBuf = Buffer.alloc(32);
+  if (hasTarget) {
+    if (args.targetHash!.length !== 32) {
+      throw new Error("targetHash must be exactly 32 bytes");
+    }
+    targetBuf.set(args.targetHash!);
+  }
+
+  const data = Buffer.concat([
+    DISC.sendTip,
+    bnToLeBuffer(args.recipientTid, 8),
+    new BN(args.amountLamports.toString()).toArrayLike(Buffer, "le", 8),
+    targetBuf,
+    Buffer.from([hasTarget ? 1 : 0]),
+  ]);
+
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.tipRegistry,
+    keys: [
+      { pubkey: senderState, isSigner: false, isWritable: true },
+      { pubkey: tipRecord, isSigner: false, isWritable: true },
+      { pubkey: sender, isSigner: true, isWritable: true },
+      { pubkey: args.recipient, isSigner: false, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig, tipId, tipRecord };
 }
