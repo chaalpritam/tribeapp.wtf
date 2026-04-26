@@ -21,8 +21,9 @@ import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribePublish } from "@/hooks/use-tribe-publish";
 import { useTribeEvent } from "@/hooks/use-tribe-event";
+import { useTribePoll } from "@/hooks/use-tribe-poll";
 import { uploadMedia, listChannels, type ChannelInfo } from "@/lib/tribe";
-import type { Tweet, ExploreItem } from "@/types";
+import type { Tweet, ExploreItem, Poll } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
 
@@ -132,15 +133,21 @@ const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, curren
 );
 
 /** Random short slug for the off-chain envelope's string id. The
- *  on-chain Event has its own monotonic u64 id; the two are
- *  bridged via the envelope's BLAKE3 hash stored as metadata_hash. */
-function newEventId(): string {
+ *  on-chain Event/Poll/etc. has its own monotonic u64 id; the two
+ *  are bridged via the envelope's BLAKE3 hash stored as
+ *  metadata_hash on chain. */
+function newContentId(prefix: string): string {
   const bytes = new Uint8Array(8);
   crypto.getRandomValues(bytes);
-  return `event-${Array.from(bytes)
+  return `${prefix}-${Array.from(bytes)
     .map((b) => b.toString(16).padStart(2, "0"))
     .join("")}`;
 }
+const newEventId = () => newContentId("event");
+const newPollId = () => newContentId("poll");
+
+const MIN_POLL_OPTIONS = 2;
+const MAX_POLL_OPTIONS = 8;
 
 /** Date input default = "now + 1 day, rounded to the next hour". */
 function defaultStartsAt(): string {
@@ -154,7 +161,7 @@ function defaultStartsAt(): string {
 
 export default function CreatePage() {
   const router = useRouter();
-  const { currentCity, addEvent } = useTribeStore();
+  const { currentCity, currentUser, addEvent, addPoll } = useTribeStore();
   const { isAuthenticated } = useAuth();
   const { publish, publishing, error: publishError } = useTribePublish();
   const {
@@ -162,6 +169,11 @@ export default function CreatePage() {
     pending: eventPending,
     walletReady: eventWalletReady,
   } = useTribeEvent();
+  const {
+    create: createPoll,
+    pending: pollPending,
+    walletReady: pollWalletReady,
+  } = useTribePoll();
   const [mode, setMode] = useState<Mode>("menu");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -179,6 +191,10 @@ export default function CreatePage() {
   const [eventDescription, setEventDescription] = useState("");
   const [eventStartsAt, setEventStartsAt] = useState<string>(defaultStartsAt());
   const [eventLocation, setEventLocation] = useState("");
+
+  // Poll state
+  const [pollQuestion, setPollQuestion] = useState("");
+  const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
 
   useEffect(() => {
     let cancelled = false;
@@ -505,9 +521,173 @@ export default function CreatePage() {
     );
   }
 
-  // Fallback for poll / task / crowdfund / channel — same composer
-  // pattern is on the way; events shipped first as the smallest
-  // visible vertical to validate the chain → store → feed loop.
+  if (mode === "poll") {
+    const trimmedOptions = pollOptions.map((o) => o.trim());
+    const validOptions = trimmedOptions.filter((o) => o.length > 0);
+    const canSubmitPoll =
+      pollQuestion.trim().length > 0 &&
+      validOptions.length >= MIN_POLL_OPTIONS &&
+      validOptions.length <= MAX_POLL_OPTIONS;
+
+    const updateOption = (idx: number, value: string) => {
+      setPollOptions((opts) => opts.map((o, i) => (i === idx ? value : o)));
+    };
+    const addOption = () => {
+      setPollOptions((opts) =>
+        opts.length < MAX_POLL_OPTIONS ? [...opts, ""] : opts
+      );
+    };
+    const removeOption = (idx: number) => {
+      setPollOptions((opts) =>
+        opts.length > MIN_POLL_OPTIONS ? opts.filter((_, i) => i !== idx) : opts
+      );
+    };
+
+    const handlePollSubmit = async () => {
+      if (!canSubmitPoll || !currentCity) return;
+      if (!isAuthenticated) {
+        setSubmitError("Sign in with Tribe to create polls");
+        return;
+      }
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        const offchainId = newPollId();
+        const result = await createPoll(
+          offchainId,
+          pollQuestion.trim(),
+          validOptions,
+          {}
+        );
+
+        // Push the new poll into the local feed. Each option needs
+        // a stable id so the existing PollCard tally bookkeeping
+        // (votes keyed by option id) keeps working — option-{n}
+        // matches the off-chain envelope's option-by-index semantics
+        // closely enough for the optimistic UI.
+        const newPoll: Poll = {
+          id: offchainId,
+          user: currentUser ?? {
+            id: "self",
+            username: "you",
+            displayName: "You",
+            avatarUrl: "",
+            cityId: currentCity.id,
+            isVerified: false,
+          },
+          question: pollQuestion.trim(),
+          options: validOptions.map((text, i) => ({
+            id: `option-${i}`,
+            text,
+          })),
+          duration: 7 * 24 * 60 * 60, // 7 days, display-only
+          timestamp: "just now",
+          votes: Object.fromEntries(
+            validOptions.map((_, i) => [`option-${i}`, 0])
+          ),
+          onchainPollPda: result.pollPda,
+        };
+        addPoll(newPoll);
+        router.push("/home");
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <FormLayout
+        title="Create Poll"
+        onSubmit={handlePollSubmit}
+        canSubmit={canSubmitPoll}
+        isSubmitting={isSubmitting || pollPending}
+        currentCity={currentCity}
+        setMode={setMode}
+      >
+        <div className="space-y-6">
+          <textarea
+            placeholder="What should the neighborhood weigh in on?"
+            value={pollQuestion}
+            onChange={(e) => setPollQuestion(e.target.value)}
+            rows={3}
+            autoFocus
+            className="w-full resize-none bg-transparent text-xl font-bold tracking-tight outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2">
+              Options ({pollOptions.length} / {MAX_POLL_OPTIONS})
+            </label>
+            <div className="space-y-2">
+              {pollOptions.map((opt, idx) => (
+                <div key={idx} className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    placeholder={`Option ${idx + 1}`}
+                    value={opt}
+                    onChange={(e) => updateOption(idx, e.target.value)}
+                    className="flex-1 h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
+                  />
+                  {pollOptions.length > MIN_POLL_OPTIONS && (
+                    <button
+                      type="button"
+                      onClick={() => removeOption(idx)}
+                      title="Remove option"
+                      className="h-12 w-12 flex items-center justify-center rounded-2xl bg-[#f5f5f5] text-[#999] hover:bg-[#eeeeee] hover:text-black transition-all active:scale-95"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  )}
+                </div>
+              ))}
+            </div>
+            {pollOptions.length < MAX_POLL_OPTIONS && (
+              <button
+                type="button"
+                onClick={addOption}
+                className="h-10 px-4 rounded-full text-[12px] font-bold text-primary bg-primary/5 hover:bg-primary/10 transition-all active:scale-95"
+              >
+                + Add option
+              </button>
+            )}
+          </div>
+
+          {isAuthenticated ? (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                {pollWalletReady
+                  ? "On submit, this poll will be anchored on Solana via poll-registry. Votes will settle on chain (one per TID)."
+                  : "Connect a Solana wallet to anchor this poll on chain. Without one, only the off-chain envelope is published."}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                Sign in with Tribe to create polls
+              </p>
+              <a
+                href="/onboarding/connect"
+                className="text-[12px] font-bold text-amber-600 underline mt-1 inline-block"
+              >
+                Sign in now
+              </a>
+            </div>
+          )}
+
+          {submitError && (
+            <p className="text-[12px] text-red-500 font-bold px-2">
+              {submitError}
+            </p>
+          )}
+        </div>
+      </FormLayout>
+    );
+  }
+
+  // Fallback for task / crowdfund / channel — same composer pattern
+  // is on the way; events + polls shipped first as the smallest
+  // visible verticals to validate the chain → store → feed loop.
   if (mode !== "menu") {
     return (
       <FormLayout
