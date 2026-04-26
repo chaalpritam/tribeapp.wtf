@@ -22,8 +22,128 @@ import {
   Zap,
   Globe,
   Star,
+  Github,
+  KeyRound,
+  Database,
+  Server,
+  Layers,
+  Lock,
+  Hash,
+  Radio,
+  Code2,
+  ExternalLink,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+
+const protocolPrimitives = [
+  {
+    icon: KeyRound,
+    title: "TIDs and app keys",
+    description:
+      "Wallet-recoverable Tribe IDs registered on Solana, with rotatable per-device app signing keys.",
+  },
+  {
+    icon: Hash,
+    title: "Tweets, channels, polls",
+    description:
+      "Signed message envelopes for posts, channels, polls, events, tasks, crowdfunds, and tips.",
+  },
+  {
+    icon: Lock,
+    title: "End-to-end DMs",
+    description:
+      "x25519 + xsalsa20-poly1305 ciphertext on the wire. Hub never sees plaintext. Group DMs via per-recipient fanout.",
+  },
+  {
+    icon: Radio,
+    title: "Hub gossip",
+    description:
+      "Push + pull replication between independent hubs. Run your own; messages catch up on connect.",
+  },
+  {
+    icon: Star,
+    title: "On-chain reputation",
+    description:
+      "Karma rolls up tweets, reactions, follows, tips received, and completed tasks per TID.",
+  },
+  {
+    icon: Code2,
+    title: "Open SDK",
+    description:
+      "TypeScript client covering identity, social, DMs, channels, polls, events, tasks, crowdfunds, tips.",
+  },
+];
+
+const architectureLayers = [
+  {
+    icon: Layers,
+    name: "Solana programs",
+    repo: "tribe-protocol",
+    description:
+      "Anchor programs for the TID registry, app keys, usernames, social graph, and hub registry.",
+  },
+  {
+    icon: Code2,
+    name: "TypeScript SDK",
+    repo: "tribe-sdk",
+    description:
+      "Single client for identity, tweets, DMs, channels, polls, events, tasks, crowdfunds, tips, search, karma, notifications.",
+  },
+  {
+    icon: Server,
+    name: "Decentralized hub",
+    repo: "tribe-hub",
+    description:
+      "Fastify + Postgres node that indexes Solana events, stores ciphertext DMs, runs gossip with peer hubs, serves the realtime WebSocket.",
+  },
+  {
+    icon: Zap,
+    name: "Ephemeral Rollup",
+    repo: "tribe-er-server",
+    description:
+      "Sequencer for instant follows with batched L1 settlement every 10 seconds.",
+  },
+  {
+    icon: Database,
+    name: "Frontends",
+    repo: "tribe-app · tribeapp.wtf",
+    description:
+      "Reference Next.js apps — tribe-app is the protocol-first client, tribeapp.wtf this hyperlocal experience.",
+  },
+];
+
+const repos = [
+  {
+    name: "tribeeco",
+    description: "Mono-repo with all submodules and the tribe CLI.",
+    url: "https://github.com/chaalpritam/tribeeco",
+  },
+  {
+    name: "tribe-protocol",
+    description: "Solana programs (Anchor): TID, app keys, usernames, social graph.",
+    url: "https://github.com/chaalpritam/tribe-protocol",
+  },
+  {
+    name: "tribe-sdk",
+    description: "TypeScript SDK for the whole protocol — published as @tribe-protocol/sdk.",
+    url: "https://github.com/chaalpritam/tribe-sdk",
+  },
+  {
+    name: "tribe-hub",
+    description: "Decentralized hub: Fastify + Postgres + Solana indexer + gossip.",
+    url: "https://github.com/chaalpritam/tribe-hub",
+  },
+  {
+    name: "tribe-er-server",
+    description: "Ephemeral Rollup sequencer for instant follows.",
+    url: "https://github.com/chaalpritam/tribe-er-server",
+  },
+  {
+    name: "tribeapp.wtf",
+    description: "This frontend — Next.js + Solana wallet adapter.",
+    url: "https://github.com/chaalpritam/tribeapp-wtf",
+  },
+];
 
 const steps = [
   {
@@ -133,6 +253,12 @@ export default function LandingPage() {
             className="px-6 py-2.5 text-[15px] font-medium text-black transition-colors hover:text-black/60"
           >
             Why
+          </Link>
+          <Link
+            href="#protocol"
+            className="px-6 py-2.5 text-[15px] font-medium text-black transition-colors hover:text-black/60"
+          >
+            Protocol
           </Link>
           <Link
             href={destination}
@@ -385,18 +511,178 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Protocol intro */}
+        <section id="protocol" className="mb-32">
+          <div className="rounded-[48px] border border-[#f0f0f0] bg-white p-12 sm:p-20 shadow-sm">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-[#f5f5f5] px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider">
+              <Layers className="h-4 w-4" />
+              Built on the Tribe Protocol
+            </div>
+            <h2 className="mb-8 max-w-[800px] text-[40px] font-bold leading-[1.1] tracking-[-1.5px] sm:text-[56px]">
+              tribeapp.wtf is one client. <br />
+              The protocol is the&nbsp;point.
+            </h2>
+            <p className="max-w-[640px] text-xl font-medium leading-[1.6] text-[#666]">
+              Tribe is an open social protocol on Solana. Identity lives in
+              wallet-recoverable Tribe IDs, content rides as signed envelopes,
+              direct messages are end-to-end encrypted, and anyone can run a
+              hub. tribeapp.wtf is a hyperlocal frontend on top — fork it,
+              build a different one, or skip the UI entirely and talk to the
+              SDK.
+            </p>
+
+            <div className="mt-12 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {protocolPrimitives.map((p, idx) => (
+                <motion.div
+                  key={p.title}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="rounded-[28px] bg-[#f9f9f9] p-7"
+                >
+                  <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-xl bg-white text-black shadow-sm">
+                    <p.icon className="h-5 w-5" />
+                  </div>
+                  <h3 className="mb-2 text-lg font-bold tracking-tight">
+                    {p.title}
+                  </h3>
+                  <p className="text-[14px] font-medium leading-[1.5] text-[#666]">
+                    {p.description}
+                  </p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Architecture */}
+        <section className="mb-32">
+          <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-end">
+            <h2 className="text-[36px] font-bold tracking-[-1.5px] sm:text-[48px]">
+              How the layers fit.
+            </h2>
+            <p className="text-lg font-medium text-[#666]">
+              Each piece is a separate repo with its own README. Swap any
+              layer — the contracts between them are signed envelopes and
+              public HTTP routes.
+            </p>
+          </div>
+
+          <div className="space-y-3">
+            {architectureLayers.map((layer, idx) => (
+              <motion.div
+                key={layer.name}
+                initial={{ opacity: 0, x: -20 }}
+                whileInView={{ opacity: 1, x: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
+                className="grid grid-cols-[64px_1fr_auto] items-center gap-6 rounded-[28px] border border-[#f0f0f0] bg-white p-6 sm:p-8 transition-all hover:border-black/5 hover:shadow-2xl hover:shadow-black/[0.02]"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-[#f5f5f5] text-black">
+                  <layer.icon className="h-6 w-6" />
+                </div>
+                <div>
+                  <div className="mb-1 flex flex-wrap items-baseline gap-3">
+                    <h3 className="text-xl font-bold tracking-tight">
+                      {layer.name}
+                    </h3>
+                    <code className="text-[12px] font-mono text-[#999]">
+                      {layer.repo}
+                    </code>
+                  </div>
+                  <p className="text-[15px] font-medium leading-[1.5] text-[#666]">
+                    {layer.description}
+                  </p>
+                </div>
+                <ArrowRight className="hidden sm:block h-5 w-5 text-[#ccc]" />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* Open source */}
+        <section className="mb-48">
+          <div className="rounded-[48px] bg-black p-12 sm:p-20 text-white">
+            <div className="mb-12 grid grid-cols-1 gap-6 lg:grid-cols-2 lg:items-end">
+              <div>
+                <div className="mb-6 inline-flex items-center gap-2 rounded-full bg-white/10 px-4 py-1.5 text-[11px] font-bold uppercase tracking-wider">
+                  <Github className="h-4 w-4" />
+                  Open source · MIT
+                </div>
+                <h2 className="text-[40px] font-bold leading-[1.1] tracking-[-1.5px] sm:text-[56px]">
+                  Every piece on GitHub.
+                </h2>
+              </div>
+              <p className="text-lg font-medium opacity-70">
+                The protocol, the SDK, the hub, the rollup, and the frontends
+                all live in public repos. Read the source, run a hub, fork
+                the app, contribute a feature.
+              </p>
+            </div>
+
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {repos.map((repo, idx) => (
+                <motion.a
+                  key={repo.name}
+                  href={repo.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.05 }}
+                  className="group flex flex-col gap-3 rounded-[24px] bg-white/5 p-6 transition-all hover:bg-white/10"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Github className="h-5 w-5 opacity-70 group-hover:opacity-100" />
+                      <code className="text-[15px] font-bold tracking-tight">
+                        {repo.name}
+                      </code>
+                    </div>
+                    <ExternalLink className="h-4 w-4 opacity-40 group-hover:opacity-100" />
+                  </div>
+                  <p className="text-[14px] font-medium leading-[1.5] opacity-70 group-hover:opacity-90">
+                    {repo.description}
+                  </p>
+                </motion.a>
+              ))}
+            </div>
+
+            <div className="mt-10 text-center">
+              <a
+                href="https://github.com/chaalpritam/tribeeco"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-full bg-white px-7 py-3 text-[14px] font-bold text-black transition-all hover:scale-[1.02] active:scale-95"
+              >
+                <Github className="h-4 w-4" />
+                Browse the mono-repo
+                <ArrowRight className="h-4 w-4" />
+              </a>
+            </div>
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="flex flex-col items-center justify-between gap-10 border-t border-[#f0f0f0] pt-16 sm:flex-row">
           <div className="flex items-center gap-2">
             <span className="text-2xl font-black tracking-tighter">tribe</span>
-            <span className="text-xs font-bold opacity-30 uppercase tracking-widest">&copy; 2025</span>
+            <span className="text-xs font-bold opacity-30 uppercase tracking-widest">&copy; 2025 · MIT</span>
           </div>
 
           <div className="flex gap-8 text-sm font-bold text-[#666]">
-            <Link href="#" className="hover:text-black">Privacy</Link>
-            <Link href="#" className="hover:text-black">Terms</Link>
-            <Link href="#" className="hover:text-black">Twitter</Link>
-            <Link href="#" className="hover:text-black">Github</Link>
+            <Link href="#protocol" className="hover:text-black">Protocol</Link>
+            <a
+              href="https://github.com/chaalpritam/tribeeco"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1.5 hover:text-black"
+            >
+              <Github className="h-4 w-4" />
+              GitHub
+            </a>
           </div>
         </footer>
       </main>
