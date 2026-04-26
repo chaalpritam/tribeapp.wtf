@@ -36,7 +36,9 @@ export type MessageType =
   | 7 // USER_DATA_ADD
   | 9 // CHANNEL_ADD
   | 10 // CHANNEL_JOIN
-  | 11; // CHANNEL_LEAVE
+  | 11 // CHANNEL_LEAVE
+  | 14 // BOOKMARK_ADD
+  | 15; // BOOKMARK_REMOVE
 
 interface BuildOptions {
   type: MessageType;
@@ -131,6 +133,33 @@ export async function signAndPublishChannelOp(
   if (!res.ok) {
     const errBody = await res.text();
     throw new Error(`Channel op failed: ${res.status} ${errBody}`);
+  }
+
+  return res.json();
+}
+
+export async function signAndPublishBookmark(
+  tid: number,
+  targetHash: string,
+  signingKeySecret: Uint8Array,
+  remove = false
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type: remove ? 15 : 14,
+    tid,
+    body: { target_hash: targetHash },
+    signingKeySecret,
+  });
+
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Bookmark op failed: ${res.status} ${errBody}`);
   }
 
   return res.json();

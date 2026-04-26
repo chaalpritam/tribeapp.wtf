@@ -20,6 +20,7 @@ import { useLike } from "@/hooks/use-like";
 import { useShare } from "@/hooks/use-share";
 import { useAuth } from "@/hooks/use-auth";
 import { useComments } from "@/hooks/use-comments";
+import { useTribeBookmark } from "@/hooks/use-tribe-bookmark";
 
 interface TweetCardProps {
   tweet: Tweet;
@@ -168,6 +169,7 @@ export function TweetCard({ tweet }: TweetCardProps) {
     tweet.isLiked,
     tweet.likes
   );
+  const { setBookmarked, ready: bookmarkReady } = useTribeBookmark();
   const { showToast: showShareToast } = useShare();
   const {
     comments,
@@ -339,7 +341,17 @@ export function TweetCard({ tweet }: TweetCardProps) {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => bookmarkTweet(tweet.id)}
+            onClick={async () => {
+              const wasSaved = !!tweet.isSaved;
+              bookmarkTweet(tweet.id);
+              if (bookmarkReady) {
+                try {
+                  await setBookmarked(tweet.id, !wasSaved);
+                } catch {
+                  bookmarkTweet(tweet.id);
+                }
+              }
+            }}
             className={cn(
               "p-2 rounded-full transition-all active:scale-90",
               tweet.isSaved
