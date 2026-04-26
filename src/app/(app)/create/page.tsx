@@ -20,8 +20,9 @@ import {
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribePublish } from "@/hooks/use-tribe-publish";
+import { useTribeEvent } from "@/hooks/use-tribe-event";
 import { uploadMedia, listChannels, type ChannelInfo } from "@/lib/tribe";
-import type { Tweet } from "@/types";
+import type { Tweet, ExploreItem } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
 
@@ -130,11 +131,37 @@ const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, curren
   </div>
 );
 
+/** Random short slug for the off-chain envelope's string id. The
+ *  on-chain Event has its own monotonic u64 id; the two are
+ *  bridged via the envelope's BLAKE3 hash stored as metadata_hash. */
+function newEventId(): string {
+  const bytes = new Uint8Array(8);
+  crypto.getRandomValues(bytes);
+  return `event-${Array.from(bytes)
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("")}`;
+}
+
+/** Date input default = "now + 1 day, rounded to the next hour". */
+function defaultStartsAt(): string {
+  const d = new Date(Date.now() + 24 * 60 * 60 * 1000);
+  d.setMinutes(0, 0, 0);
+  d.setHours(d.getHours() + 1);
+  // datetime-local format: "YYYY-MM-DDTHH:MM"
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
 export default function CreatePage() {
   const router = useRouter();
-  const { currentCity } = useTribeStore();
+  const { currentCity, addEvent } = useTribeStore();
   const { isAuthenticated } = useAuth();
   const { publish, publishing, error: publishError } = useTribePublish();
+  const {
+    create: createEvent,
+    pending: eventPending,
+    walletReady: eventWalletReady,
+  } = useTribeEvent();
   const [mode, setMode] = useState<Mode>("menu");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -146,6 +173,12 @@ export default function CreatePage() {
   const [channelId, setChannelId] = useState<string>(GENERAL_CHANNEL_ID);
   const [channelOptions, setChannelOptions] = useState<ChannelInfo[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Event state
+  const [eventTitle, setEventTitle] = useState("");
+  const [eventDescription, setEventDescription] = useState("");
+  const [eventStartsAt, setEventStartsAt] = useState<string>(defaultStartsAt());
+  const [eventLocation, setEventLocation] = useState("");
 
   useEffect(() => {
     let cancelled = false;
@@ -328,7 +361,153 @@ export default function CreatePage() {
     );
   }
 
-  // Fallback modes use same pattern
+  if (mode === "event") {
+    const handleEventSubmit = async () => {
+      if (!eventTitle.trim() || !eventStartsAt || !currentCity) return;
+      if (!isAuthenticated) {
+        setSubmitError("Sign in with Tribe to create events");
+        return;
+      }
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        // Off-chain envelope wants a short string id; on-chain Event
+        // has its own u64 id derived from the per-creator counter.
+        const offchainId = newEventId();
+        const startsAtUnix = Math.floor(new Date(eventStartsAt).getTime() / 1000);
+        const result = await createEvent(
+          offchainId,
+          eventTitle.trim(),
+          startsAtUnix,
+          {
+            description: eventDescription.trim() || undefined,
+            locationText: eventLocation.trim() || undefined,
+          }
+        );
+
+        // Push the new event into the local feed so it shows up
+        // immediately with the on-chain badge when the chain hop
+        // succeeded. Subsequent RSVPs from this card route via
+        // rsvpOnchain when wallet is connected.
+        const newItem: ExploreItem = {
+          id: offchainId,
+          type: "event",
+          title: eventTitle.trim(),
+          description: eventDescription.trim() || "",
+          icon: "calendar",
+          color: "#6366F1",
+          participants: 0,
+          location: eventLocation.trim() || currentCity.name,
+          timeAgo: "just now",
+          isTrending: false,
+          cityId: currentCity.id,
+          onchainEventPda: result.eventPda,
+        };
+        addEvent(newItem);
+        router.push("/home");
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <FormLayout
+        title="Create Event"
+        onSubmit={handleEventSubmit}
+        canSubmit={!!eventTitle.trim() && !!eventStartsAt}
+        isSubmitting={isSubmitting || eventPending}
+        currentCity={currentCity}
+        setMode={setMode}
+      >
+        <div className="space-y-6">
+          <input
+            type="text"
+            placeholder="What's the event called?"
+            value={eventTitle}
+            onChange={(e) => setEventTitle(e.target.value)}
+            autoFocus
+            className="w-full bg-transparent text-2xl font-black tracking-tight outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <textarea
+            placeholder="Describe what's happening (optional)"
+            value={eventDescription}
+            onChange={(e) => setEventDescription(e.target.value)}
+            rows={3}
+            className="w-full resize-none bg-transparent text-[15px] font-medium outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="event-starts-at"
+                className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2"
+              >
+                Starts
+              </label>
+              <input
+                id="event-starts-at"
+                type="datetime-local"
+                value={eventStartsAt}
+                onChange={(e) => setEventStartsAt(e.target.value)}
+                className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5"
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="event-location"
+                className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2"
+              >
+                Where
+              </label>
+              <input
+                id="event-location"
+                type="text"
+                placeholder={`e.g. ${currentCity?.name ?? "your city"}`}
+                value={eventLocation}
+                onChange={(e) => setEventLocation(e.target.value)}
+                className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
+              />
+            </div>
+          </div>
+
+          {isAuthenticated ? (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                {eventWalletReady
+                  ? "On submit, this event will be anchored on Solana via event-registry. RSVPs will settle on chain."
+                  : "Connect a Solana wallet to anchor this event on chain. Without one, only the off-chain envelope is published."}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                Sign in with Tribe to create events
+              </p>
+              <a
+                href="/onboarding/connect"
+                className="text-[12px] font-bold text-amber-600 underline mt-1 inline-block"
+              >
+                Sign in now
+              </a>
+            </div>
+          )}
+
+          {submitError && (
+            <p className="text-[12px] text-red-500 font-bold px-2">
+              {submitError}
+            </p>
+          )}
+        </div>
+      </FormLayout>
+    );
+  }
+
+  // Fallback for poll / task / crowdfund / channel — same composer
+  // pattern is on the way; events shipped first as the smallest
+  // visible vertical to validate the chain → store → feed loop.
   if (mode !== "menu") {
     return (
       <FormLayout
