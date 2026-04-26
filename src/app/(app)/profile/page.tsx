@@ -8,6 +8,7 @@ import { useTribeStore } from "@/store/use-tribe-store";
 import { TweetCard } from "@/components/features/home/tweet-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeUserData } from "@/hooks/use-tribe-user-data";
+import { useTribeUser } from "@/hooks/use-tribe-user";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -100,6 +101,7 @@ export default function ProfilePage() {
   const { currentUser, updateCurrentUser, tweets } = useTribeStore();
   const { isAuthenticated, profile, tid } = useAuth();
   const { setFields: publishUserData, error: publishError } = useTribeUserData();
+  const { user: hubUser } = useTribeUser(tid ?? null);
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Posts");
   const [isEditing, setIsEditing] = useState(false);
@@ -135,22 +137,39 @@ export default function ProfilePage() {
   const levelConfig = karma ? karmaLevelConfig[karma.level] : null;
   const progress = karma ? getKarmaProgress(karma.totalKarma, karma.level) : 0;
 
+  const hubUsername = hubUser?.username ?? null;
+  const hubProfile = hubUser?.profile ?? {};
+
   const displayName =
-    profile?.displayName || profile?.username || currentUser?.displayName || `tid:${tid ?? "?"}`;
+    hubProfile.displayName ||
+    profile?.displayName ||
+    profile?.username ||
+    currentUser?.displayName ||
+    `tid:${tid ?? "?"}`;
 
-  const displayBio = currentUser?.bio || "";
+  const displayBio = hubProfile.bio || currentUser?.bio || "";
 
-  const displayAvatar = profile?.image || currentUser?.avatarUrl || "/default-avatar.png";
+  const displayAvatar =
+    hubProfile.pfpUrl ||
+    profile?.image ||
+    currentUser?.avatarUrl ||
+    "/default-avatar.png";
 
-  const displayHandle = profile?.username
-    ? `@${profile.username}`
-    : currentUser?.username
-      ? `@${currentUser.username}`
-      : tid
-        ? `tid:${tid}`
-        : "";
+  const displayHandle = hubUsername
+    ? `@${hubUsername}`
+    : profile?.username
+      ? `@${profile.username}`
+      : currentUser?.username
+        ? `@${currentUser.username}`
+        : tid
+          ? `tid:${tid}`
+          : "";
 
-  const socialCounts = { followers: 0, following: 0, posts: 0 };
+  const socialCounts = {
+    followers: hubUser?.followers_count ?? 0,
+    following: hubUser?.following_count ?? 0,
+    posts: 0,
+  };
 
   const allPosts = currentUser
     ? tweets.filter((c) => c.user.id === currentUser.id)
