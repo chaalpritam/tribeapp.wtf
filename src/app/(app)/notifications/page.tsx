@@ -2,9 +2,11 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { Heart, MessageCircle, UserPlus, Calendar, Hash, Coins, Users, CheckCircle, Bell } from "lucide-react";
+import { Heart, MessageCircle, UserPlus, Calendar, Hash, Coins, Users, CheckCircle, Bell, Reply, AtSign } from "lucide-react";
 import { useNotificationStore } from "@/store/use-notification-store";
 import { AppHeader } from "@/components/layout/app-header";
+import { useTribeNotifications } from "@/hooks/use-tribe-notifications";
+import { formatDistanceToNow } from "date-fns";
 
 const iconMap: Record<string, React.ElementType> = {
   like: Heart,
@@ -14,6 +16,9 @@ const iconMap: Record<string, React.ElementType> = {
   channel: Hash,
   tip: Coins,
   join: Users,
+  reaction: Heart,
+  reply: Reply,
+  mention: AtSign,
 };
 
 const colorMap: Record<string, string> = {
@@ -24,11 +29,23 @@ const colorMap: Record<string, string> = {
   channel: "text-cyan-500 bg-cyan-50",
   tip: "text-amber-500 bg-amber-50",
   join: "text-violet-500 bg-violet-50",
+  reaction: "text-rose-500 bg-rose-50",
+  reply: "text-blue-500 bg-blue-50",
+  mention: "text-purple-500 bg-purple-50",
+};
+
+const verbForType: Record<string, string> = {
+  follow: "started following you",
+  reaction: "reacted to your tweet",
+  reply: "replied to your tweet",
+  tip: "tipped you",
+  mention: "mentioned you",
 };
 
 export default function NotificationsPage() {
   const router = useRouter();
   const { notifications, unreadCount, markAllRead, markRead } = useNotificationStore();
+  const { notifications: hubNotifications } = useTribeNotifications();
 
   const handleNotifClick = (id: string, href?: string) => {
     markRead(id);
@@ -55,6 +72,49 @@ export default function NotificationsPage() {
       </div>
 
       <div className="max-w-2xl mx-auto px-3 sm:px-6 py-6 sm:py-8">
+        {hubNotifications.length > 0 && (
+          <div className="flex flex-col gap-3 mb-6">
+            <h3 className="text-[11px] font-black uppercase tracking-[0.2em] text-[#999] px-1">
+              From the network
+            </h3>
+            {hubNotifications.map((notif, idx) => {
+              const Icon = iconMap[notif.type] || Bell;
+              const colorClass = colorMap[notif.type] || colorMap.like;
+              return (
+                <div
+                  key={`hub-${notif.type}-${notif.actor_tid}-${notif.created_at}-${idx}`}
+                  className="flex items-center gap-3 sm:gap-4 p-3.5 sm:p-5 rounded-[20px] sm:rounded-[28px] bg-white border border-[#f0f0f0] shadow-sm"
+                >
+                  <div className="relative shrink-0">
+                    <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-[16px] sm:rounded-[20px] bg-muted/40 flex items-center justify-center">
+                      <span className="text-[10px] font-black tracking-tight">
+                        TID
+                      </span>
+                    </div>
+                    <div className={`absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full border-2 border-white ${colorClass}`}>
+                      <Icon className="h-3.5 w-3.5" />
+                    </div>
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[15px] leading-tight">
+                      <span className="font-bold">tid:{notif.actor_tid}</span>{" "}
+                      <span className="text-[#666] font-medium">
+                        {verbForType[notif.type] ?? notif.type}
+                        {notif.preview ? ` — "${notif.preview.slice(0, 60)}"` : ""}
+                      </span>
+                    </p>
+                    <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">
+                      {formatDistanceToNow(new Date(notif.created_at), {
+                        addSuffix: true,
+                      })}
+                    </p>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+
         <div className="flex flex-col gap-3">
           {notifications.map((notif) => {
             const Icon = iconMap[notif.type] || Heart;
