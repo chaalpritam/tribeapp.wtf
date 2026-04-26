@@ -93,6 +93,52 @@ export async function fetchFollowing(
   return res.json();
 }
 
+export interface UserSearchHit {
+  tid: string;
+  custody_address: string;
+  username: string | null;
+  display_name: string | null;
+  bio: string | null;
+  pfp_url: string | null;
+}
+
+export interface ChannelSearchHit {
+  id: string;
+  name: string | null;
+  description: string | null;
+  member_count: number;
+  last_tweet_at: string | null;
+}
+
+export async function searchTweets(q: string, limit = 20) {
+  const params = new URLSearchParams({ q, limit: String(limit) });
+  const res = await hubFetch(`/v1/search?${params}`);
+  if (!res.ok) throw new Error(`Tweet search failed: ${res.statusText}`);
+  return res.json();
+}
+
+export async function searchUsers(
+  q: string,
+  limit = 20
+): Promise<UserSearchHit[]> {
+  const params = new URLSearchParams({ q, limit: String(limit) });
+  const res = await hubFetch(`/v1/search/users?${params}`);
+  if (!res.ok) throw new Error(`User search failed: ${res.statusText}`);
+  const json = (await res.json()) as { users: UserSearchHit[] };
+  return json.users;
+}
+
+export async function searchChannels(
+  q: string,
+  limit = 20
+): Promise<ChannelSearchHit[]> {
+  const params = new URLSearchParams({ q, limit: String(limit) });
+  const res = await hubFetch(`/v1/search/channels?${params}`);
+  if (!res.ok) throw new Error(`Channel search failed: ${res.statusText}`);
+  const json = (await res.json()) as { channels: ChannelSearchHit[] };
+  return json.channels;
+}
+
 export function getMediaUrl(hash: string): string {
   return `${getHubBaseUrl()}/v1/media/${hash}`;
 }
