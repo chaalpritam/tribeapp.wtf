@@ -40,7 +40,9 @@ export type MessageType =
   | 14 // BOOKMARK_ADD
   | 15 // BOOKMARK_REMOVE
   | 16 // POLL_ADD
-  | 17; // POLL_VOTE
+  | 17 // POLL_VOTE
+  | 18 // EVENT_ADD
+  | 19; // EVENT_RSVP
 
 interface BuildOptions {
   type: MessageType;
@@ -137,6 +139,77 @@ export async function signAndPublishChannelOp(
     throw new Error(`Channel op failed: ${res.status} ${errBody}`);
   }
 
+  return res.json();
+}
+
+export async function signAndPublishEvent(
+  tid: number,
+  eventId: string,
+  title: string,
+  startsAtUnix: number,
+  signingKeySecret: Uint8Array,
+  opts: {
+    description?: string;
+    endsAtUnix?: number;
+    locationText?: string;
+    latitude?: number;
+    longitude?: number;
+    channelId?: string;
+    imageUrl?: string;
+  } = {}
+): Promise<{ hash: string }> {
+  const body: Record<string, unknown> = {
+    event_id: eventId,
+    title,
+    starts_at: startsAtUnix,
+  };
+  if (opts.description) body.description = opts.description;
+  if (opts.endsAtUnix) body.ends_at = opts.endsAtUnix;
+  if (opts.locationText) body.location_text = opts.locationText;
+  if (opts.latitude !== undefined) body.latitude = opts.latitude;
+  if (opts.longitude !== undefined) body.longitude = opts.longitude;
+  if (opts.channelId) body.channel_id = opts.channelId;
+  if (opts.imageUrl) body.image_url = opts.imageUrl;
+
+  const message = await buildSignedMessage({
+    type: 18,
+    tid,
+    body,
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Event create failed: ${res.status} ${errBody}`);
+  }
+  return res.json();
+}
+
+export async function signAndPublishRsvp(
+  tid: number,
+  eventId: string,
+  status: "yes" | "no" | "maybe",
+  signingKeySecret: Uint8Array
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type: 19,
+    tid,
+    body: { event_id: eventId, status },
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`RSVP failed: ${res.status} ${errBody}`);
+  }
   return res.json();
 }
 

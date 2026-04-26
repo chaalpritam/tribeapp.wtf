@@ -1,15 +1,31 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { Calendar, MapPin, Users, Ticket } from "lucide-react";
+import { Calendar, MapPin, Users, Ticket, Loader2, CheckCircle2 } from "lucide-react";
 import type { ExploreItem } from "@/types";
 import { formatNumber } from "@/lib/utils";
+import { useTribeEvent } from "@/hooks/use-tribe-event";
 
 interface EventCardProps {
   event: ExploreItem;
 }
 
 export function EventCard({ event }: EventCardProps) {
+  const { rsvp, pending, ready } = useTribeEvent();
+  const [rsvped, setRsvped] = useState(false);
+
+  const handleRsvp = async () => {
+    setRsvped(true);
+    if (ready) {
+      try {
+        await rsvp(event.id, "yes");
+      } catch {
+        setRsvped(false);
+      }
+    }
+  };
+
   return (
     <div className="group bg-white rounded-[32px] border border-[#f0f0f0] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03] overflow-hidden">
       {/* Type Tag */}
@@ -58,9 +74,19 @@ export function EventCard({ event }: EventCardProps) {
       </div>
 
       {/* Action */}
-      <button className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-black text-white font-bold text-[14px] transition-all active:scale-[0.98] hover:bg-black/90">
-        <Ticket className="h-4 w-4" />
-        Join Event
+      <button
+        onClick={handleRsvp}
+        disabled={pending || rsvped}
+        className="w-full flex items-center justify-center gap-2 py-4 rounded-2xl bg-black text-white font-bold text-[14px] transition-all active:scale-[0.98] hover:bg-black/90 disabled:opacity-60"
+      >
+        {pending ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : rsvped ? (
+          <CheckCircle2 className="h-4 w-4" />
+        ) : (
+          <Ticket className="h-4 w-4" />
+        )}
+        {rsvped ? "Going" : "Join Event"}
       </button>
     </div>
   );
