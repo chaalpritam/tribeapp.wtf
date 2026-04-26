@@ -96,3 +96,24 @@ export async function fetchFollowing(
 export function getMediaUrl(hash: string): string {
   return `${getHubBaseUrl()}/v1/media/${hash}`;
 }
+
+export interface UploadResult {
+  hash: string;
+  url: string;
+  contentType: string;
+  size: number;
+  /** Absolute URL on the hub the file was uploaded to. */
+  absoluteUrl: string;
+}
+
+export async function uploadMedia(file: File): Promise<UploadResult> {
+  const form = new FormData();
+  form.append("file", file);
+  const res = await hubFetch("/v1/upload", { method: "POST", body: form });
+  if (!res.ok) {
+    const txt = await res.text();
+    throw new Error(`Upload failed: ${res.status} ${txt}`);
+  }
+  const json = (await res.json()) as Omit<UploadResult, "absoluteUrl">;
+  return { ...json, absoluteUrl: `${getHubBaseUrl()}${json.url}` };
+}

@@ -20,6 +20,7 @@ import {
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribePublish } from "@/hooks/use-tribe-publish";
+import { uploadMedia } from "@/lib/tribe";
 import type { Tweet } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
@@ -137,6 +138,7 @@ export default function CreatePage() {
   // Tweet state
   const [caption, setCaption] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [channelId, setChannelId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -146,9 +148,15 @@ export default function CreatePage() {
       setIsSubmitting(true);
       setSubmitError(null);
       try {
+        const embeds: string[] = [];
+        if (selectedFile && isAuthenticated) {
+          const upload = await uploadMedia(selectedFile);
+          embeds.push(upload.absoluteUrl);
+        }
         if (isAuthenticated) {
           await publish(caption.trim(), {
             channelId: channelId.trim() || undefined,
+            embeds: embeds.length > 0 ? embeds : undefined,
           });
         }
         router.push("/home");
@@ -209,7 +217,10 @@ export default function CreatePage() {
 
           <input ref={fileInputRef} type="file" accept="image/*" onChange={(e) => {
             const f = e.target.files?.[0];
-            if (f) setSelectedImage(URL.createObjectURL(f));
+            if (f) {
+              setSelectedFile(f);
+              setSelectedImage(URL.createObjectURL(f));
+            }
           }} className="hidden" />
 
           {selectedImage ? (
@@ -217,7 +228,7 @@ export default function CreatePage() {
               <div className="relative aspect-video">
                 <Image src={selectedImage} alt="Selected" fill className="object-cover" />
               </div>
-              <button onClick={() => setSelectedImage(null)} className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md">
+              <button onClick={() => { setSelectedImage(null); setSelectedFile(null); }} className="absolute top-4 right-4 h-10 w-10 flex items-center justify-center rounded-full bg-black/60 text-white backdrop-blur-md">
                 <X className="h-5 w-5" />
               </button>
             </div>
