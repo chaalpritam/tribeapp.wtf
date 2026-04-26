@@ -45,18 +45,6 @@ export function useFarcasterUser(fid: number | null | undefined) {
         address,
       });
 
-      // Register identity for the chat UI to have metadata (Name/PFP)
-      if (address) {
-        const { registerIdentity } = await import("@/lib/xmtp/identity-map");
-        registerIdentity({
-          fid: u.fid,
-          inboxId: "", // Not known yet
-          address: address.toLowerCase(),
-          username: u.username,
-          displayName: u.display_name,
-          pfpUrl: u.pfp_url,
-        });
-      }
     } catch (err: unknown) {
       const error = err as Error;
       setError(error.message ?? "Failed to fetch user");
