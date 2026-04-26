@@ -32,7 +32,8 @@ export type MessageType =
   | 3 // REACTION_ADD
   | 4 // REACTION_REMOVE
   | 5 // LINK_ADD
-  | 6; // LINK_REMOVE
+  | 6 // LINK_REMOVE
+  | 7; // USER_DATA_ADD
 
 interface BuildOptions {
   type: MessageType;
@@ -100,6 +101,33 @@ export async function signAndPublishTweet(
   if (!res.ok) {
     const errBody = await res.text();
     throw new Error(`Tweet failed: ${res.status} ${errBody}`);
+  }
+
+  return res.json();
+}
+
+export async function signAndPublishUserData(
+  tid: number,
+  field: "bio" | "displayName" | "pfpUrl" | "url" | "location",
+  value: string,
+  signingKeySecret: Uint8Array
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type: 7, // USER_DATA_ADD
+    tid,
+    body: { field, value },
+    signingKeySecret,
+  });
+
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`User data publish failed: ${res.status} ${errBody}`);
   }
 
   return res.json();

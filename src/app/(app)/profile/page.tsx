@@ -7,6 +7,7 @@ import Link from "next/link";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { TweetCard } from "@/components/features/home/tweet-card";
 import { useAuth } from "@/hooks/use-auth";
+import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -98,6 +99,7 @@ function PostsFeed({ tweets, isLoading }: { tweets: Tweet[]; isLoading?: boolean
 export default function ProfilePage() {
   const { currentUser, updateCurrentUser, tweets } = useTribeStore();
   const { isAuthenticated, profile, tid } = useAuth();
+  const { setFields: publishUserData, error: publishError } = useTribeUserData();
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Posts");
   const [isEditing, setIsEditing] = useState(false);
@@ -366,7 +368,16 @@ export default function ProfilePage() {
                       if (currentUser) {
                         updateCurrentUser({ displayName: editName, bio: editBio });
                       }
+                      if (isAuthenticated) {
+                        await publishUserData({
+                          displayName: editName,
+                          bio: editBio,
+                          location: editLocation,
+                        });
+                      }
                       setIsEditing(false);
+                    } catch {
+                      // keep modal open; error shown below
                     } finally {
                       setIsSaving(false);
                     }
@@ -376,6 +387,11 @@ export default function ProfilePage() {
                   {isSaving ? "Saving…" : "Save Pulse"}
                 </button>
               </div>
+              {publishError && (
+                <p className="text-[12px] text-red-500 font-bold mt-2">
+                  {publishError.message}
+                </p>
+              )}
             </div>
           </div>
         </div>
