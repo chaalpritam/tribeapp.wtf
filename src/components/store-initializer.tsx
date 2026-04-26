@@ -3,9 +3,11 @@
 import { useEffect } from "react";
 import { useTribeStore } from "@/store/use-tribe-store";
 
+// tribeapp.wtf defaults to seed/dummy data so the demo runs without
+// any backend or API keys. Opt out by setting NEXT_PUBLIC_SEED_DATA=false.
 const SEED_ENABLED =
-  typeof process !== "undefined" &&
-  process.env.NEXT_PUBLIC_SEED_DATA === "true";
+  typeof process === "undefined" ||
+  process.env.NEXT_PUBLIC_SEED_DATA !== "false";
 
 export function StoreInitializer() {
   const { currentCity, setInitialData } = useTribeStore();
