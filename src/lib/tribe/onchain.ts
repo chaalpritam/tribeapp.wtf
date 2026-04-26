@@ -47,6 +47,11 @@ const DISC = {
   // karma-registry
   initKarmaAccount:   Buffer.from([  0, 123,  22, 226, 115,  30, 193, 246]),
   recordTipReceived:  Buffer.from([ 25, 115, 185,  32, 204, 249, 253, 223]),
+  // event-registry
+  eventInitCreatorState: Buffer.from([105,  60,   2,  31,  14, 151, 165,  18]),
+  eventCreate:           Buffer.from([ 49, 219,  29, 203,  22,  98, 100,  87]),
+  eventRsvp:             Buffer.from([134, 164, 221,  33, 183,  12,  73,  32]),
+  eventUpdateRsvp:       Buffer.from([133, 246, 132,  11, 142, 135,  34,   5]),
 };
 
 // ── PDA Helpers ──────────────────────────────────────────────────────
@@ -533,4 +538,207 @@ export async function recordTipReceivedOnchain(
 
   const txSig = await provider.sendAndConfirm(txn);
   return { txSig, karmaAccount, karmaProof };
+}
+
+// ── Events ───────────────────────────────────────────────────────────
+
+function getEventCreatorStatePda(creator: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("event-creator"), creator.toBuffer()],
+    PROGRAM_IDS.eventRegistry
+  )[0];
+}
+
+function getEventPda(creator: PublicKey, eventId: bigint): PublicKey {
+  const idBuf = Buffer.alloc(8);
+  idBuf.writeBigUInt64LE(eventId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("event"), creator.toBuffer(), idBuf],
+    PROGRAM_IDS.eventRegistry
+  )[0];
+}
+
+function getRsvpPda(eventPda: PublicKey, attendee: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("rsvp"), eventPda.toBuffer(), attendee.toBuffer()],
+    PROGRAM_IDS.eventRegistry
+  )[0];
+}
+
+export async function hasEventCreatorState(
+  connection: Connection,
+  creator: PublicKey
+): Promise<boolean> {
+  const info = await connection.getAccountInfo(getEventCreatorStatePda(creator));
+  return info !== null;
+}
+
+/** CreatorEventState.next_event_id sits at offset 48 (8 disc + 32 creator + 8 tid). */
+async function getNextEventId(
+  connection: Connection,
+  creator: PublicKey
+): Promise<bigint> {
+  const info = await connection.getAccountInfo(
+    getEventCreatorStatePda(creator)
+  );
+  if (!info) throw new Error("CreatorEventState not initialized");
+  return info.data.readBigUInt64LE(48);
+}
+
+function writeFloat64LE(value: number): Buffer {
+  const buf = Buffer.alloc(8);
+  buf.writeDoubleLE(value, 0);
+  return buf;
+}
+
+function writeI64LE(value: number | bigint): Buffer {
+  const buf = Buffer.alloc(8);
+  buf.writeBigInt64LE(typeof value === "bigint" ? value : BigInt(value), 0);
+  return buf;
+}
+
+/**
+ * Create an on-chain Event. Lazy-inits the creator state PDA on
+ * first use so callers don't need a separate setup step.
+ *
+ * `metadataHash` should be the BLAKE3 hash of the off-chain
+ * EVENT_ADD envelope so the on-chain Event PDA points back to the
+ * envelope (apps can fetch /v1/messages/:hash for title /
+ * description / location_text).
+ */
+export async function createEventOnchain(
+  provider: AnchorProvider,
+  args: {
+    creatorTid: number;
+    startsAtUnix: number;
+    endsAtUnix?: number;
+    latitude?: number;
+    longitude?: number;
+    /** 32-byte BLAKE3 hash. Pass an all-zero buffer to skip the link. */
+    metadataHash: Uint8Array;
+  }
+): Promise<{ txSig: string; eventPda: PublicKey; eventId: bigint }> {
+  if (args.metadataHash.length !== 32) {
+    throw new Error("metadataHash must be exactly 32 bytes");
+  }
+
+  const creator = provider.wallet.publicKey;
+  const creatorState = getEventCreatorStatePda(creator);
+
+  const txn = new Transaction();
+
+  // Lazy-init creator state. SenderTipState pattern: the PDA is a
+  // small counter so the first time costs the user a tiny rent
+  // payment, then every subsequent event reuses it.
+  if (!(await hasEventCreatorState(provider.connection, creator))) {
+    const initData = Buffer.concat([
+      DISC.eventInitCreatorState,
+      bnToLeBuffer(args.creatorTid, 8),
+    ]);
+    txn.add(
+      new TransactionInstruction({
+        programId: PROGRAM_IDS.eventRegistry,
+        keys: [
+          { pubkey: creatorState, isSigner: false, isWritable: true },
+          { pubkey: creator, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: initData,
+      })
+    );
+  }
+
+  // For event PDA derivation we need next_event_id. If we just
+  // included init, it's 0; otherwise read from chain.
+  let eventId: bigint;
+  if (txn.instructions.length === 0) {
+    eventId = await getNextEventId(provider.connection, creator);
+  } else {
+    eventId = BigInt(0);
+  }
+  const eventPda = getEventPda(creator, eventId);
+
+  const hasEnd = args.endsAtUnix !== undefined;
+  const hasLocation =
+    args.latitude !== undefined || args.longitude !== undefined;
+
+  // Args layout (mirrors the program signature):
+  //   starts_at i64 | ends_at i64 | has_end u8 | latitude f64
+  //   | longitude f64 | has_location u8 | metadata_hash [u8;32]
+  const createData = Buffer.concat([
+    DISC.eventCreate,
+    writeI64LE(args.startsAtUnix),
+    writeI64LE(args.endsAtUnix ?? 0),
+    Buffer.from([hasEnd ? 1 : 0]),
+    writeFloat64LE(args.latitude ?? 0),
+    writeFloat64LE(args.longitude ?? 0),
+    Buffer.from([hasLocation ? 1 : 0]),
+    Buffer.from(args.metadataHash),
+  ]);
+  txn.add(
+    new TransactionInstruction({
+      programId: PROGRAM_IDS.eventRegistry,
+      keys: [
+        { pubkey: creatorState, isSigner: false, isWritable: true },
+        { pubkey: eventPda, isSigner: false, isWritable: true },
+        { pubkey: creator, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: createData,
+    })
+  );
+
+  const txSig = await provider.sendAndConfirm(txn);
+  return { txSig, eventPda, eventId };
+}
+
+/** Cast or change an RSVP for an event. status: 1=Yes, 2=No, 3=Maybe. */
+export async function rsvpEventOnchain(
+  provider: AnchorProvider,
+  args: {
+    eventPda: PublicKey;
+    attendeeTid: number;
+    status: 1 | 2 | 3;
+    /** True when this is changing an existing RSVP. */
+    isUpdate?: boolean;
+  }
+): Promise<{ txSig: string; rsvpPda: PublicKey }> {
+  const attendee = provider.wallet.publicKey;
+  const rsvpPda = getRsvpPda(args.eventPda, attendee);
+
+  if (args.isUpdate) {
+    // update_rsvp(status: u8) — accounts: event(mut), rsvp(mut), attendee(signer)
+    const data = Buffer.concat([DISC.eventUpdateRsvp, Buffer.from([args.status])]);
+    const ix = new TransactionInstruction({
+      programId: PROGRAM_IDS.eventRegistry,
+      keys: [
+        { pubkey: args.eventPda, isSigner: false, isWritable: true },
+        { pubkey: rsvpPda, isSigner: false, isWritable: true },
+        { pubkey: attendee, isSigner: true, isWritable: false },
+      ],
+      data,
+    });
+    const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+    return { txSig, rsvpPda };
+  }
+
+  // rsvp(attendee_tid: u64, status: u8) — accounts: event(mut),
+  //   rsvp_record(init), attendee(signer, mut), system_program
+  const data = Buffer.concat([
+    DISC.eventRsvp,
+    bnToLeBuffer(args.attendeeTid, 8),
+    Buffer.from([args.status]),
+  ]);
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.eventRegistry,
+    keys: [
+      { pubkey: args.eventPda, isSigner: false, isWritable: true },
+      { pubkey: rsvpPda, isSigner: false, isWritable: true },
+      { pubkey: attendee, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig, rsvpPda };
 }

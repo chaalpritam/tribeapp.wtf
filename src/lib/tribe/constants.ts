@@ -21,6 +21,7 @@ export const PROGRAM_IDS = {
   socialGraph: new PublicKey("8kKnWvbmTjWq5uPePk79RRbQMAXCszNFzHdRwUS4N74w"),
   tipRegistry: new PublicKey("TipReg1111111111111111111111111111111111111"),
   karmaRegistry: new PublicKey("KarmaReg11111111111111111111111111111111111"),
+  eventRegistry: new PublicKey("D2Gt2qkNAa8gZAmvqt3PWH39ydBL1cpwuXqeogkCoPRk"),
 };
 
 // Network discriminator used by message envelopes.
