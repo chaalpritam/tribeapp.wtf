@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { useTribeUser } from "@/hooks/use-tribe-user";
 import { useTribeKarma } from "@/hooks/use-tribe-karma";
+import { useTribeOnchainKarma } from "@/hooks/use-tribe-onchain-karma";
 import { useTribeFollowList, type FollowListKind } from "@/hooks/use-tribe-follow-list";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
@@ -105,6 +106,7 @@ export default function ProfilePage() {
   const { setFields: publishUserData, error: publishError } = useTribeUserData();
   const { user: hubUser } = useTribeUser(tid ?? null);
   const { karma: hubKarma } = useTribeKarma(tid ?? null);
+  const { karma: onchainKarma } = useTribeOnchainKarma(tid ?? null);
   const [followListKind, setFollowListKind] = useState<FollowListKind | null>(null);
   const { users: followListUsers, loading: followListLoading } =
     useTribeFollowList(tid ?? null, followListKind ?? "followers", followListKind !== null);
@@ -337,6 +339,55 @@ export default function ProfilePage() {
               <div className="mt-4 flex justify-between text-[11px] font-bold uppercase tracking-widest text-indigo-900/40">
                 <span>Recent Milestones</span>
                 <span>{Math.round(progress)}% to Level {karma.level + 1}</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* On-chain karma — populated only after the first tip received
+            or task completed flips the KarmaAccount PDA into existence. */}
+        {onchainKarma && (
+          <div className="px-3 sm:px-6 pb-6 sm:pb-8 -mt-4 sm:-mt-6">
+            <div className="p-5 sm:p-6 rounded-[24px] sm:rounded-[32px] bg-amber-50 border border-amber-100 shadow-sm">
+              <div className="flex items-center justify-between mb-4">
+                <div className="flex items-center gap-3">
+                  <div className="h-10 w-10 flex items-center justify-center rounded-2xl bg-white text-amber-500 shadow-sm">
+                    <Zap className="h-5 w-5 fill-current" />
+                  </div>
+                  <div>
+                    <p className="text-[14px] font-black tracking-tight text-amber-900 leading-none">
+                      On-chain receipts
+                    </p>
+                    <p className="text-[10px] font-bold text-amber-600/60 uppercase tracking-widest mt-1.5">
+                      Settled on Solana
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl bg-white p-4">
+                  <p className="text-[10px] font-bold text-amber-600/70 uppercase tracking-widest">
+                    Tips received
+                  </p>
+                  <p className="text-xl font-black text-amber-900 mt-1.5 leading-none">
+                    {(Number(onchainKarma.tipsReceivedLamports) / 1_000_000_000).toFixed(4)}{" "}
+                    <span className="text-xs font-bold">SOL</span>
+                  </p>
+                  <p className="text-[10px] font-bold text-amber-600/60 mt-1.5">
+                    across {formatNumber(onchainKarma.tipsReceivedCount)} tip{onchainKarma.tipsReceivedCount === 1 ? "" : "s"}
+                  </p>
+                </div>
+                <div className="rounded-2xl bg-white p-4">
+                  <p className="text-[10px] font-bold text-amber-600/70 uppercase tracking-widest">
+                    Tasks completed
+                  </p>
+                  <p className="text-xl font-black text-amber-900 mt-1.5 leading-none">
+                    {formatNumber(onchainKarma.tasksCompletedCount)}
+                  </p>
+                  <p className="text-[10px] font-bold text-amber-600/60 mt-1.5">
+                    {(Number(onchainKarma.tasksCompletedRewardLamports) / 1_000_000_000).toFixed(4)} SOL earned
+                  </p>
+                </div>
               </div>
             </div>
           </div>
