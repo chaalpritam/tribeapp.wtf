@@ -58,6 +58,12 @@ const DISC = {
   pollInitCreatorState:  Buffer.from([105,  60,   2,  31,  14, 151, 165,  18]),
   pollCreate:            Buffer.from([182, 171, 112, 238,   6, 219,  14, 110]),
   pollVote:              Buffer.from([227, 110, 155,  23, 136, 126, 172,  25]),
+  // crowdfund-registry — same init_creator_state collision as event/poll
+  cfInitCreatorState:    Buffer.from([105,  60,   2,  31,  14, 151, 165,  18]),
+  cfCreateCrowdfund:     Buffer.from([142,  70,  11, 110,  16, 180,   1, 160]),
+  cfPledge:              Buffer.from([235,  47, 156, 254,   0,  88, 212, 142]),
+  cfClaimFunds:          Buffer.from([145,  36, 143, 242, 168,  66, 200, 155]),
+  cfRefund:              Buffer.from([  2,  96, 183, 251,  63, 208,  46,  46]),
 };
 
 // ── PDA Helpers ──────────────────────────────────────────────────────
@@ -911,4 +917,215 @@ export async function votePollOnchain(
   });
   const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
   return { txSig, votePda };
+}
+
+// ── Crowdfunds ───────────────────────────────────────────────────────
+
+function getCrowdfundCreatorStatePda(creator: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("cf-creator"), creator.toBuffer()],
+    PROGRAM_IDS.crowdfundRegistry
+  )[0];
+}
+
+function getCrowdfundPda(creator: PublicKey, crowdfundId: bigint): PublicKey {
+  const idBuf = Buffer.alloc(8);
+  idBuf.writeBigUInt64LE(crowdfundId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("crowdfund"), creator.toBuffer(), idBuf],
+    PROGRAM_IDS.crowdfundRegistry
+  )[0];
+}
+
+function getPledgePda(crowdfundPda: PublicKey, backer: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("pledge"), crowdfundPda.toBuffer(), backer.toBuffer()],
+    PROGRAM_IDS.crowdfundRegistry
+  )[0];
+}
+
+export async function hasCrowdfundCreatorState(
+  connection: Connection,
+  creator: PublicKey
+): Promise<boolean> {
+  const info = await connection.getAccountInfo(
+    getCrowdfundCreatorStatePda(creator)
+  );
+  return info !== null;
+}
+
+/** CreatorCrowdfundState.next_crowdfund_id sits at offset 48
+ *  (8 disc + 32 creator + 8 tid). */
+async function getNextCrowdfundId(
+  connection: Connection,
+  creator: PublicKey
+): Promise<bigint> {
+  const info = await connection.getAccountInfo(
+    getCrowdfundCreatorStatePda(creator)
+  );
+  if (!info) throw new Error("CreatorCrowdfundState not initialized");
+  return info.data.readBigUInt64LE(48);
+}
+
+/**
+ * Create an on-chain crowdfund campaign. Lazy-inits the per-creator
+ * counter PDA on first use. The Crowdfund PDA itself doubles as the
+ * lamport vault — pledges System-CPI lamports into it; claim/refund
+ * directly mutate the PDA's lamport balance.
+ *
+ * `metadataHash` should be the BLAKE3 hash of the off-chain
+ * CROWDFUND_ADD envelope so the on-chain Crowdfund points back to
+ * title / description / image / currency.
+ */
+export async function createCrowdfundOnchain(
+  provider: AnchorProvider,
+  args: {
+    creatorTid: number;
+    /** Goal in lamports. */
+    goalAmountLamports: bigint;
+    /** Unix seconds; must be in the future. */
+    deadlineAtUnix: number;
+    metadataHash: Uint8Array;
+  }
+): Promise<{ txSig: string; crowdfundPda: PublicKey; crowdfundId: bigint }> {
+  if (args.metadataHash.length !== 32) {
+    throw new Error("metadataHash must be exactly 32 bytes");
+  }
+  if (args.goalAmountLamports <= BigInt(0)) {
+    throw new Error("goalAmountLamports must be > 0");
+  }
+
+  const creator = provider.wallet.publicKey;
+  const creatorState = getCrowdfundCreatorStatePda(creator);
+
+  const txn = new Transaction();
+
+  if (!(await hasCrowdfundCreatorState(provider.connection, creator))) {
+    const initData = Buffer.concat([
+      DISC.cfInitCreatorState,
+      bnToLeBuffer(args.creatorTid, 8),
+    ]);
+    txn.add(
+      new TransactionInstruction({
+        programId: PROGRAM_IDS.crowdfundRegistry,
+        keys: [
+          { pubkey: creatorState, isSigner: false, isWritable: true },
+          { pubkey: creator, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: initData,
+      })
+    );
+  }
+
+  let crowdfundId: bigint;
+  if (txn.instructions.length === 0) {
+    crowdfundId = await getNextCrowdfundId(provider.connection, creator);
+  } else {
+    crowdfundId = BigInt(0);
+  }
+  const crowdfundPda = getCrowdfundPda(creator, crowdfundId);
+
+  // Args: goal_amount u64 | deadline_at i64 | metadata_hash [u8;32]
+  const createData = Buffer.concat([
+    DISC.cfCreateCrowdfund,
+    new BN(args.goalAmountLamports.toString()).toArrayLike(Buffer, "le", 8),
+    writeI64LE(args.deadlineAtUnix),
+    Buffer.from(args.metadataHash),
+  ]);
+  txn.add(
+    new TransactionInstruction({
+      programId: PROGRAM_IDS.crowdfundRegistry,
+      keys: [
+        { pubkey: creatorState, isSigner: false, isWritable: true },
+        { pubkey: crowdfundPda, isSigner: false, isWritable: true },
+        { pubkey: creator, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: createData,
+    })
+  );
+
+  const txSig = await provider.sendAndConfirm(txn);
+  return { txSig, crowdfundPda, crowdfundId };
+}
+
+/**
+ * Pledge `amountLamports` to a campaign. The Pledge PDA seeded by
+ * (crowdfund, backer) accumulates across multiple pledges from the
+ * same backer (init_if_needed in the program, no-op when re-pledging).
+ */
+export async function pledgeCrowdfundOnchain(
+  provider: AnchorProvider,
+  args: {
+    crowdfundPda: PublicKey;
+    backerTid: number;
+    amountLamports: bigint;
+  }
+): Promise<{ txSig: string; pledgePda: PublicKey }> {
+  if (args.amountLamports <= BigInt(0)) {
+    throw new Error("amountLamports must be > 0");
+  }
+  const backer = provider.wallet.publicKey;
+  const pledgePda = getPledgePda(args.crowdfundPda, backer);
+
+  // Args: backer_tid u64 | amount u64
+  const data = Buffer.concat([
+    DISC.cfPledge,
+    bnToLeBuffer(args.backerTid, 8),
+    new BN(args.amountLamports.toString()).toArrayLike(Buffer, "le", 8),
+  ]);
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.crowdfundRegistry,
+    keys: [
+      { pubkey: args.crowdfundPda, isSigner: false, isWritable: true },
+      { pubkey: pledgePda, isSigner: false, isWritable: true },
+      { pubkey: backer, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig, pledgePda };
+}
+
+/** Creator-only. Once the deadline passes and the goal is met, sweep
+ *  the vault into the creator's wallet and mark the campaign Succeeded. */
+export async function claimCrowdfundFundsOnchain(
+  provider: AnchorProvider,
+  crowdfundPda: PublicKey
+): Promise<{ txSig: string }> {
+  const creator = provider.wallet.publicKey;
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.crowdfundRegistry,
+    keys: [
+      { pubkey: crowdfundPda, isSigner: false, isWritable: true },
+      { pubkey: creator, isSigner: true, isWritable: true },
+    ],
+    data: DISC.cfClaimFunds,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig };
+}
+
+/** Backer-only. Once the deadline passes and the goal wasn't met,
+ *  return the backer's pledge from the vault. Closes the Pledge PDA;
+ *  rent goes back to the backer. */
+export async function refundCrowdfundOnchain(
+  provider: AnchorProvider,
+  crowdfundPda: PublicKey
+): Promise<{ txSig: string; pledgePda: PublicKey }> {
+  const backer = provider.wallet.publicKey;
+  const pledgePda = getPledgePda(crowdfundPda, backer);
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.crowdfundRegistry,
+    keys: [
+      { pubkey: crowdfundPda, isSigner: false, isWritable: true },
+      { pubkey: pledgePda, isSigner: false, isWritable: true },
+      { pubkey: backer, isSigner: true, isWritable: true },
+    ],
+    data: DISC.cfRefund,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig, pledgePda };
 }

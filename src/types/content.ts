@@ -79,4 +79,16 @@ export interface Crowdfund {
   raised: number;
   contributors: number;
   timeAgo: string;
+  /**
+   * On-chain Crowdfund PDA (base58) when this campaign is anchored
+   * in crowdfund-registry. When set, pledge actions transfer real
+   * SOL into the on-chain vault; absent → off-chain envelope pledge
+   * (social signal only).
+   */
+  onchainCrowdfundPda?: string;
+  /**
+   * Default pledge amount in SOL when the on-chain path is taken.
+   * Off-chain envelope path uses the original USD-denominated default.
+   */
+  onchainPledgeAmountSol?: number;
 }

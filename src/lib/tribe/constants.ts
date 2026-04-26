@@ -23,6 +23,7 @@ export const PROGRAM_IDS = {
   karmaRegistry: new PublicKey("KarmaReg11111111111111111111111111111111111"),
   eventRegistry: new PublicKey("D2Gt2qkNAa8gZAmvqt3PWH39ydBL1cpwuXqeogkCoPRk"),
   pollRegistry: new PublicKey("HPd8FqxVfoeBxwBr7wuKDeahgGX1V9UewxEWzjZY2SAm"),
+  crowdfundRegistry: new PublicKey("CrowdF11111111111111111111111111111111111111"),
 };
 
 // Network discriminator used by message envelopes.
