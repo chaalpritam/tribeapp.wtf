@@ -2,7 +2,7 @@ import type { City } from "./city";
 import type { UserKarma } from "./user";
 
 export interface UserStats {
-  casts: number;
+  tweets: number;
   events: number;
   tasks: number;
   polls: number;
@@ -25,7 +25,7 @@ export interface UserProfile {
   isVerified: boolean;
 }
 
-export type ActivityType = "cast" | "event" | "task";
+export type ActivityType = "tweet" | "event" | "task";
 
 export interface ActivityItem {
   id: string;

@@ -3,16 +3,16 @@
 import { useState } from "react";
 import { Plus } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
-import { CastCard } from "./cast-card";
+import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
 import { EventCard } from "./event-card";
 import { TaskCard } from "./task-card";
 import { CrowdfundCard } from "./crowdfund-card";
 import { useAuth } from "@/hooks/use-auth";
 import { AppHeader } from "@/components/layout/app-header";
-import type { Cast, Poll, Task, Crowdfund, ExploreItem } from "@/types";
+import type { Tweet, Poll, Task, Crowdfund, ExploreItem } from "@/types";
 
-type FeedItemData = Cast | Poll | Task | Crowdfund | ExploreItem;
+type FeedItemData = Tweet | Poll | Task | Crowdfund | ExploreItem;
 
 const iconMap: Record<string, string> = {
   bike: "🚲",
@@ -43,7 +43,7 @@ const iconMap: Record<string, string> = {
 type FeedTab = "all" | "city" | "following";
 
 export function HomeFeed() {
-  const { casts, polls, events, tasks, crowdfunds, currentCity, tribes } =
+  const { tweets, polls, events, tasks, crowdfunds, currentCity, tribes } =
     useTribeStore();
   const { isAuthenticated } = useAuth();
   const [activeTab, setActiveTab] = useState<FeedTab>("city");
@@ -51,8 +51,8 @@ export function HomeFeed() {
   // Build mixed feed from seed data.
   const feedItems: { type: string; data: FeedItemData; key: string }[] = [];
 
-  casts.forEach((cast) => {
-    feedItems.push({ type: "cast", data: cast, key: cast.id });
+  tweets.forEach((tweet) => {
+    feedItems.push({ type: "tweet", data: tweet, key: tweet.id });
   });
 
   events.forEach((event, i) => {
@@ -155,7 +155,7 @@ export function HomeFeed() {
         <div className="flex flex-col gap-4 sm:gap-6">
           {feedItems.map((item) => (
             <div key={item.key} className="w-full">
-              {item.type === "cast" && <CastCard cast={item.data as Cast} />}
+              {item.type === "tweet" && <TweetCard tweet={item.data as Tweet} />}
               {item.type === "event" && (
                 <EventCard event={item.data as ExploreItem} />
               )}

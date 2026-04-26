@@ -1,4 +1,4 @@
-import type { Cast } from "@/types";
+import type { Tweet } from "@/types";
 import {
   currentUser,
   user1,
@@ -18,10 +18,10 @@ import {
   user15,
 } from "./users";
 
-// Bangalore Casts
-export const bangaloreCasts: Cast[] = [
+// Bangalore Tweets
+export const bangaloreTweets: Tweet[] = [
   {
-    id: "cast-blr-1",
+    id: "tweet-blr-1",
     user: currentUser,
     imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop",
     likes: 42,
@@ -39,7 +39,7 @@ export const bangaloreCasts: Cast[] = [
     tribeId: "tribe-blr-food",
   },
   {
-    id: "cast-blr-2",
+    id: "tweet-blr-2",
     user: user1,
     imageUrl: "https://images.unsplash.com/photo-1571019614242-c5c5dee9f50b?w=800&h=600&fit=crop",
     likes: 89,
@@ -57,7 +57,7 @@ export const bangaloreCasts: Cast[] = [
     tribeId: "tribe-blr-cycling",
   },
   {
-    id: "cast-blr-3",
+    id: "tweet-blr-3",
     user: user2,
     imageUrl: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=800&h=600&fit=crop",
     likes: 156,
@@ -74,7 +74,7 @@ export const bangaloreCasts: Cast[] = [
     cityId: "bangalore",
   },
   {
-    id: "cast-blr-4",
+    id: "tweet-blr-4",
     user: user3,
     imageUrl: "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?w=800&h=600&fit=crop",
     likes: 34,
@@ -91,7 +91,7 @@ export const bangaloreCasts: Cast[] = [
     tribeId: "tribe-blr-tech",
   },
   {
-    id: "cast-blr-5",
+    id: "tweet-blr-5",
     user: user15,
     imageUrl: "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?w=800&h=600&fit=crop",
     likes: 201,
@@ -110,7 +110,7 @@ export const bangaloreCasts: Cast[] = [
     tribeId: "tribe-blr-fitness",
   },
   {
-    id: "cast-blr-6",
+    id: "tweet-blr-6",
     user: user1,
     imageUrl: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800&h=600&fit=crop",
     likes: 67,
@@ -128,10 +128,10 @@ export const bangaloreCasts: Cast[] = [
   },
 ];
 
-// Mumbai Casts
-export const mumbaiCasts: Cast[] = [
+// Mumbai Tweets
+export const mumbaiTweets: Tweet[] = [
   {
-    id: "cast-mum-1",
+    id: "tweet-mum-1",
     user: user4,
     imageUrl: "https://images.unsplash.com/photo-1567157577867-05ccb1388e66?w=800&h=600&fit=crop",
     likes: 234,
@@ -148,7 +148,7 @@ export const mumbaiCasts: Cast[] = [
     cityId: "mumbai",
   },
   {
-    id: "cast-mum-2",
+    id: "tweet-mum-2",
     user: user5,
     imageUrl: "https://images.unsplash.com/photo-1601050690117-94f5f6fa8bd7?w=800&h=600&fit=crop",
     likes: 78,
@@ -165,7 +165,7 @@ export const mumbaiCasts: Cast[] = [
     tribeId: "tribe-mum-food",
   },
   {
-    id: "cast-mum-3",
+    id: "tweet-mum-3",
     user: user4,
     imageUrl: "https://images.unsplash.com/photo-1595658658481-d53d3f999875?w=800&h=600&fit=crop",
     likes: 145,
@@ -181,7 +181,7 @@ export const mumbaiCasts: Cast[] = [
     cityId: "mumbai",
   },
   {
-    id: "cast-mum-4",
+    id: "tweet-mum-4",
     user: user5,
     imageUrl: "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=800&h=600&fit=crop",
     likes: 56,
@@ -198,7 +198,7 @@ export const mumbaiCasts: Cast[] = [
     tribeId: "tribe-mum-fitness",
   },
   {
-    id: "cast-mum-5",
+    id: "tweet-mum-5",
     user: user4,
     imageUrl: "https://images.unsplash.com/photo-1514525253161-7a46d19cd819?w=800&h=600&fit=crop",
     likes: 312,
@@ -215,7 +215,7 @@ export const mumbaiCasts: Cast[] = [
     tribeId: "tribe-mum-music",
   },
   {
-    id: "cast-mum-6",
+    id: "tweet-mum-6",
     user: user5,
     imageUrl: "https://images.unsplash.com/photo-1552664730-d307ca884978?w=800&h=600&fit=crop",
     likes: 45,
@@ -232,10 +232,10 @@ export const mumbaiCasts: Cast[] = [
   },
 ];
 
-// Delhi Casts
-export const delhiCasts: Cast[] = [
+// Delhi Tweets
+export const delhiTweets: Tweet[] = [
   {
-    id: "cast-del-1",
+    id: "tweet-del-1",
     user: user6,
     imageUrl: "https://images.unsplash.com/photo-1585135497273-1a86b09fe70e?w=800&h=600&fit=crop",
     likes: 189,
@@ -252,7 +252,7 @@ export const delhiCasts: Cast[] = [
     cityId: "delhi",
   },
   {
-    id: "cast-del-2",
+    id: "tweet-del-2",
     user: user7,
     imageUrl: "https://images.unsplash.com/photo-1567337710282-00832b415979?w=800&h=600&fit=crop",
     likes: 92,
@@ -269,7 +269,7 @@ export const delhiCasts: Cast[] = [
     tribeId: "tribe-del-food",
   },
   {
-    id: "cast-del-3",
+    id: "tweet-del-3",
     user: user6,
     imageUrl: "https://images.unsplash.com/photo-1524492412937-b28074a5d7da?w=800&h=600&fit=crop",
     likes: 267,
@@ -285,7 +285,7 @@ export const delhiCasts: Cast[] = [
     cityId: "delhi",
   },
   {
-    id: "cast-del-4",
+    id: "tweet-del-4",
     user: user7,
     imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85f82e?w=800&h=600&fit=crop",
     likes: 43,
@@ -301,7 +301,7 @@ export const delhiCasts: Cast[] = [
     cityId: "delhi",
   },
   {
-    id: "cast-del-5",
+    id: "tweet-del-5",
     user: user6,
     imageUrl: "https://images.unsplash.com/photo-1459749411175-04bf5292ceea?w=800&h=600&fit=crop",
     likes: 178,
@@ -318,7 +318,7 @@ export const delhiCasts: Cast[] = [
     tribeId: "tribe-del-arts",
   },
   {
-    id: "cast-del-6",
+    id: "tweet-del-6",
     user: user7,
     imageUrl: "https://images.unsplash.com/photo-1517457373958-b7bdd4587205?w=800&h=600&fit=crop",
     likes: 31,
@@ -335,10 +335,10 @@ export const delhiCasts: Cast[] = [
   },
 ];
 
-// San Francisco Casts
-export const sanFranciscoCasts: Cast[] = [
+// San Francisco Tweets
+export const sanFranciscoTweets: Tweet[] = [
   {
-    id: "cast-sf-1",
+    id: "tweet-sf-1",
     user: user8,
     imageUrl: "https://images.unsplash.com/photo-1449034446853-66c86144b0ad?w=800&h=600&fit=crop",
     likes: 198,
@@ -355,7 +355,7 @@ export const sanFranciscoCasts: Cast[] = [
     tribeId: "tribe-sf-fitness",
   },
   {
-    id: "cast-sf-2",
+    id: "tweet-sf-2",
     user: user9,
     imageUrl: "https://images.unsplash.com/photo-1556761175-b413da4baf72?w=800&h=600&fit=crop",
     likes: 67,
@@ -372,7 +372,7 @@ export const sanFranciscoCasts: Cast[] = [
     tribeId: "tribe-sf-tech",
   },
   {
-    id: "cast-sf-3",
+    id: "tweet-sf-3",
     user: user8,
     imageUrl: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800&h=600&fit=crop",
     likes: 124,
@@ -389,7 +389,7 @@ export const sanFranciscoCasts: Cast[] = [
     tribeId: "tribe-sf-food",
   },
   {
-    id: "cast-sf-4",
+    id: "tweet-sf-4",
     user: user9,
     imageUrl: "https://images.unsplash.com/photo-1558981806-ec527fa84c39?w=800&h=600&fit=crop",
     likes: 89,
@@ -405,7 +405,7 @@ export const sanFranciscoCasts: Cast[] = [
     cityId: "san-francisco",
   },
   {
-    id: "cast-sf-5",
+    id: "tweet-sf-5",
     user: user8,
     imageUrl: "https://images.unsplash.com/photo-1511632765486-a01980e01a18?w=800&h=600&fit=crop",
     likes: 156,
@@ -421,7 +421,7 @@ export const sanFranciscoCasts: Cast[] = [
     cityId: "san-francisco",
   },
   {
-    id: "cast-sf-6",
+    id: "tweet-sf-6",
     user: user9,
     imageUrl: "https://images.unsplash.com/photo-1510137600163-2729bc6959e4?w=800&h=600&fit=crop",
     likes: 45,
@@ -439,10 +439,10 @@ export const sanFranciscoCasts: Cast[] = [
   },
 ];
 
-// London Casts
-export const londonCasts: Cast[] = [
+// London Tweets
+export const londonTweets: Tweet[] = [
   {
-    id: "cast-ldn-1",
+    id: "tweet-ldn-1",
     user: user10,
     imageUrl: "https://images.unsplash.com/photo-1513635269975-59663e0ac1ad?w=800&h=600&fit=crop",
     likes: 345,
@@ -458,7 +458,7 @@ export const londonCasts: Cast[] = [
     cityId: "london",
   },
   {
-    id: "cast-ldn-2",
+    id: "tweet-ldn-2",
     user: user11,
     imageUrl: "https://images.unsplash.com/photo-1580477667995-2b94f01c9516?w=800&h=600&fit=crop",
     likes: 78,
@@ -474,7 +474,7 @@ export const londonCasts: Cast[] = [
     cityId: "london",
   },
   {
-    id: "cast-ldn-3",
+    id: "tweet-ldn-3",
     user: user10,
     imageUrl: "https://images.unsplash.com/photo-1576073719676-aa95576db207?w=800&h=600&fit=crop",
     likes: 212,
@@ -490,7 +490,7 @@ export const londonCasts: Cast[] = [
     cityId: "london",
   },
   {
-    id: "cast-ldn-4",
+    id: "tweet-ldn-4",
     user: user11,
     imageUrl: "https://images.unsplash.com/photo-1551632436-cbf8dd35adfa?w=800&h=600&fit=crop",
     likes: 95,
@@ -507,7 +507,7 @@ export const londonCasts: Cast[] = [
     tribeId: "tribe-ldn-arts",
   },
   {
-    id: "cast-ldn-5",
+    id: "tweet-ldn-5",
     user: user10,
     imageUrl: "https://images.unsplash.com/photo-1574180045827-681f8a1a9622?w=800&h=600&fit=crop",
     likes: 167,
@@ -524,7 +524,7 @@ export const londonCasts: Cast[] = [
     tribeId: "tribe-ldn-food",
   },
   {
-    id: "cast-ldn-6",
+    id: "tweet-ldn-6",
     user: user11,
     imageUrl: "https://images.unsplash.com/photo-1486299267070-83823f5448dd?w=800&h=600&fit=crop",
     likes: 54,
@@ -542,10 +542,10 @@ export const londonCasts: Cast[] = [
   },
 ];
 
-// New York Casts
-export const newYorkCasts: Cast[] = [
+// New York Tweets
+export const newYorkTweets: Tweet[] = [
   {
-    id: "cast-nyc-1",
+    id: "tweet-nyc-1",
     user: user12,
     imageUrl: "https://images.unsplash.com/photo-1534430480872-3498386e7856?w=800&h=600&fit=crop",
     likes: 278,
@@ -562,7 +562,7 @@ export const newYorkCasts: Cast[] = [
     cityId: "new-york",
   },
   {
-    id: "cast-nyc-2",
+    id: "tweet-nyc-2",
     user: user13,
     imageUrl: "https://images.unsplash.com/photo-1555992336-03a23c7b20ee?w=800&h=600&fit=crop",
     likes: 134,
@@ -579,7 +579,7 @@ export const newYorkCasts: Cast[] = [
     tribeId: "tribe-nyc-arts",
   },
   {
-    id: "cast-nyc-3",
+    id: "tweet-nyc-3",
     user: user12,
     imageUrl: "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=800&h=600&fit=crop",
     likes: 189,
@@ -596,7 +596,7 @@ export const newYorkCasts: Cast[] = [
     cityId: "new-york",
   },
   {
-    id: "cast-nyc-4",
+    id: "tweet-nyc-4",
     user: user14,
     imageUrl: "https://images.unsplash.com/photo-1474224017946-8f6217e7d90a?w=800&h=600&fit=crop",
     likes: 23,
@@ -613,7 +613,7 @@ export const newYorkCasts: Cast[] = [
     tribeId: "tribe-nyc-fitness",
   },
   {
-    id: "cast-nyc-5",
+    id: "tweet-nyc-5",
     user: user13,
     imageUrl: "https://images.unsplash.com/photo-1485182708500-e8f1f318ba72?w=800&h=600&fit=crop",
     likes: 245,
@@ -630,7 +630,7 @@ export const newYorkCasts: Cast[] = [
     tribeId: "tribe-nyc-music",
   },
   {
-    id: "cast-nyc-6",
+    id: "tweet-nyc-6",
     user: user12,
     imageUrl: "https://images.unsplash.com/photo-1555396273-367ea4eb4db5?w=800&h=600&fit=crop",
     likes: 156,
@@ -649,11 +649,11 @@ export const newYorkCasts: Cast[] = [
   },
 ];
 
-export const casts: Cast[] = [
-  ...bangaloreCasts,
-  ...mumbaiCasts,
-  ...delhiCasts,
-  ...sanFranciscoCasts,
-  ...londonCasts,
-  ...newYorkCasts,
+export const tweets: Tweet[] = [
+  ...bangaloreTweets,
+  ...mumbaiTweets,
+  ...delhiTweets,
+  ...sanFranciscoTweets,
+  ...londonTweets,
+  ...newYorkTweets,
 ];

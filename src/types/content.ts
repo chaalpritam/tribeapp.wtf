@@ -6,7 +6,7 @@ export interface Comment {
   text: string;
 }
 
-export interface Cast {
+export interface Tweet {
   id: string;
   user: User;
   imageUrl?: string;

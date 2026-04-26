@@ -2,7 +2,7 @@ import type { City } from "@/types";
 
 export async function loadCityData(_city: City) {
   return {
-    casts: [],
+    tweets: [],
     events: [],
     polls: [],
     tasks: [],

@@ -7,7 +7,7 @@ import { Users, Lock, Shield, Hash, Share2, MapPin, Calendar, Crown, MessageSqua
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useShare } from "@/hooks/use-share";
 import { formatNumber, cn } from "@/lib/utils";
-import { CastCard } from "@/components/features/home/cast-card";
+import { TweetCard } from "@/components/features/home/tweet-card";
 import { EventCard } from "@/components/features/home/event-card";
 import type { User } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
@@ -16,7 +16,7 @@ const tabs = ["Feed", "Events", "Members", "About"];
 
 export default function TribeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { tribes, joinTribe, leaveTribe, casts, events } = useTribeStore();
+  const { tribes, joinTribe, leaveTribe, tweets, events } = useTribeStore();
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Feed");
   const [members, setMembers] = useState<User[]>([]);
@@ -37,9 +37,9 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
     );
   }
 
-  const tribeCasts = casts.filter((c) => c.tribeId === tribe.id);
-  const cityCasts = casts.filter((c) => c.cityId === tribe.cityId);
-  const feedCasts = tribeCasts.length > 0 ? tribeCasts : cityCasts.slice(0, 5);
+  const tribeTweets = tweets.filter((c) => c.tribeId === tribe.id);
+  const cityTweets = tweets.filter((c) => c.cityId === tribe.cityId);
+  const feedTweets = tribeTweets.length > 0 ? tribeTweets : cityTweets.slice(0, 5);
   const tribeEvents = events.filter((e) => e.cityId === tribe.cityId);
 
   return (
@@ -120,7 +120,7 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
         <div className="px-6 pb-32">
           {activeTab === "Feed" && (
             <div className="flex flex-col gap-6">
-              {feedCasts.length === 0 ? (
+              {feedTweets.length === 0 ? (
                 <div className="py-20 text-center space-y-4 bg-white rounded-[40px] border border-[#f0f0f0] p-8">
                   <div className="h-20 w-20 bg-muted/30 rounded-[32px] flex items-center justify-center mx-auto">
                     <MessageSquare className="h-10 w-10 text-muted-foreground/30" />
@@ -131,8 +131,8 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
                   </div>
                 </div>
               ) : (
-                feedCasts.map((cast) => (
-                  <CastCard key={cast.id} cast={cast} />
+                feedTweets.map((tweet) => (
+                  <TweetCard key={tweet.id} tweet={tweet} />
                 ))
               )}
             </div>

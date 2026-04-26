@@ -5,7 +5,7 @@ export const achievements: Achievement[] = [
   {
     id: "ach-1",
     name: "First Post",
-    description: "Published your first cast",
+    description: "Published your first tweet",
     icon: "pencil",
     earnedAt: "2024-01-15",
     isEarned: true,

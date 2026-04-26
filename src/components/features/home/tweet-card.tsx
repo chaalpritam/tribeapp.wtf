@@ -12,7 +12,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
-import type { Cast } from "@/types";
+import type { Tweet } from "@/types";
 import type { CommentData } from "@/hooks/use-comments";
 import { cn, formatNumber } from "@/lib/utils";
 import { useTribeStore } from "@/store/use-tribe-store";
@@ -21,8 +21,8 @@ import { useShare } from "@/hooks/use-share";
 import { useAuth } from "@/hooks/use-auth";
 import { useComments } from "@/hooks/use-comments";
 
-interface CastCardProps {
-  cast: Cast;
+interface TweetCardProps {
+  tweet: Tweet;
 }
 
 function CommentItem({
@@ -160,13 +160,13 @@ function CommentItem({
   );
 }
 
-export function CastCard({ cast }: CastCardProps) {
-  const { likeCast, bookmarkCast } = useTribeStore();
+export function TweetCard({ tweet }: TweetCardProps) {
+  const { likeTweet, bookmarkTweet } = useTribeStore();
   const { isAuthenticated, profile } = useAuth();
   const { isLiked, likeCount, toggleLike } = useLike(
-    cast.id,
-    cast.isLiked,
-    cast.likes
+    tweet.id,
+    tweet.isLiked,
+    tweet.likes
   );
   const { showToast: showShareToast } = useShare();
   const {
@@ -193,7 +193,7 @@ export function CastCard({ cast }: CastCardProps) {
   }, [showInput]);
 
   const handleLike = async () => {
-    likeCast(cast.id);
+    likeTweet(tweet.id);
     if (isAuthenticated) {
       await toggleLike();
     }
@@ -221,8 +221,8 @@ export function CastCard({ cast }: CastCardProps) {
     setShowInput((prev) => !prev);
   };
 
-  const displayCount = comments.length || cast.comments.length;
-  const isShortCaption = cast.caption.length < 60;
+  const displayCount = comments.length || tweet.comments.length;
+  const isShortCaption = tweet.caption.length < 60;
 
   return (
     <div className="group relative bg-white rounded-[20px] sm:rounded-[32px] border border-[#f0f0f0] p-4 sm:p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03] overflow-hidden">
@@ -235,31 +235,31 @@ export function CastCard({ cast }: CastCardProps) {
           >
             <div className="h-9 w-9 sm:h-10 sm:w-10 rounded-full bg-muted overflow-hidden relative border border-[#f0f0f0] group-hover/avatar:ring-2 group-hover/avatar:ring-primary/20 transition-all">
               <Image
-                src={cast.user.avatarUrl}
-                alt={cast.user.displayName}
+                src={tweet.user.avatarUrl}
+                alt={tweet.user.displayName}
                 fill
                 className="object-cover"
               />
             </div>
             <div>
               <p className="text-[14px] font-bold tracking-tight">
-                @{cast.user.username}
+                @{tweet.user.username}
               </p>
               <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-                {cast.timestamp}
+                {tweet.timestamp}
               </p>
             </div>
           </Link>
         </div>
         <div className="rounded-full bg-[#f5f5f5] px-3 py-1 text-[11px] font-bold tracking-tight text-muted-foreground flex items-center gap-1.5 capitalize">
-          {cast.channel ? (
+          {tweet.channel ? (
             <>
-              {cast.channel.imageUrl && (
+              {tweet.channel.imageUrl && (
                 <div className="relative h-3 w-3 rounded-full overflow-hidden shrink-0 ring-1 ring-black/5">
-                  <Image src={cast.channel.imageUrl} alt={cast.channel.name} fill className="object-cover" />
+                  <Image src={tweet.channel.imageUrl} alt={tweet.channel.name} fill className="object-cover" />
                 </div>
               )}
-              {cast.channel.name}
+              {tweet.channel.name}
             </>
           ) : (
             "Local"
@@ -276,23 +276,23 @@ export function CastCard({ cast }: CastCardProps) {
             : "text-[14px] sm:text-[16px] font-medium text-black/80"
         )}
       >
-        {cast.caption}
+        {tweet.caption}
       </div>
 
       {/* Integrated Image */}
-      {cast.imageUrl && (
+      {tweet.imageUrl && (
         <div
           className="relative mb-4 sm:mb-6 overflow-hidden rounded-[16px] sm:rounded-[24px] bg-[#f5f5f5] min-h-[200px]"
           style={{
-            aspectRatio: cast.imageWidth && cast.imageHeight
-              ? `${cast.imageWidth} / ${cast.imageHeight}`
+            aspectRatio: tweet.imageWidth && tweet.imageHeight
+              ? `${tweet.imageWidth} / ${tweet.imageHeight}`
               : "16 / 10",
             maxHeight: "min(65vh, 600px)"
           }}
         >
           <Image
-            src={cast.imageUrl}
-            alt={cast.caption || "Cast image"}
+            src={tweet.imageUrl}
+            alt={tweet.caption || "Tweet image"}
             fill
             className="object-cover transition-transform group-hover:scale-[1.02] duration-700"
             sizes="(max-width: 768px) 100vw, 600px"
@@ -339,16 +339,16 @@ export function CastCard({ cast }: CastCardProps) {
 
         <div className="flex items-center gap-2">
           <button
-            onClick={() => bookmarkCast(cast.id)}
+            onClick={() => bookmarkTweet(tweet.id)}
             className={cn(
               "p-2 rounded-full transition-all active:scale-90",
-              cast.isSaved
+              tweet.isSaved
                 ? "bg-black text-white"
                 : "hover:bg-[#f5f5f5] text-[#666]"
             )}
           >
             <Bookmark
-              className={cn("h-5 w-5", cast.isSaved && "fill-current")}
+              className={cn("h-5 w-5", tweet.isSaved && "fill-current")}
             />
           </button>
         </div>

@@ -20,14 +20,14 @@ export {
   achievements,
 } from "./users";
 export {
-  casts,
-  bangaloreCasts,
-  mumbaiCasts,
-  delhiCasts,
-  sanFranciscoCasts,
-  londonCasts,
-  newYorkCasts,
-} from "./casts";
+  tweets,
+  bangaloreTweets,
+  mumbaiTweets,
+  delhiTweets,
+  sanFranciscoTweets,
+  londonTweets,
+  newYorkTweets,
+} from "./tweets";
 export { polls } from "./polls";
 export { tasks, getAllTasks } from "./tasks";
 export { crowdfunds } from "./crowdfunds";

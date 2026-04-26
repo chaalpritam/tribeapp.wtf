@@ -20,7 +20,7 @@ export function StoreInitializer() {
       Promise.all([
         import("@/seed/cities"),
         import("@/seed/users"),
-        import("@/seed/casts"),
+        import("@/seed/tweets"),
         import("@/seed/explore"),
         import("@/seed/polls"),
         import("@/seed/tasks"),
@@ -30,7 +30,7 @@ export function StoreInitializer() {
         ([
           { cities },
           { currentUser },
-          { casts },
+          { tweets },
           { exploreItems },
           { polls },
           { tasks },
@@ -44,7 +44,7 @@ export function StoreInitializer() {
           setInitialData({
             city,
             user: currentUser,
-            casts: casts.filter(
+            tweets: tweets.filter(
               (c: { cityId?: string }) => c.cityId === city.id
             ),
             events: exploreItems.filter(
@@ -79,7 +79,7 @@ export function StoreInitializer() {
             cityId: city.id,
             isVerified: false,
           },
-          casts: [],
+          tweets: [],
           events: [],
           polls: [],
           tasks: [],

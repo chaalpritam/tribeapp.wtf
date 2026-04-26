@@ -20,14 +20,14 @@ import {
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribePublish } from "@/hooks/use-tribe-publish";
-import type { Cast } from "@/types";
+import type { Tweet } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
 
 const createOptions = [
   {
-    id: "cast",
-    label: "Cast",
+    id: "tweet",
+    label: "Tweet",
     description: "Update the neighborhood Pulse",
     icon: PenSquare,
     color: "#6366F1",
@@ -75,7 +75,7 @@ const createOptions = [
   },
 ];
 
-type Mode = "menu" | "cast" | "event" | "poll" | "task" | "crowdfund" | "channel";
+type Mode = "menu" | "tweet" | "event" | "poll" | "task" | "crowdfund" | "channel";
 
 const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, currentCity, setMode }: {
   title: string;
@@ -134,14 +134,14 @@ export default function CreatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
-  // Cast state
+  // Tweet state
   const [caption, setCaption] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [channelId, setChannelId] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  if (mode === "cast") {
-    const handleCastSubmit = async () => {
+  if (mode === "tweet") {
+    const handleTweetSubmit = async () => {
       if (!caption.trim() || !currentCity) return;
       setIsSubmitting(true);
       setSubmitError(null);
@@ -162,7 +162,7 @@ export default function CreatePage() {
     return (
       <FormLayout
         title="Broadcast"
-        onSubmit={handleCastSubmit}
+        onSubmit={handleTweetSubmit}
         canSubmit={!!caption.trim()}
         isSubmitting={isSubmitting || publishing}
         currentCity={currentCity}
@@ -199,7 +199,7 @@ export default function CreatePage() {
           ) : (
             <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
               <p className="text-[13px] font-bold text-amber-800">
-                Sign in with Tribe to publish casts
+                Sign in with Tribe to publish tweets
               </p>
               <a href="/onboarding/connect" className="text-[12px] font-bold text-amber-600 underline mt-1 inline-block">
                 Sign in now

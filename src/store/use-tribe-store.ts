@@ -1,13 +1,13 @@
 "use client";
 
 import { create } from "zustand";
-import type { City, Cast, Poll, Task, Crowdfund, Tribe, ExploreItem, User } from "@/types";
+import type { City, Tweet, Poll, Task, Crowdfund, Tribe, ExploreItem, User } from "@/types";
 import { useNotificationStore } from "./use-notification-store";
 
 interface TribeStore {
   // State
   currentCity: City | null;
-  casts: Cast[];
+  tweets: Tweet[];
   events: ExploreItem[];
   polls: Poll[];
   tasks: Task[];
@@ -20,7 +20,7 @@ interface TribeStore {
   setInitialData: (data: {
     city: City;
     user: User;
-    casts: Cast[];
+    tweets: Tweet[];
     events: ExploreItem[];
     polls: Poll[];
     tasks: Task[];
@@ -30,7 +30,7 @@ interface TribeStore {
   switchCity: (
     city: City,
     data: {
-      casts: Cast[];
+      tweets: Tweet[];
       events: ExploreItem[];
       polls: Poll[];
       tasks: Task[];
@@ -39,11 +39,11 @@ interface TribeStore {
     }
   ) => void;
 
-  // Cast actions
-  likeCast: (castId: string) => void;
-  bookmarkCast: (castId: string) => void;
-  tipCast: (castId: string, amount: number) => void;
-  addCast: (cast: Cast) => void;
+  // Tweet actions
+  likeTweet: (tweetId: string) => void;
+  bookmarkTweet: (tweetId: string) => void;
+  tipTweet: (tweetId: string, amount: number) => void;
+  addTweet: (tweet: Tweet) => void;
 
   // Poll actions
   votePoll: (pollId: string, optionId: string) => void;
@@ -69,7 +69,7 @@ interface TribeStore {
 
 export const useTribeStore = create<TribeStore>((set, get) => ({
   currentCity: null,
-  casts: [],
+  tweets: [],
   events: [],
   polls: [],
   tasks: [],
@@ -82,7 +82,7 @@ export const useTribeStore = create<TribeStore>((set, get) => ({
     set({
       currentCity: data.city,
       currentUser: data.user,
-      casts: data.casts,
+      tweets: data.tweets,
       events: data.events,
       polls: data.polls,
       tasks: data.tasks,
@@ -95,7 +95,7 @@ export const useTribeStore = create<TribeStore>((set, get) => ({
     setTimeout(() => {
       set({
         currentCity: city,
-        casts: data.casts,
+        tweets: data.tweets,
         events: data.events,
         polls: data.polls,
         tasks: data.tasks,
@@ -108,60 +108,60 @@ export const useTribeStore = create<TribeStore>((set, get) => ({
     }, 400);
   },
 
-  likeCast: (castId) => {
-    const cast = get().casts.find((c) => c.id === castId);
-    const wasLiked = cast?.isLiked;
+  likeTweet: (tweetId) => {
+    const tweet = get().tweets.find((c) => c.id === tweetId);
+    const wasLiked = tweet?.isLiked;
     set((state) => ({
-      casts: state.casts.map((c) =>
-        c.id === castId
+      tweets: state.tweets.map((c) =>
+        c.id === tweetId
           ? { ...c, isLiked: !c.isLiked, likes: c.isLiked ? c.likes - 1 : c.likes + 1 }
           : c
       ),
     }));
 
-    if (cast && !wasLiked) {
+    if (tweet && !wasLiked) {
       const currentUser = get().currentUser;
-      if (currentUser && cast.user.id !== currentUser.id) {
+      if (currentUser && tweet.user.id !== currentUser.id) {
         useNotificationStore.getState().addNotification({
           type: "like",
-          user: cast.user.displayName,
-          avatar: cast.user.avatarUrl,
-          message: `Your post "${cast.caption.slice(0, 40)}..." got a new like`,
+          user: tweet.user.displayName,
+          avatar: tweet.user.avatarUrl,
+          message: `Your post "${tweet.caption.slice(0, 40)}..." got a new like`,
           href: "/home",
         });
       }
     }
   },
 
-  bookmarkCast: (castId) =>
+  bookmarkTweet: (tweetId) =>
     set((state) => ({
-      casts: state.casts.map((c) =>
-        c.id === castId ? { ...c, isSaved: !c.isSaved } : c
+      tweets: state.tweets.map((c) =>
+        c.id === tweetId ? { ...c, isSaved: !c.isSaved } : c
       ),
     })),
 
-  tipCast: (castId, amount) => {
-    const cast = get().casts.find((c) => c.id === castId);
+  tipTweet: (tweetId, amount) => {
+    const tweet = get().tweets.find((c) => c.id === tweetId);
     set((state) => ({
-      casts: state.casts.map((c) =>
-        c.id === castId
+      tweets: state.tweets.map((c) =>
+        c.id === tweetId
           ? { ...c, tipCount: c.tipCount + 1, totalTips: c.totalTips + amount }
           : c
       ),
     }));
-    if (cast) {
+    if (tweet) {
       useNotificationStore.getState().addNotification({
         type: "tip",
-        user: cast.user.displayName,
-        avatar: cast.user.avatarUrl,
-        message: `received a tip on "${cast.caption.slice(0, 30)}..."`,
+        user: tweet.user.displayName,
+        avatar: tweet.user.avatarUrl,
+        message: `received a tip on "${tweet.caption.slice(0, 30)}..."`,
         href: "/wallet",
       });
     }
   },
 
-  addCast: (cast) => {
-    set((state) => ({ casts: [cast, ...state.casts] }));
+  addTweet: (tweet) => {
+    set((state) => ({ tweets: [tweet, ...state.tweets] }));
   },
 
   votePoll: (pollId, optionId) =>

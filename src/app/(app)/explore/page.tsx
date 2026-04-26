@@ -5,16 +5,16 @@ import { Search } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { AppHeader } from "@/components/layout/app-header";
 import { EventCard } from "@/components/features/home/event-card";
-import { CastCard } from "@/components/features/home/cast-card";
+import { TweetCard } from "@/components/features/home/tweet-card";
 
 const categories = ["All", "Events", "Trending", "Nearby"];
 
 export default function ExplorePage() {
-  const { events, casts, currentCity } = useTribeStore();
+  const { events, tweets, currentCity } = useTribeStore();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState("All");
 
-  const filteredCasts = casts.filter((c) =>
+  const filteredTweets = tweets.filter((c) =>
     c.caption.toLowerCase().includes(search.toLowerCase())
   );
 
@@ -62,15 +62,15 @@ export default function ExplorePage() {
       {/* Content */}
       <div className="px-3 sm:px-6 py-6 sm:py-8 max-w-2xl mx-auto">
         <div className="flex flex-col gap-6">
-          {filteredCasts.map((cast) => (
-            <CastCard key={cast.id} cast={cast} />
+          {filteredTweets.map((tweet) => (
+            <TweetCard key={tweet.id} tweet={tweet} />
           ))}
           {filteredEvents.map((event) => (
             <EventCard key={event.id} event={event} />
           ))}
         </div>
 
-        {filteredCasts.length === 0 && filteredEvents.length === 0 && (
+        {filteredTweets.length === 0 && filteredEvents.length === 0 && (
           <div className="flex h-[40vh] flex-col items-center justify-center space-y-4 text-center">
             <div className="rounded-[32px] bg-muted/30 p-8">
               <Search className="h-10 w-10 text-muted-foreground" />

@@ -5,7 +5,7 @@ import Image from "next/image";
 import { Settings, MapPin, BadgeCheck, Star, Award, PlusCircle, Heart, MessageCircle, Share2, ShieldCheck, Zap } from "lucide-react";
 import Link from "next/link";
 import { useTribeStore } from "@/store/use-tribe-store";
-import { CastCard } from "@/components/features/home/cast-card";
+import { TweetCard } from "@/components/features/home/tweet-card";
 import { useAuth } from "@/hooks/use-auth";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
@@ -15,11 +15,11 @@ import { AppHeader } from "@/components/layout/app-header";
 
 const tabs = ["Posts", "Media", "Badges", "Stats"];
 
-import type { Cast } from "@/types";
+import type { Tweet } from "@/types";
 import { Loader2 } from "lucide-react";
 
-function ActivityGrid({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean }) {
-  const mediaCasts = casts.filter((c) => c.imageUrl).slice(0, 9);
+function ActivityGrid({ tweets, isLoading }: { tweets: Tweet[]; isLoading?: boolean }) {
+  const mediaTweets = tweets.filter((c) => c.imageUrl).slice(0, 9);
 
   if (isLoading) {
     return (
@@ -29,7 +29,7 @@ function ActivityGrid({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean
     );
   }
 
-  if (mediaCasts.length === 0) {
+  if (mediaTweets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="rounded-[32px] bg-muted/30 p-8 mb-6">
@@ -43,11 +43,11 @@ function ActivityGrid({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean
 
   return (
     <div className="grid grid-cols-3 gap-1.5 sm:gap-2 px-3 sm:px-6 pb-20">
-      {mediaCasts.map((cast) => (
-        <div key={cast.id} className="group relative aspect-square overflow-hidden rounded-[20px] bg-muted border border-[#f0f0f0]">
+      {mediaTweets.map((tweet) => (
+        <div key={tweet.id} className="group relative aspect-square overflow-hidden rounded-[20px] bg-muted border border-[#f0f0f0]">
           <Image
-            src={cast.imageUrl!}
-            alt={cast.caption}
+            src={tweet.imageUrl!}
+            alt={tweet.caption}
             fill
             className="object-cover transition-transform group-hover:scale-110 duration-500"
             sizes="(max-width: 640px) 33vw, 200px"
@@ -55,7 +55,7 @@ function ActivityGrid({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean
           <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
             <div className="flex items-center gap-3 text-white text-[13px] font-bold">
               <span className="flex items-center gap-1.5 backdrop-blur-md bg-white/20 px-3 py-1.5 rounded-full">
-                <Heart className="h-4 w-4 fill-white" /> {cast.likes}
+                <Heart className="h-4 w-4 fill-white" /> {tweet.likes}
               </span>
             </div>
           </div>
@@ -65,7 +65,7 @@ function ActivityGrid({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean
   );
 }
 
-function PostsFeed({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean }) {
+function PostsFeed({ tweets, isLoading }: { tweets: Tweet[]; isLoading?: boolean }) {
   if (isLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -74,7 +74,7 @@ function PostsFeed({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean })
     );
   }
 
-  if (casts.length === 0) {
+  if (tweets.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-20 text-center">
         <div className="rounded-[32px] bg-muted/30 p-8 mb-6">
@@ -88,15 +88,15 @@ function PostsFeed({ casts, isLoading }: { casts: Cast[]; isLoading?: boolean })
 
   return (
     <div className="flex flex-col gap-4 px-3 sm:px-6 pb-24">
-      {casts.map((cast) => (
-        <CastCard key={cast.id} cast={cast} />
+      {tweets.map((tweet) => (
+        <TweetCard key={tweet.id} tweet={tweet} />
       ))}
     </div>
   );
 }
 
 export default function ProfilePage() {
-  const { currentUser, updateCurrentUser, casts } = useTribeStore();
+  const { currentUser, updateCurrentUser, tweets } = useTribeStore();
   const { isAuthenticated, profile, tid } = useAuth();
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Posts");
@@ -116,7 +116,7 @@ export default function ProfilePage() {
           </div>
           <h2 className="text-2xl font-black tracking-tighter text-black mb-2">Sign in to view your profile</h2>
           <p className="text-sm font-medium text-muted-foreground mb-8 max-w-sm">
-            Connect your Solana wallet to claim a Tribe ID, then view your profile, followers, and casts.
+            Connect your Solana wallet to claim a Tribe ID, then view your profile, followers, and tweets.
           </p>
           <a
             href="/onboarding/connect"
@@ -151,7 +151,7 @@ export default function ProfilePage() {
   const socialCounts = { followers: 0, following: 0, posts: 0 };
 
   const allPosts = currentUser
-    ? casts.filter((c) => c.user.id === currentUser.id)
+    ? tweets.filter((c) => c.user.id === currentUser.id)
     : [];
 
   return (
@@ -300,10 +300,10 @@ export default function ProfilePage() {
         {/* Content Area */}
         {activeTab === "Posts" && (
           <div className="flex flex-col gap-4 px-3 sm:px-6 pb-24">
-            <PostsFeed casts={allPosts} />
+            <PostsFeed tweets={allPosts} />
           </div>
         )}
-        {activeTab === "Media" && <ActivityGrid casts={allPosts} />}
+        {activeTab === "Media" && <ActivityGrid tweets={allPosts} />}
 
         {activeTab === "Badges" && (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 px-3 sm:px-6 pb-24">

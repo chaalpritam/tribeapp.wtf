@@ -51,7 +51,7 @@ const steps = [
     step: "04",
     title: "Start Contributing",
     description:
-      "Post casts, create events, run polls, help with tasks, fund causes, and earn karma to build your reputation.",
+      "Post tweets, create events, run polls, help with tasks, fund causes, and earn karma to build your reputation.",
     icon: Zap,
   },
 ];
@@ -61,7 +61,7 @@ const features = [
     icon: Heart,
     title: "Social Feed",
     description:
-      "Share photo casts, like and comment on posts, bookmark your favorites, and build a following in your neighborhood.",
+      "Share photo tweets, like and comment on posts, bookmark your favorites, and build a following in your neighborhood.",
   },
   {
     icon: Coins,
