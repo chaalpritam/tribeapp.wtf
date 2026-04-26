@@ -45,6 +45,12 @@ export interface Poll {
   imageUrl?: string;
   votes: Record<string, number>;
   userVote?: string;
+  /**
+   * On-chain Poll PDA (base58) when this poll is anchored in
+   * poll-registry. When set, vote actions settle on chain via
+   * voteOnchain; absent → off-chain envelope vote.
+   */
+  onchainPollPda?: string;
 }
 
 export interface Task {

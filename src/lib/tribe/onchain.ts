@@ -52,6 +52,12 @@ const DISC = {
   eventCreate:           Buffer.from([ 49, 219,  29, 203,  22,  98, 100,  87]),
   eventRsvp:             Buffer.from([134, 164, 221,  33, 183,  12,  73,  32]),
   eventUpdateRsvp:       Buffer.from([133, 246, 132,  11, 142, 135,  34,   5]),
+  // poll-registry — `init_creator_state` shares its name across
+  // event/task/poll/crowdfund so the discriminator collides; per-
+  // program log routing means it never matters in practice.
+  pollInitCreatorState:  Buffer.from([105,  60,   2,  31,  14, 151, 165,  18]),
+  pollCreate:            Buffer.from([182, 171, 112, 238,   6, 219,  14, 110]),
+  pollVote:              Buffer.from([227, 110, 155,  23, 136, 126, 172,  25]),
 };
 
 // ── PDA Helpers ──────────────────────────────────────────────────────
@@ -741,4 +747,168 @@ export async function rsvpEventOnchain(
   });
   const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
   return { txSig, rsvpPda };
+}
+
+// ── Polls ────────────────────────────────────────────────────────────
+
+function getPollCreatorStatePda(creator: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("poll-creator"), creator.toBuffer()],
+    PROGRAM_IDS.pollRegistry
+  )[0];
+}
+
+function getPollPda(creator: PublicKey, pollId: bigint): PublicKey {
+  const idBuf = Buffer.alloc(8);
+  idBuf.writeBigUInt64LE(pollId);
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("poll"), creator.toBuffer(), idBuf],
+    PROGRAM_IDS.pollRegistry
+  )[0];
+}
+
+function getPollVotePda(pollPda: PublicKey, voter: PublicKey): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("poll-vote"), pollPda.toBuffer(), voter.toBuffer()],
+    PROGRAM_IDS.pollRegistry
+  )[0];
+}
+
+export async function hasPollCreatorState(
+  connection: Connection,
+  creator: PublicKey
+): Promise<boolean> {
+  const info = await connection.getAccountInfo(getPollCreatorStatePda(creator));
+  return info !== null;
+}
+
+/** CreatorPollState.next_poll_id sits at offset 48 (8 disc + 32 creator + 8 tid). */
+async function getNextPollId(
+  connection: Connection,
+  creator: PublicKey
+): Promise<bigint> {
+  const info = await connection.getAccountInfo(
+    getPollCreatorStatePda(creator)
+  );
+  if (!info) throw new Error("CreatorPollState not initialized");
+  return info.data.readBigUInt64LE(48);
+}
+
+/**
+ * Create an on-chain Poll. Lazy-inits the creator state PDA on
+ * first use. `metadataHash` should be the BLAKE3 hash of the
+ * off-chain POLL_ADD envelope so the on-chain Poll PDA points back
+ * to the question + option labels.
+ *
+ * `optionCount` must be in 2..=8 (capped on chain to keep tally
+ * fixed-size). `expiresAtUnix` is optional; pass undefined to
+ * create a poll that never expires.
+ */
+export async function createPollOnchain(
+  provider: AnchorProvider,
+  args: {
+    creatorTid: number;
+    optionCount: number;
+    expiresAtUnix?: number;
+    /** 32-byte BLAKE3 hash of the off-chain POLL_ADD envelope. */
+    metadataHash: Uint8Array;
+  }
+): Promise<{ txSig: string; pollPda: PublicKey; pollId: bigint }> {
+  if (args.optionCount < 2 || args.optionCount > 8) {
+    throw new Error("optionCount must be between 2 and 8");
+  }
+  if (args.metadataHash.length !== 32) {
+    throw new Error("metadataHash must be exactly 32 bytes");
+  }
+
+  const creator = provider.wallet.publicKey;
+  const creatorState = getPollCreatorStatePda(creator);
+
+  const txn = new Transaction();
+
+  if (!(await hasPollCreatorState(provider.connection, creator))) {
+    const initData = Buffer.concat([
+      DISC.pollInitCreatorState,
+      bnToLeBuffer(args.creatorTid, 8),
+    ]);
+    txn.add(
+      new TransactionInstruction({
+        programId: PROGRAM_IDS.pollRegistry,
+        keys: [
+          { pubkey: creatorState, isSigner: false, isWritable: true },
+          { pubkey: creator, isSigner: true, isWritable: true },
+          { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+        ],
+        data: initData,
+      })
+    );
+  }
+
+  let pollId: bigint;
+  if (txn.instructions.length === 0) {
+    pollId = await getNextPollId(provider.connection, creator);
+  } else {
+    pollId = BigInt(0);
+  }
+  const pollPda = getPollPda(creator, pollId);
+
+  const hasExpiry = args.expiresAtUnix !== undefined;
+  // Args layout: option_count u8 | expires_at i64 | has_expiry u8
+  //   | metadata_hash [u8; 32]
+  const createData = Buffer.concat([
+    DISC.pollCreate,
+    Buffer.from([args.optionCount]),
+    writeI64LE(args.expiresAtUnix ?? 0),
+    Buffer.from([hasExpiry ? 1 : 0]),
+    Buffer.from(args.metadataHash),
+  ]);
+  txn.add(
+    new TransactionInstruction({
+      programId: PROGRAM_IDS.pollRegistry,
+      keys: [
+        { pubkey: creatorState, isSigner: false, isWritable: true },
+        { pubkey: pollPda, isSigner: false, isWritable: true },
+        { pubkey: creator, isSigner: true, isWritable: true },
+        { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+      ],
+      data: createData,
+    })
+  );
+
+  const txSig = await provider.sendAndConfirm(txn);
+  return { txSig, pollPda, pollId };
+}
+
+/** Cast an on-chain vote on a Poll PDA. The `init` constraint on
+ *  the per-(poll, voter) Vote PDA enforces one-vote-per-TID, so a
+ *  redelivered tx fails with "already voted". */
+export async function votePollOnchain(
+  provider: AnchorProvider,
+  args: {
+    pollPda: PublicKey;
+    voterTid: number;
+    optionIndex: number;
+  }
+): Promise<{ txSig: string; votePda: PublicKey }> {
+  const voter = provider.wallet.publicKey;
+  const votePda = getPollVotePda(args.pollPda, voter);
+
+  // Args: voter_tid u64 | option_index u8
+  const data = Buffer.concat([
+    DISC.pollVote,
+    bnToLeBuffer(args.voterTid, 8),
+    Buffer.from([args.optionIndex]),
+  ]);
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.pollRegistry,
+    keys: [
+      { pubkey: args.pollPda, isSigner: false, isWritable: true },
+      { pubkey: votePda, isSigner: false, isWritable: true },
+      { pubkey: voter, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig, votePda };
 }

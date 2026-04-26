@@ -2,7 +2,8 @@
 
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { BarChart3, CheckCircle2 } from "lucide-react";
+import { BarChart3, CheckCircle2, Zap } from "lucide-react";
+import { PublicKey } from "@solana/web3.js";
 import type { Poll } from "@/types";
 import { cn } from "@/lib/utils";
 import { useTribeStore } from "@/store/use-tribe-store";
@@ -14,9 +15,11 @@ interface PollCardProps {
 
 export function PollCard({ poll }: PollCardProps) {
   const { votePoll } = useTribeStore();
-  const { vote: voteOnHub, ready: pollReady } = useTribePoll();
+  const { vote: voteOnHub, voteOnchain, ready: pollReady, walletReady } = useTribePoll();
   const totalVotes = Object.values(poll.votes).reduce((a, b) => a + b, 0);
   const hasVoted = !!poll.userVote;
+  const onchainPda = poll.onchainPollPda;
+  const canVoteOnchain = !!onchainPda && walletReady;
 
   return (
     <div className="group bg-white rounded-[32px] border border-[#f0f0f0] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03]">
@@ -26,8 +29,19 @@ export function PollCard({ poll }: PollCardProps) {
           <BarChart3 className="h-4 w-4" />
           <span className="text-[11px] uppercase tracking-widest">Community Poll</span>
         </div>
-        <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-          {poll.duration} Left
+        <div className="flex items-center gap-2">
+          {onchainPda && (
+            <span
+              className="rounded-full bg-amber-50 px-2.5 py-0.5 text-[10px] font-bold text-amber-600 uppercase tracking-wider flex items-center gap-1"
+              title="Vote tally settles on Solana"
+            >
+              <Zap className="h-3 w-3 fill-current" />
+              On chain
+            </span>
+          )}
+          <div className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+            {poll.duration} Left
+          </div>
         </div>
       </div>
 
@@ -62,8 +76,15 @@ export function PollCard({ poll }: PollCardProps) {
               disabled={hasVoted}
               onClick={async () => {
                 votePoll(poll.id, opt.id);
-                if (pollReady) {
-                  try { await voteOnHub(poll.id, index); } catch {}
+                if (!pollReady) return;
+                try {
+                  if (canVoteOnchain && onchainPda) {
+                    await voteOnchain(new PublicKey(onchainPda), index);
+                  } else {
+                    await voteOnHub(poll.id, index);
+                  }
+                } catch {
+                  /* keep optimistic UI; chain replay handled separately */
                 }
               }}
               className={cn(
