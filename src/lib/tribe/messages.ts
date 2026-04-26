@@ -42,7 +42,10 @@ export type MessageType =
   | 16 // POLL_ADD
   | 17 // POLL_VOTE
   | 18 // EVENT_ADD
-  | 19; // EVENT_RSVP
+  | 19 // EVENT_RSVP
+  | 20 // TASK_ADD
+  | 21 // TASK_CLAIM
+  | 22; // TASK_COMPLETE
 
 interface BuildOptions {
   type: MessageType;
@@ -139,6 +142,64 @@ export async function signAndPublishChannelOp(
     throw new Error(`Channel op failed: ${res.status} ${errBody}`);
   }
 
+  return res.json();
+}
+
+export async function signAndPublishTask(
+  tid: number,
+  taskId: string,
+  title: string,
+  signingKeySecret: Uint8Array,
+  opts: {
+    description?: string;
+    rewardText?: string;
+    channelId?: string;
+  } = {}
+): Promise<{ hash: string }> {
+  const body: Record<string, unknown> = { task_id: taskId, title };
+  if (opts.description) body.description = opts.description;
+  if (opts.rewardText) body.reward_text = opts.rewardText;
+  if (opts.channelId) body.channel_id = opts.channelId;
+
+  const message = await buildSignedMessage({
+    type: 20,
+    tid,
+    body,
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Task create failed: ${res.status} ${errBody}`);
+  }
+  return res.json();
+}
+
+export async function signAndPublishTaskTransition(
+  tid: number,
+  taskId: string,
+  type: 21 | 22,
+  signingKeySecret: Uint8Array
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type,
+    tid,
+    body: { task_id: taskId },
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Task transition failed: ${res.status} ${errBody}`);
+  }
   return res.json();
 }
 

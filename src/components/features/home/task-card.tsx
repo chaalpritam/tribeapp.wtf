@@ -1,14 +1,30 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
-import { MapPin, Users, Clock, AlertTriangle, Coins } from "lucide-react";
+import { MapPin, Users, Clock, AlertTriangle, Coins, Loader2, CheckCircle2 } from "lucide-react";
 import type { Task } from "@/types";
+import { useTribeTask } from "@/hooks/use-tribe-task";
 
 interface TaskCardProps {
   task: Task;
 }
 
 export function TaskCard({ task }: TaskCardProps) {
+  const { claim, pending, ready } = useTribeTask();
+  const [claimed, setClaimed] = useState(false);
+
+  const handleClaim = async () => {
+    setClaimed(true);
+    if (ready) {
+      try {
+        await claim(task.id);
+      } catch {
+        setClaimed(false);
+      }
+    }
+  };
+
   return (
     <div className="group bg-white rounded-[32px] border border-[#f0f0f0] p-6 shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03]">
       {/* Header Info */}
@@ -64,8 +80,17 @@ export function TaskCard({ task }: TaskCardProps) {
           </div>
           <span className="text-[13px] font-bold tracking-tight">@{task.user.username}</span>
         </div>
-        <button className="px-5 py-2.5 rounded-full bg-black text-white font-bold text-[13px] hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-black/10">
-          Help Out
+        <button
+          onClick={handleClaim}
+          disabled={pending || claimed}
+          className="px-5 py-2.5 rounded-full bg-black text-white font-bold text-[13px] hover:scale-105 transition-transform active:scale-95 shadow-lg shadow-black/10 disabled:opacity-60 flex items-center gap-1.5"
+        >
+          {pending ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : claimed ? (
+            <CheckCircle2 className="h-3.5 w-3.5" />
+          ) : null}
+          {claimed ? "Claimed" : "Help Out"}
         </button>
       </div>
     </div>
