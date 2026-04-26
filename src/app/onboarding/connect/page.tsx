@@ -7,10 +7,14 @@ import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { NeynarSignIn } from "@/components/auth/neynar-sign-in";
+import { TribeSignIn } from "@/components/auth/tribe-sign-in";
+import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 
 export default function ConnectPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const tribeIdentity = useTribeIdentityStore((s) => s.identity);
+  const signedIn = isAuthenticated || tribeIdentity !== null;
   const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
@@ -19,12 +23,10 @@ export default function ConnectPage() {
   }, []);
 
   useEffect(() => {
-    console.log("ConnectPage Status:", { hasHydrated, isAuthenticated });
-    if (hasHydrated && isAuthenticated) {
-      console.log("Redirecting to /onboarding/city");
+    if (hasHydrated && signedIn) {
       router.push("/onboarding/city");
     }
-  }, [isAuthenticated, router, hasHydrated]);
+  }, [signedIn, router, hasHydrated]);
 
   const handleSIWNSuccess = () => {
     router.push("/onboarding/city");
@@ -62,15 +64,15 @@ export default function ConnectPage() {
         </div>
 
         <h1 className="mb-3 text-3xl font-black tracking-tighter">
-          {isAuthenticated ? "Welcome Back!" : "Sign in with Farcaster"}
+          {signedIn ? "Welcome Back!" : "Choose your sign-in"}
         </h1>
         <p className="mb-10 text-[15px] font-medium text-muted-foreground leading-relaxed">
-          {isAuthenticated
+          {signedIn
             ? "You're already authenticated. Continue to explore your neighborhood and connect with your tribes."
-            : "Connect your Farcaster account to get started. Your identity travels with you across the decentralized social web."}
+            : "Bring your Farcaster identity, or claim a Tribe ID on Solana. Your identity travels with you across the decentralized social web."}
         </p>
 
-        {isAuthenticated ? (
+        {signedIn ? (
           <motion.button
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -81,15 +83,23 @@ export default function ConnectPage() {
             Continue with Tribe
           </motion.button>
         ) : (
-          <NeynarSignIn
-            onSuccess={handleSIWNSuccess}
-            className="flex justify-center mb-4"
-          />
+          <div className="space-y-5">
+            <TribeSignIn onSuccess={handleSIWNSuccess} />
+            <div className="flex items-center gap-3 text-[11px] font-black uppercase tracking-widest text-muted-foreground">
+              <div className="h-px flex-1 bg-border" />
+              <span>or</span>
+              <div className="h-px flex-1 bg-border" />
+            </div>
+            <NeynarSignIn
+              onSuccess={handleSIWNSuccess}
+              className="flex justify-center"
+            />
+          </div>
         )}
 
         <div className="mt-8 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#999]">
           <Shield className="h-3.5 w-3.5" />
-          <span>Secure sign-in powered by Neynar</span>
+          <span>Tribe protocol on Solana · Farcaster via Neynar</span>
         </div>
 
         <Link
