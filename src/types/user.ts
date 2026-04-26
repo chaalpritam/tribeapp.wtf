@@ -57,5 +57,4 @@ export interface User {
   wallet?: Wallet;
   bio?: string;
   joinedDate?: string;
-  farcasterFid?: number;
 }

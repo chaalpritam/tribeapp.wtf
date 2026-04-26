@@ -14,7 +14,6 @@ export const cities: City[] = [
     coordinates: { latitude: 12.9716, longitude: 77.5946 },
     accentColor: "#6366F1",
     emoji: "🇮🇳",
-    farcasterChannelId: "bangalore",
   },
   {
     id: "mumbai",
@@ -28,7 +27,6 @@ export const cities: City[] = [
     coordinates: { latitude: 19.076, longitude: 72.8777 },
     accentColor: "#FB7185",
     emoji: "🇮🇳",
-    farcasterChannelId: "mumbai",
   },
   {
     id: "delhi",
@@ -42,7 +40,6 @@ export const cities: City[] = [
     coordinates: { latitude: 28.7041, longitude: 77.1025 },
     accentColor: "#FB923C",
     emoji: "🇮🇳",
-    farcasterChannelId: "delhi",
   },
   {
     id: "chennai",
@@ -56,7 +53,6 @@ export const cities: City[] = [
     coordinates: { latitude: 13.0827, longitude: 80.2707 },
     accentColor: "#F59E0B",
     emoji: "🇮🇳",
-    farcasterChannelId: "chennai",
   },
   {
     id: "hyderabad",
@@ -70,7 +66,6 @@ export const cities: City[] = [
     coordinates: { latitude: 17.3850, longitude: 78.4867 },
     accentColor: "#EC4899",
     emoji: "🇮🇳",
-    farcasterChannelId: "hyderabad",
   },
   {
     id: "pune",
@@ -84,7 +79,6 @@ export const cities: City[] = [
     coordinates: { latitude: 18.5204, longitude: 73.8567 },
     accentColor: "#8B5CF6",
     emoji: "🇮🇳",
-    farcasterChannelId: "pune",
   },
 
   // --- INTERNATIONAL ---
@@ -100,7 +94,6 @@ export const cities: City[] = [
     coordinates: { latitude: 37.7749, longitude: -122.4194 },
     accentColor: "#14B8A6",
     emoji: "🇺🇸",
-    farcasterChannelId: "san-francisco",
   },
   {
     id: "london",
@@ -114,7 +107,6 @@ export const cities: City[] = [
     coordinates: { latitude: 51.5074, longitude: -0.1278 },
     accentColor: "#38BDF8",
     emoji: "🇬🇧",
-    farcasterChannelId: "london",
   },
   {
     id: "new-york",
@@ -128,7 +120,6 @@ export const cities: City[] = [
     coordinates: { latitude: 40.7128, longitude: -74.006 },
     accentColor: "#A78BFA",
     emoji: "🇺🇸",
-    farcasterChannelId: "new-york",
   },
   {
     id: "paris",
@@ -142,7 +133,6 @@ export const cities: City[] = [
     coordinates: { latitude: 48.8566, longitude: 2.3522 },
     accentColor: "#EF4444",
     emoji: "🇫🇷",
-    farcasterChannelId: "paris",
   },
   {
     id: "berlin",
@@ -156,7 +146,6 @@ export const cities: City[] = [
     coordinates: { latitude: 52.5200, longitude: 13.4050 },
     accentColor: "#10B981",
     emoji: "🇩🇪",
-    farcasterChannelId: "berlin",
   },
   {
     id: "dubai",
@@ -170,7 +159,6 @@ export const cities: City[] = [
     coordinates: { latitude: 25.2048, longitude: 55.2708 },
     accentColor: "#FBBF24",
     emoji: "🇦🇪",
-    farcasterChannelId: "dubai",
   },
   {
     id: "singapore",
@@ -184,7 +172,6 @@ export const cities: City[] = [
     coordinates: { latitude: 1.3521, longitude: 103.8198 },
     accentColor: "#F43F5E",
     emoji: "🇸🇬",
-    farcasterChannelId: "singapore",
   },
   {
     id: "tokyo",
@@ -198,7 +185,6 @@ export const cities: City[] = [
     coordinates: { latitude: 35.6762, longitude: 139.6503 },
     accentColor: "#D946EF",
     emoji: "🇯🇵",
-    farcasterChannelId: "tokyo",
   },
   {
     id: "seattle",
@@ -212,7 +198,6 @@ export const cities: City[] = [
     coordinates: { latitude: 47.6062, longitude: -122.3321 },
     accentColor: "#0EA5E9",
     emoji: "🇺🇸",
-    farcasterChannelId: "seattle",
   },
   {
     id: "austin",
@@ -226,6 +211,5 @@ export const cities: City[] = [
     coordinates: { latitude: 30.2672, longitude: -97.7431 },
     accentColor: "#F97316",
     emoji: "🇺🇸",
-    farcasterChannelId: "austin",
   },
 ];

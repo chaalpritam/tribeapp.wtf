@@ -20,9 +20,7 @@ export interface Cast {
   totalTips: number;
   cityId: string;
   tribeId?: string;
-  castHash?: string;
   embeds?: { url: string }[];
-  recasts?: number;
   imageWidth?: number;
   imageHeight?: number;
   channel?: {

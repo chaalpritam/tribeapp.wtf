@@ -15,5 +15,4 @@ export interface City {
   accentColor: string;
   emoji?: string;
   memberCountDisplay?: string;
-  farcasterChannelId?: string;
 }
