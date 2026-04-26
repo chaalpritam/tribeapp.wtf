@@ -10,6 +10,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { useTribeUser } from "@/hooks/use-tribe-user";
 import { useTribeKarma } from "@/hooks/use-tribe-karma";
+import { useTribeFollowList, type FollowListKind } from "@/hooks/use-tribe-follow-list";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -104,6 +105,9 @@ export default function ProfilePage() {
   const { setFields: publishUserData, error: publishError } = useTribeUserData();
   const { user: hubUser } = useTribeUser(tid ?? null);
   const { karma: hubKarma } = useTribeKarma(tid ?? null);
+  const [followListKind, setFollowListKind] = useState<FollowListKind | null>(null);
+  const { users: followListUsers, loading: followListLoading } =
+    useTribeFollowList(tid ?? null, followListKind ?? "followers", followListKind !== null);
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Posts");
   const [isEditing, setIsEditing] = useState(false);
@@ -240,14 +244,22 @@ export default function ProfilePage() {
                 </p>
 
                 <div className="flex flex-wrap justify-center sm:justify-start gap-4 sm:gap-6 mt-4 sm:mt-6">
-                  <div className="text-center sm:text-left">
+                  <button
+                    type="button"
+                    onClick={() => setFollowListKind("followers")}
+                    className="text-center sm:text-left transition-opacity hover:opacity-70"
+                  >
                     <p className="text-[17px] sm:text-[20px] font-black leading-none">{formatNumber(socialCounts.followers)}</p>
                     <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Followers</p>
-                  </div>
-                  <div className="text-center sm:text-left">
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFollowListKind("following")}
+                    className="text-center sm:text-left transition-opacity hover:opacity-70"
+                  >
                     <p className="text-[17px] sm:text-[20px] font-black leading-none">{formatNumber(socialCounts.following)}</p>
                     <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Following</p>
-                  </div>
+                  </button>
                   <div className="text-center sm:text-left">
                     <p className="text-[17px] sm:text-[20px] font-black leading-none">{karma?.totalKarma || 0}</p>
                     <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Karma</p>
@@ -441,6 +453,64 @@ export default function ProfilePage() {
                   {publishError.message}
                 </p>
               )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {followListKind && (
+        <div
+          className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-6 bg-black/60 backdrop-blur-sm"
+          onClick={() => setFollowListKind(null)}
+        >
+          <div
+            className="bg-white rounded-t-[32px] sm:rounded-[40px] w-full max-w-lg max-h-[80vh] flex flex-col shadow-2xl animate-in slide-in-from-bottom sm:zoom-in-95 duration-200"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="px-6 sm:px-8 pt-6 pb-4 border-b border-[#f0f0f0]">
+              <h3 className="text-xl sm:text-2xl font-black tracking-tight capitalize">
+                {followListKind}
+              </h3>
+            </div>
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-4">
+              {followListLoading && followListUsers.length === 0 && (
+                <div className="flex items-center justify-center py-12">
+                  <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+                </div>
+              )}
+              {!followListLoading && followListUsers.length === 0 && (
+                <p className="text-sm text-muted-foreground text-center py-12">
+                  No {followListKind} yet.
+                </p>
+              )}
+              <div className="flex flex-col gap-3">
+                {followListUsers.map((u) => (
+                  <div
+                    key={u.tid}
+                    className="flex items-center gap-3 p-3 rounded-2xl bg-[#fcfcfc] border border-[#f0f0f0]"
+                  >
+                    <div className="h-10 w-10 rounded-2xl bg-muted/40 flex items-center justify-center text-[10px] font-black">
+                      TID
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[14px] font-bold tracking-tight">
+                        {u.username ? `@${u.username}` : `tid:${u.tid}`}
+                      </p>
+                      <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                        tid {u.tid}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <div className="px-6 sm:px-8 py-4 border-t border-[#f0f0f0]">
+              <button
+                onClick={() => setFollowListKind(null)}
+                className="w-full h-12 rounded-2xl bg-[#f5f5f5] text-black font-bold"
+              >
+                Close
+              </button>
             </div>
           </div>
         </div>
