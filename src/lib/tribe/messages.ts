@@ -71,13 +71,16 @@ export async function signAndPublishTweet(
   signingKeySecret: Uint8Array,
   opts: { parentHash?: string; channelId?: string; embeds?: string[] } = {}
 ): Promise<{ hash: string }> {
+  // Every tweet must belong to a channel; fall back to the reserved
+  // "general" channel when the caller didn't pick one.
+  const channelId = (opts.channelId || "").trim() || "general";
   const body: Record<string, unknown> = {
     text,
     mentions: [] as number[],
     embeds: opts.embeds ?? [],
+    channel_id: channelId,
   };
   if (opts.parentHash) body.parent_hash = opts.parentHash;
-  if (opts.channelId) body.channel_id = opts.channelId;
 
   const message = await buildSignedMessage({
     type: 1,

@@ -4,6 +4,10 @@ export interface ChannelInfo {
   id: string;
   name: string | null;
   description: string | null;
+  /** 1 = GENERAL, 2 = CITY, 3 = INTEREST. */
+  kind: number | null;
+  latitude: number | null;
+  longitude: number | null;
   created_by: string | null;
   created_at: string | null;
   member_count: number;

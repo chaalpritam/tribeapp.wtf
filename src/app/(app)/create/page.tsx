@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import {
@@ -20,10 +20,14 @@ import {
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribePublish } from "@/hooks/use-tribe-publish";
-import { uploadMedia } from "@/lib/tribe";
+import { uploadMedia, listChannels, type ChannelInfo } from "@/lib/tribe";
 import type { Tweet } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
+
+const GENERAL_CHANNEL_ID = "general";
+const CHANNEL_KIND_GENERAL = 1;
+const CHANNEL_KIND_CITY = 2;
 
 const createOptions = [
   {
@@ -139,8 +143,65 @@ export default function CreatePage() {
   const [caption, setCaption] = useState("");
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [channelId, setChannelId] = useState("");
+  const [channelId, setChannelId] = useState<string>(GENERAL_CHANNEL_ID);
+  const [channelOptions, setChannelOptions] = useState<ChannelInfo[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      try {
+        const channels = await listChannels(50, 0);
+        if (cancelled) return;
+        // Surface "general" first, then cities, then interest channels.
+        const sorted = [...channels].sort((a, b) => {
+          if (a.id === GENERAL_CHANNEL_ID) return -1;
+          if (b.id === GENERAL_CHANNEL_ID) return 1;
+          const ak = a.kind ?? 3;
+          const bk = b.kind ?? 3;
+          if (ak !== bk) return ak - bk;
+          return (a.name ?? a.id).localeCompare(b.name ?? b.id);
+        });
+        if (!sorted.some((c) => c.id === GENERAL_CHANNEL_ID)) {
+          sorted.unshift({
+            id: GENERAL_CHANNEL_ID,
+            name: "General",
+            description: null,
+            kind: CHANNEL_KIND_GENERAL,
+            latitude: null,
+            longitude: null,
+            created_by: null,
+            created_at: null,
+            member_count: 0,
+            tweet_count: 0,
+            last_tweet_at: null,
+          });
+        }
+        setChannelOptions(sorted);
+      } catch {
+        if (!cancelled) {
+          setChannelOptions([
+            {
+              id: GENERAL_CHANNEL_ID,
+              name: "General",
+              description: null,
+              kind: CHANNEL_KIND_GENERAL,
+              latitude: null,
+              longitude: null,
+              created_by: null,
+              created_at: null,
+              member_count: 0,
+              tweet_count: 0,
+              last_tweet_at: null,
+            },
+          ]);
+        }
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (mode === "tweet") {
     const handleTweetSubmit = async () => {
@@ -155,7 +216,9 @@ export default function CreatePage() {
         }
         if (isAuthenticated) {
           await publish(caption.trim(), {
-            channelId: channelId.trim() || undefined,
+            // Always send a channel — the SDK / hub fall back to
+            // "general" but this keeps the wire payload explicit.
+            channelId: channelId.trim() || GENERAL_CHANNEL_ID,
             embeds: embeds.length > 0 ? embeds : undefined,
           });
         }
@@ -188,16 +251,36 @@ export default function CreatePage() {
 
           {isAuthenticated ? (
             <div className="space-y-2">
-              <label className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2">
-                Channel (optional)
+              <label
+                htmlFor="composer-channel"
+                className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2"
+              >
+                Posting to
               </label>
-              <input
-                type="text"
-                placeholder="e.g. tribe, base, degen"
+              <select
+                id="composer-channel"
                 value={channelId}
                 onChange={(e) => setChannelId(e.target.value)}
-                className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-6 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
-              />
+                className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-6 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5"
+              >
+                {channelOptions.map((ch) => {
+                  const prefix =
+                    ch.kind === CHANNEL_KIND_GENERAL
+                      ? ""
+                      : ch.kind === CHANNEL_KIND_CITY
+                      ? "📍 "
+                      : "#";
+                  return (
+                    <option key={ch.id} value={ch.id}>
+                      {prefix}
+                      {ch.name?.trim() || ch.id}
+                    </option>
+                  );
+                })}
+              </select>
+              <p className="text-[11px] text-[#999] px-2">
+                Tweets without a city or interest group land in the General channel.
+              </p>
               {(submitError || publishError?.message) && (
                 <p className="text-[12px] text-red-500 font-bold px-2">
                   {submitError ?? publishError?.message}
