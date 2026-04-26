@@ -69,7 +69,12 @@ export default function ConferencePage() {
           <Link href="/home" className="absolute left-4 top-4 rounded-full bg-white/20 p-2 backdrop-blur-sm">
             <ArrowLeft className="h-5 w-5" />
           </Link>
-          <h1 className="text-2xl font-bold">Devconnect</h1>
+          <div className="flex items-center gap-2">
+            <h1 className="text-2xl font-bold">Devconnect</h1>
+            <span className="rounded-full bg-amber-400/90 px-2 py-0.5 text-[10px] font-black text-amber-950 uppercase tracking-widest">
+              Demo
+            </span>
+          </div>
           <p className="text-sm text-white/80">A week of independent Ethereum events</p>
           <div className="mt-2 flex flex-wrap gap-3 text-xs text-white/70">
             <span className="flex items-center gap-1">
