@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
+import { useTribePublish } from "@/hooks/use-tribe-publish";
 import type { Cast } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
@@ -128,8 +129,10 @@ export default function CreatePage() {
   const router = useRouter();
   const { currentCity } = useTribeStore();
   const { isAuthenticated } = useAuth();
+  const { publish, publishing, error: publishError } = useTribePublish();
   const [mode, setMode] = useState<Mode>("menu");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
 
   // Cast state
   const [caption, setCaption] = useState("");
@@ -141,9 +144,19 @@ export default function CreatePage() {
     const handleCastSubmit = async () => {
       if (!caption.trim() || !currentCity) return;
       setIsSubmitting(true);
-      // TODO: publish via tribe-sdk TweetClient once wired in.
-      setIsSubmitting(false);
-      router.push("/home");
+      setSubmitError(null);
+      try {
+        if (isAuthenticated) {
+          await publish(caption.trim(), {
+            channelId: channelId.trim() || undefined,
+          });
+        }
+        router.push("/home");
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsSubmitting(false);
+      }
     };
 
     return (
@@ -151,7 +164,7 @@ export default function CreatePage() {
         title="Broadcast"
         onSubmit={handleCastSubmit}
         canSubmit={!!caption.trim()}
-        isSubmitting={isSubmitting}
+        isSubmitting={isSubmitting || publishing}
         currentCity={currentCity}
         setMode={setMode}
       >
@@ -177,6 +190,11 @@ export default function CreatePage() {
                 onChange={(e) => setChannelId(e.target.value)}
                 className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-6 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
               />
+              {(submitError || publishError?.message) && (
+                <p className="text-[12px] text-red-500 font-bold px-2">
+                  {submitError ?? publishError?.message}
+                </p>
+              )}
             </div>
           ) : (
             <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
