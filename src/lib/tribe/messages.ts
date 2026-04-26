@@ -471,7 +471,7 @@ export async function signAndPublishBookmark(
 
 export async function signAndPublishUserData(
   tid: number,
-  field: "bio" | "displayName" | "pfpUrl" | "url" | "location",
+  field: "bio" | "displayName" | "pfpUrl" | "url" | "location" | "city",
   value: string,
   signingKeySecret: Uint8Array
 ): Promise<{ hash: string }> {

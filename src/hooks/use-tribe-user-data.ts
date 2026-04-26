@@ -4,7 +4,7 @@ import { useCallback, useState } from "react";
 import { signAndPublishUserData } from "@/lib/tribe";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 
-type Field = "bio" | "displayName" | "pfpUrl" | "url" | "location";
+type Field = "bio" | "displayName" | "pfpUrl" | "url" | "location" | "city";
 
 function fromBase64(b64: string): Uint8Array {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -64,5 +64,5 @@ export function useTribeUserData() {
     [identity]
   );
 
-  return { setField, setFields, publishing, error };
+  return { setField, setFields, publishing, error, ready: identity !== null };
 }

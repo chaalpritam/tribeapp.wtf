@@ -4,6 +4,7 @@ import { useState } from "react";
 import Image from "next/image";
 import { Check, MapPin, Search, Globe } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
+import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { loadCityData } from "@/lib/city-data";
 import { cities } from "@/seed/cities";
 import {
@@ -21,6 +22,7 @@ interface CitySwitcherProps {
 
 export function CitySwitcher({ isOpen, onOpenChange }: CitySwitcherProps) {
     const { currentCity, switchCity } = useTribeStore();
+    const { setField: publishUserData, ready: userDataReady } = useTribeUserData();
     const [search, setSearch] = useState("");
 
     const filteredCities = cities.filter((c) =>
@@ -39,6 +41,11 @@ export function CitySwitcher({ isOpen, onOpenChange }: CitySwitcherProps) {
             const data = await loadCityData(city);
             switchCity(city, data);
             onOpenChange(false);
+            // Publish the user's city affiliation to the hub so cross-device
+            // and remote profile views can see it.
+            if (userDataReady) {
+                publishUserData("city", city.id).catch(() => {});
+            }
         } catch (err) {
             console.error("Failed to switch city:", err);
         }
