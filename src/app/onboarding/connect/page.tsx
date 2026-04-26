@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
@@ -8,36 +8,22 @@ import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { TribeSignIn } from "@/components/auth/tribe-sign-in";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
+import { useMounted } from "@/hooks/use-mounted";
 
 export default function ConnectPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const tribeIdentity = useTribeIdentityStore((s) => s.identity);
-  const signedIn = isAuthenticated || tribeIdentity !== null;
-  const [hasHydrated, setHasHydrated] = useState(false);
+  const mounted = useMounted();
+  const signedIn = mounted && (isAuthenticated || tribeIdentity !== null);
 
   useEffect(() => {
-    const timer = setTimeout(() => setHasHydrated(true), 0);
-    return () => clearTimeout(timer);
-  }, []);
-
-  useEffect(() => {
-    if (hasHydrated && signedIn) {
-      router.push("/onboarding/city");
-    }
-  }, [signedIn, router, hasHydrated]);
+    if (signedIn) router.replace("/onboarding/city");
+  }, [signedIn, router]);
 
   const handleSignInSuccess = () => {
-    router.push("/onboarding/city");
+    router.replace("/onboarding/city");
   };
-
-  if (!hasHydrated) {
-    return (
-      <div className="flex min-h-screen flex-col items-center justify-center px-4">
-        <div className="mx-auto mb-8 flex h-28 w-28 items-center justify-center rounded-3xl bg-muted animate-pulse shadow-lg" />
-      </div>
-    );
-  }
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4">
@@ -76,7 +62,7 @@ export default function ConnectPage() {
             initial={{ opacity: 0, scale: 0.95 }}
             animate={{ opacity: 1, scale: 1 }}
             whileTap={{ scale: 0.98 }}
-            onClick={() => router.push("/onboarding/city")}
+            onClick={() => router.replace("/onboarding/city")}
             className="w-full rounded-[32px] bg-primary py-5 text-lg font-black text-white shadow-2xl shadow-primary/20 hover:opacity-90 transition-all"
           >
             Continue with Tribe

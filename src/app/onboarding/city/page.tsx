@@ -6,31 +6,33 @@ import Image from "next/image";
 import { motion } from "framer-motion";
 import { MapPin, Search, Globe } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
+import { useMounted } from "@/hooks/use-mounted";
 import { cities } from "@/seed/cities";
 import { cn } from "@/lib/utils";
 
 export default function CitySelectionPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const tribeIdentity = useTribeIdentityStore((s) => s.identity);
+  const mounted = useMounted();
+  const signedIn = isAuthenticated || tribeIdentity !== null;
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [search, setSearch] = useState("");
-  const [hasHydrated, setHasHydrated] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setHasHydrated(true), 0);
-
-    if (hasHydrated && !isAuthenticated) {
-      router.push("/onboarding/connect");
+    if (mounted && !signedIn) {
+      router.replace("/onboarding/connect");
     }
+  }, [mounted, signedIn, router]);
 
+  useEffect(() => {
+    if (!mounted) return;
     const saved = localStorage.getItem("tribe-selected-city");
-    if (saved && !selectedCityId) {
-      setTimeout(() => setSelectedCityId(saved), 0);
-    }
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, router, selectedCityId, hasHydrated]);
+    if (saved) setSelectedCityId(saved);
+  }, [mounted]);
 
-  if (!hasHydrated) return null;
+  if (!mounted || !signedIn) return null;
 
   const filteredCities = cities.filter(
     (c) =>
@@ -44,8 +46,6 @@ export default function CitySelectionPage() {
       router.push("/home");
     }
   };
-
-  if (!isAuthenticated) return null;
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center px-4 py-12">
