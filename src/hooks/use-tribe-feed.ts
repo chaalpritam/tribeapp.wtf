@@ -7,6 +7,7 @@ import {
   fetchChannelFeed,
   type TribeTweet,
 } from "@/lib/tribe";
+import { useTribeRealtime } from "./use-tribe-realtime";
 
 interface UseTribeFeedOptions {
   tid?: string;
@@ -44,6 +45,11 @@ export function useTribeFeed({
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Refresh whenever the hub broadcasts a new tweet.
+  useTribeRealtime("new_message", () => {
+    if (enabled) void load();
+  });
 
   return { tweets, loading, error, refresh: load };
 }

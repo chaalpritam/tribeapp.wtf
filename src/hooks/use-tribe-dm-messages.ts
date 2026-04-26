@@ -7,8 +7,7 @@ import {
   type DecryptedDm,
 } from "@/lib/tribe";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
-
-const POLL_INTERVAL_MS = 4_000;
+import { useTribeRealtime } from "./use-tribe-realtime";
 
 function fromBase64(b64: string): Uint8Array {
   return Uint8Array.from(atob(b64), (c) => c.charCodeAt(0));
@@ -17,13 +16,11 @@ function fromBase64(b64: string): Uint8Array {
 interface UseTribeDmMessagesOptions {
   conversationId: string | null;
   recipientTid: number | null;
-  pollIntervalMs?: number;
 }
 
 export function useTribeDmMessages({
   conversationId,
   recipientTid,
-  pollIntervalMs = POLL_INTERVAL_MS,
 }: UseTribeDmMessagesOptions) {
   const identity = useTribeIdentityStore((s) => s.identity);
   const [messages, setMessages] = useState<DecryptedDm[]>([]);
@@ -47,12 +44,15 @@ export function useTribeDmMessages({
 
   useEffect(() => {
     void load();
-    if (!conversationId || !pollIntervalMs) return;
-    const id = setInterval(() => {
+  }, [load]);
+
+  // Push-based: refresh when the hub announces a new DM in this convo.
+  useTribeRealtime("new_dm", (data) => {
+    const evt = data as { conversationId?: string };
+    if (!evt?.conversationId || evt.conversationId === conversationId) {
       void load();
-    }, pollIntervalMs);
-    return () => clearInterval(id);
-  }, [load, conversationId, pollIntervalMs]);
+    }
+  });
 
   const send = useCallback(
     async (plaintext: string) => {

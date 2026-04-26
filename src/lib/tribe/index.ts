@@ -6,3 +6,4 @@ export * from "./messages";
 export * from "./dm";
 export * from "./adapters";
 export * from "./channels";
+export * from "./realtime";
