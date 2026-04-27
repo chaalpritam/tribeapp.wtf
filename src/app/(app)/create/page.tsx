@@ -15,7 +15,6 @@ import {
   Send,
   Loader2,
   X,
-  LayoutGrid
 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useAuth } from "@/hooks/use-auth";
@@ -24,7 +23,15 @@ import { useTribeEvent } from "@/hooks/use-tribe-event";
 import { useTribePoll } from "@/hooks/use-tribe-poll";
 import { useTribeTask } from "@/hooks/use-tribe-task";
 import { useTribeCrowdfund } from "@/hooks/use-tribe-crowdfund";
-import { uploadMedia, listChannels, type ChannelInfo } from "@/lib/tribe";
+import { useTribeChannels } from "@/hooks/use-tribe-channels";
+import {
+  uploadMedia,
+  listChannels,
+  type ChannelInfo,
+  CHANNEL_KIND_CITY,
+  CHANNEL_KIND_INTEREST,
+  validateChannelId,
+} from "@/lib/tribe";
 import type { Tweet, ExploreItem, Poll, Task, Crowdfund } from "@/types";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { AppHeader } from "@/components/layout/app-header";
@@ -32,7 +39,6 @@ import { cn } from "@/lib/utils";
 
 const GENERAL_CHANNEL_ID = "general";
 const CHANNEL_KIND_GENERAL = 1;
-const CHANNEL_KIND_CITY = 2;
 
 const createOptions = [
   {
@@ -204,6 +210,11 @@ export default function CreatePage() {
     pending: crowdfundPending,
     walletReady: crowdfundWalletReady,
   } = useTribeCrowdfund();
+  const {
+    create: createChannel,
+    pending: channelPending,
+    walletReady: channelWalletReady,
+  } = useTribeChannels();
   const [mode, setMode] = useState<Mode>("menu");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -239,6 +250,14 @@ export default function CreatePage() {
   const [crowdfundDeadline, setCrowdfundDeadline] = useState<string>(
     defaultCrowdfundDeadline()
   );
+
+  // Channel state
+  const [channelComposerId, setChannelComposerId] = useState("");
+  const [channelComposerName, setChannelComposerName] = useState("");
+  const [channelComposerDescription, setChannelComposerDescription] = useState("");
+  const [channelComposerKind, setChannelComposerKind] = useState<
+    typeof CHANNEL_KIND_CITY | typeof CHANNEL_KIND_INTEREST
+  >(CHANNEL_KIND_INTEREST);
 
   useEffect(() => {
     let cancelled = false;
@@ -1065,27 +1084,165 @@ export default function CreatePage() {
     );
   }
 
-  // Fallback for channel — composer pattern is on the way; the four
-  // community primitives (event/poll/task/crowdfund) ship first.
-  if (mode !== "menu") {
+  if (mode === "channel") {
+    const trimmedId = channelComposerId.trim().toLowerCase();
+    const trimmedName = channelComposerName.trim();
+    let idValidationError: string | null = null;
+    if (trimmedId.length > 0) {
+      try {
+        validateChannelId(trimmedId);
+      } catch (err) {
+        idValidationError = err instanceof Error ? err.message : String(err);
+      }
+    }
+    const canSubmitChannel =
+      trimmedId.length > 0 && trimmedName.length > 0 && !idValidationError;
+
+    const handleChannelSubmit = async () => {
+      if (!canSubmitChannel || !currentCity) return;
+      if (!isAuthenticated) {
+        setSubmitError("Sign in with Tribe to create channels");
+        return;
+      }
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        await createChannel(trimmedId, trimmedName, {
+          description: channelComposerDescription.trim() || undefined,
+          kind: channelComposerKind,
+        });
+        // Channels show up in the channel selector after a refresh,
+        // so just bounce back to home — the new slug becomes
+        // available for tweet composers as soon as the gossip layer
+        // catches up.
+        router.push("/home");
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
     return (
       <FormLayout
-        title={`Create ${mode}`}
-        onSubmit={() => setMode("menu")}
-        canSubmit={true}
-        isSubmitting={isSubmitting}
+        title="Create Tribe"
+        onSubmit={handleChannelSubmit}
+        canSubmit={canSubmitChannel}
+        isSubmitting={isSubmitting || channelPending}
         currentCity={currentCity}
         setMode={setMode}
       >
-        <div className="py-20 text-center space-y-4">
-          <div className="h-20 w-20 bg-[#f5f5f5] rounded-full mx-auto flex items-center justify-center text-[#ccc]">
-            <LayoutGrid className="h-10 w-10" />
+        <div className="space-y-6">
+          <input
+            type="text"
+            placeholder="Display name (e.g. Mission Bay Runners)"
+            value={channelComposerName}
+            onChange={(e) => setChannelComposerName(e.target.value)}
+            autoFocus
+            className="w-full bg-transparent text-2xl font-black tracking-tight outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <div className="space-y-2">
+            <label
+              htmlFor="channel-id"
+              className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2"
+            >
+              Slug (used in URLs and on chain)
+            </label>
+            <input
+              id="channel-id"
+              type="text"
+              placeholder="mission-bay-runners"
+              value={channelComposerId}
+              onChange={(e) =>
+                setChannelComposerId(e.target.value.toLowerCase())
+              }
+              maxLength={32}
+              className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-mono outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
+            />
+            <p className="text-[11px] text-[#999] px-2">
+              Lowercase letters, numbers, and dashes. Max 32 chars.
+              {trimmedId && !idValidationError && (
+                <span className="text-emerald-600 font-bold"> ✓ available shape</span>
+              )}
+            </p>
+            {idValidationError && (
+              <p className="text-[12px] text-red-500 font-bold px-2">
+                {idValidationError}
+              </p>
+            )}
           </div>
-          <p className="text-xl font-bold tracking-tight">Form Coming Soon</p>
-          <p className="text-sm font-medium text-muted-foreground">The {mode} creation experience is being refined.</p>
+
+          <textarea
+            placeholder="What's this tribe about? (optional)"
+            value={channelComposerDescription}
+            onChange={(e) => setChannelComposerDescription(e.target.value)}
+            rows={3}
+            className="w-full resize-none bg-transparent text-[15px] font-medium outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <div className="space-y-2">
+            <label className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2">
+              Kind
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setChannelComposerKind(CHANNEL_KIND_CITY)}
+                className={cn(
+                  "h-14 rounded-2xl border text-[13px] font-bold transition-all active:scale-95",
+                  channelComposerKind === CHANNEL_KIND_CITY
+                    ? "bg-black text-white border-black"
+                    : "bg-[#fcfcfc] text-[#666] border-[#f0f0f0] hover:bg-[#f5f5f5]"
+                )}
+              >
+                📍 City
+              </button>
+              <button
+                type="button"
+                onClick={() => setChannelComposerKind(CHANNEL_KIND_INTEREST)}
+                className={cn(
+                  "h-14 rounded-2xl border text-[13px] font-bold transition-all active:scale-95",
+                  channelComposerKind === CHANNEL_KIND_INTEREST
+                    ? "bg-black text-white border-black"
+                    : "bg-[#fcfcfc] text-[#666] border-[#f0f0f0] hover:bg-[#f5f5f5]"
+                )}
+              >
+                # Interest
+              </button>
+            </div>
+          </div>
+
+          {isAuthenticated ? (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                {channelWalletReady
+                  ? "On submit, this slug will be claimed first-write-wins on Solana via channel-registry. Once registered, no other hub or user can take the same id."
+                  : "Connect a Solana wallet to claim this slug on chain. Without one, the channel exists only in this hub's gossip mesh."}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                Sign in with Tribe to create channels
+              </p>
+              <a
+                href="/onboarding/connect"
+                className="text-[12px] font-bold text-amber-600 underline mt-1 inline-block"
+              >
+                Sign in now
+              </a>
+            </div>
+          )}
+
+          {submitError && (
+            <p className="text-[12px] text-red-500 font-bold px-2">
+              {submitError}
+            </p>
+          )}
         </div>
       </FormLayout>
-    )
+    );
   }
 
   return (
