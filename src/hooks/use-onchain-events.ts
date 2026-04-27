@@ -12,6 +12,14 @@ interface RawOnchainEvent {
   starts_at: string;
   created_at: string;
   create_tx_signature: string;
+  metadata_hash: string | null;
+  /** Resolved from the off-chain EVENT_ADD envelope via the
+   *  metadata_hash JOIN; null when the indexer hasn't captured the
+   *  hash yet (e.g. RPC failure during the EventCreated handler). */
+  off_title: string | null;
+  off_description: string | null;
+  off_location_text: string | null;
+  off_image_url: string | null;
   yes_count: number;
   no_count: number;
   maybe_count: number;
@@ -46,30 +54,31 @@ function relativeTime(iso: string): string {
 /**
  * Map an on-chain event row into the home feed's ExploreItem shape.
  *
- * The event-registry program stores only timing + lat/lon + a hash
- * pointing back at the off-chain EVENT_ADD envelope (which carries
- * the title / description / location_text). Without resolving that
- * envelope we use placeholder copy — good enough to demonstrate the
- * full vertical (chain → indexer → hook → home feed → on-chain
- * RSVP), and the metadata bridge is a separate follow-up.
+ * Title / description / location come from the off-chain EVENT_ADD
+ * envelope, JOINed in by the hub via the metadata_hash bridge.
+ * Falls back to placeholder copy when the envelope hasn't been
+ * captured yet (RPC failure during indexing) so the card still
+ * renders something meaningful.
  */
 function adaptOnchainEvent(
   row: RawOnchainEvent,
   cityId: string
 ): ExploreItem {
   const goingCount = row.yes_count ?? 0;
+  const fallbackDescription = `Anchored on Solana by tid:${row.creator_tid}. ${
+    goingCount > 0 ? `${goingCount} going so far.` : "Be the first to RSVP."
+  }`;
   return {
     id: `onchain-event-${row.pda}`,
     type: "event",
-    title: `On-chain event #${row.event_id}`,
-    description: `Anchored on Solana by tid:${row.creator_tid}. ${
-      goingCount > 0 ? `${goingCount} going so far.` : "Be the first to RSVP."
-    }`,
+    title: row.off_title ?? `On-chain event #${row.event_id}`,
+    description: row.off_description ?? fallbackDescription,
     icon: "calendar",
     color: "#6366F1",
     participants: goingCount,
-    location: "On-chain",
+    location: row.off_location_text ?? "On-chain",
     timeAgo: relativeTime(row.starts_at),
+    imageUrl: row.off_image_url ?? undefined,
     isTrending: goingCount >= 5,
     cityId,
     onchainEventPda: row.pda,
