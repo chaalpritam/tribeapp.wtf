@@ -22,8 +22,10 @@ import { useAuth } from "@/hooks/use-auth";
 import { useTribePublish } from "@/hooks/use-tribe-publish";
 import { useTribeEvent } from "@/hooks/use-tribe-event";
 import { useTribePoll } from "@/hooks/use-tribe-poll";
+import { useTribeTask } from "@/hooks/use-tribe-task";
 import { uploadMedia, listChannels, type ChannelInfo } from "@/lib/tribe";
-import type { Tweet, ExploreItem, Poll } from "@/types";
+import type { Tweet, ExploreItem, Poll, Task } from "@/types";
+import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
 
@@ -145,6 +147,7 @@ function newContentId(prefix: string): string {
 }
 const newEventId = () => newContentId("event");
 const newPollId = () => newContentId("poll");
+const newTaskId = () => newContentId("task");
 
 const MIN_POLL_OPTIONS = 2;
 const MAX_POLL_OPTIONS = 8;
@@ -161,7 +164,7 @@ function defaultStartsAt(): string {
 
 export default function CreatePage() {
   const router = useRouter();
-  const { currentCity, currentUser, addEvent, addPoll } = useTribeStore();
+  const { currentCity, currentUser, addEvent, addPoll, addTask } = useTribeStore();
   const { isAuthenticated } = useAuth();
   const { publish, publishing, error: publishError } = useTribePublish();
   const {
@@ -174,6 +177,11 @@ export default function CreatePage() {
     pending: pollPending,
     walletReady: pollWalletReady,
   } = useTribePoll();
+  const {
+    create: createTask,
+    pending: taskPending,
+    walletReady: taskWalletReady,
+  } = useTribeTask();
   const [mode, setMode] = useState<Mode>("menu");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -195,6 +203,12 @@ export default function CreatePage() {
   // Poll state
   const [pollQuestion, setPollQuestion] = useState("");
   const [pollOptions, setPollOptions] = useState<string[]>(["", ""]);
+
+  // Task state
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDescription, setTaskDescription] = useState("");
+  const [taskRewardSol, setTaskRewardSol] = useState<string>("");
+  const [taskIsUrgent, setTaskIsUrgent] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -685,8 +699,178 @@ export default function CreatePage() {
     );
   }
 
-  // Fallback for task / crowdfund / channel — same composer pattern
-  // is on the way; events + polls shipped first as the smallest
+  if (mode === "task") {
+    const rewardSolNum = taskRewardSol.trim() === ""
+      ? 0
+      : Number(taskRewardSol);
+    const rewardValid =
+      taskRewardSol.trim() === "" ||
+      (Number.isFinite(rewardSolNum) && rewardSolNum >= 0);
+    const canSubmitTask = !!taskTitle.trim() && rewardValid;
+
+    const handleTaskSubmit = async () => {
+      if (!canSubmitTask || !currentCity) return;
+      if (!isAuthenticated) {
+        setSubmitError("Sign in with Tribe to create tasks");
+        return;
+      }
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        const offchainId = newTaskId();
+        // Off-chain envelope's reward_text is a free-form display
+        // string ('5 USDC', 'A coffee') — independent of the on-chain
+        // SOL escrow. Render the SOL amount when present so feeds
+        // without on-chain access still see something meaningful.
+        const rewardText = rewardSolNum > 0
+          ? `${rewardSolNum} SOL`
+          : taskIsUrgent
+          ? "Urgent help needed"
+          : "Gratitude";
+
+        const result = await createTask(offchainId, taskTitle.trim(), {
+          description: taskDescription.trim() || undefined,
+          rewardText,
+          rewardSol: rewardSolNum > 0 ? rewardSolNum : undefined,
+        });
+
+        const newTask: Task = {
+          id: offchainId,
+          user: currentUser ?? {
+            id: "self",
+            username: "you",
+            displayName: "You",
+            avatarUrl: "",
+            cityId: currentCity.id,
+            isVerified: false,
+          },
+          title: taskTitle.trim(),
+          description: taskDescription.trim() || "",
+          icon: "alert",
+          location: currentCity.name,
+          helpers: 0,
+          timeAgo: "just now",
+          reward: rewardText,
+          isUrgent: taskIsUrgent,
+          onchainTaskPda: result.taskPda,
+          onchainRewardLamports:
+            rewardSolNum > 0
+              ? BigInt(Math.floor(rewardSolNum * LAMPORTS_PER_SOL)).toString()
+              : undefined,
+        };
+        addTask(newTask);
+        router.push("/home");
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <FormLayout
+        title="Create Task"
+        onSubmit={handleTaskSubmit}
+        canSubmit={canSubmitTask}
+        isSubmitting={isSubmitting || taskPending}
+        currentCity={currentCity}
+        setMode={setMode}
+      >
+        <div className="space-y-6">
+          <input
+            type="text"
+            placeholder="What needs doing?"
+            value={taskTitle}
+            onChange={(e) => setTaskTitle(e.target.value)}
+            autoFocus
+            className="w-full bg-transparent text-2xl font-black tracking-tight outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <textarea
+            placeholder="More context for the helper (optional)"
+            value={taskDescription}
+            onChange={(e) => setTaskDescription(e.target.value)}
+            rows={3}
+            className="w-full resize-none bg-transparent text-[15px] font-medium outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="task-reward"
+                className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2"
+              >
+                Reward (SOL, optional)
+              </label>
+              <input
+                id="task-reward"
+                type="number"
+                min="0"
+                step="0.001"
+                placeholder="0"
+                value={taskRewardSol}
+                onChange={(e) => setTaskRewardSol(e.target.value)}
+                className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
+              />
+              <p className="text-[11px] text-[#999] px-2">
+                Escrowed in the Task PDA on submit; released to the claimer when you mark complete, refunded if you cancel before claim.
+              </p>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2">
+                Urgency
+              </label>
+              <button
+                type="button"
+                onClick={() => setTaskIsUrgent((v) => !v)}
+                className={cn(
+                  "w-full h-12 rounded-2xl border text-[13px] font-bold transition-all active:scale-95",
+                  taskIsUrgent
+                    ? "bg-red-500 text-white border-red-500"
+                    : "bg-[#fcfcfc] text-[#666] border-[#f0f0f0] hover:bg-[#f5f5f5]"
+                )}
+              >
+                {taskIsUrgent ? "Marked Urgent" : "Mark as Urgent"}
+              </button>
+            </div>
+          </div>
+
+          {isAuthenticated ? (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                {taskWalletReady
+                  ? rewardSolNum > 0
+                    ? `On submit, ${rewardSolNum} SOL will be escrowed in the on-chain Task PDA via task-registry.`
+                    : "On submit, this task will be anchored on Solana via task-registry. No reward escrow."
+                  : "Connect a Solana wallet to anchor this task on chain. Without one, only the off-chain envelope is published (rewards become signal-only)."}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                Sign in with Tribe to create tasks
+              </p>
+              <a
+                href="/onboarding/connect"
+                className="text-[12px] font-bold text-amber-600 underline mt-1 inline-block"
+              >
+                Sign in now
+              </a>
+            </div>
+          )}
+
+          {submitError && (
+            <p className="text-[12px] text-red-500 font-bold px-2">
+              {submitError}
+            </p>
+          )}
+        </div>
+      </FormLayout>
+    );
+  }
+
+  // Fallback for crowdfund / channel — same composer pattern is on
+  // the way; events + polls + tasks shipped first as the smallest
   // visible verticals to validate the chain → store → feed loop.
   if (mode !== "menu") {
     return (
