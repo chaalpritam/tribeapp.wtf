@@ -26,6 +26,8 @@ interface RawOnchainCrowdfund {
   off_description: string | null;
   off_image_url: string | null;
   off_currency: string | null;
+  /** Resolved from the tids table (off-chain) JOINed on creator_tid. */
+  creator_username: string | null;
 }
 
 interface ListCrowdfundsOptions {
@@ -36,7 +38,24 @@ interface ListCrowdfundsOptions {
   cityId?: string;
 }
 
-function placeholderUser(tid: string | number, cityId: string): User {
+/** Build a User for an on-chain creator. Prefers the resolved
+ *  off-chain username when present; falls back to a TID-based
+ *  placeholder while the envelope has yet to be captured. */
+function resolveUser(
+  tid: string | number,
+  username: string | null,
+  cityId: string
+): User {
+  if (username) {
+    return {
+      id: `tid-${tid}`,
+      username,
+      displayName: username,
+      avatarUrl: "",
+      cityId,
+      isVerified: false,
+    };
+  }
   return {
     id: `tid-${tid}`,
     username: `tid${tid}`,
@@ -83,7 +102,7 @@ function adaptOnchainCrowdfund(
 
   return {
     id: `onchain-crowdfund-${row.pda}`,
-    user: placeholderUser(row.creator_tid, cityId),
+    user: resolveUser(row.creator_tid, row.creator_username, cityId),
     title: row.off_title ?? `On-chain crowdfund #${row.crowdfund_id}`,
     description:
       row.off_description ??

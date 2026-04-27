@@ -20,6 +20,8 @@ interface RawOnchainEvent {
   off_description: string | null;
   off_location_text: string | null;
   off_image_url: string | null;
+  /** Resolved from the tids table (off-chain) JOINed on creator_tid. */
+  creator_username: string | null;
   yes_count: number;
   no_count: number;
   maybe_count: number;
@@ -65,7 +67,10 @@ function adaptOnchainEvent(
   cityId: string
 ): ExploreItem {
   const goingCount = row.yes_count ?? 0;
-  const fallbackDescription = `Anchored on Solana by tid:${row.creator_tid}. ${
+  const creatorLabel = row.creator_username
+    ? `@${row.creator_username}`
+    : `tid:${row.creator_tid}`;
+  const fallbackDescription = `Anchored on Solana by ${creatorLabel}. ${
     goingCount > 0 ? `${goingCount} going so far.` : "Be the first to RSVP."
   }`;
   return {

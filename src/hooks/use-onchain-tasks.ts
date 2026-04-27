@@ -24,6 +24,8 @@ interface RawOnchainTask {
   off_title: string | null;
   off_description: string | null;
   off_reward_text: string | null;
+  /** Resolved from the tids table (off-chain) JOINed on creator_tid. */
+  creator_username: string | null;
 }
 
 interface ListTasksOptions {
@@ -34,7 +36,24 @@ interface ListTasksOptions {
   cityId?: string;
 }
 
-function placeholderUser(tid: string | number, cityId: string): User {
+/** Build a User for an on-chain creator. Prefers the resolved
+ *  off-chain username when present; falls back to a TID-based
+ *  placeholder while the envelope has yet to be captured. */
+function resolveUser(
+  tid: string | number,
+  username: string | null,
+  cityId: string
+): User {
+  if (username) {
+    return {
+      id: `tid-${tid}`,
+      username,
+      displayName: username,
+      avatarUrl: "",
+      cityId,
+      isVerified: false,
+    };
+  }
   return {
     id: `tid-${tid}`,
     username: `tid${tid}`,
@@ -80,7 +99,7 @@ function adaptOnchainTask(row: RawOnchainTask, cityId: string): Task {
       : row.off_reward_text ?? "Gratitude";
   return {
     id: `onchain-task-${row.pda}`,
-    user: placeholderUser(row.creator_tid, cityId),
+    user: resolveUser(row.creator_tid, row.creator_username, cityId),
     title: row.off_title ?? `On-chain task #${row.task_id}`,
     description: row.off_description ?? fallbackDescription,
     icon: "alert",

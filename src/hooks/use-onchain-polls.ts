@@ -24,6 +24,8 @@ interface RawOnchainPoll {
    * that option.
    */
   option_tallies: Record<string, number> | null;
+  /** Resolved from the tids table (off-chain) JOINed on creator_tid. */
+  creator_username: string | null;
 }
 
 interface ListPollsOptions {
@@ -32,7 +34,24 @@ interface ListPollsOptions {
   cityId?: string;
 }
 
-function placeholderUser(tid: string | number, cityId: string): User {
+/** Build a User for an on-chain creator. Prefers the resolved
+ *  off-chain username when present; falls back to a TID-based
+ *  placeholder while the envelope has yet to be captured. */
+function resolveUser(
+  tid: string | number,
+  username: string | null,
+  cityId: string
+): User {
+  if (username) {
+    return {
+      id: `tid-${tid}`,
+      username,
+      displayName: username,
+      avatarUrl: "",
+      cityId,
+      isVerified: false,
+    };
+  }
   return {
     id: `tid-${tid}`,
     username: `tid${tid}`,
@@ -62,7 +81,7 @@ function adaptOnchainPoll(row: RawOnchainPoll, cityId: string): Poll {
   const tallies = row.option_tallies ?? {};
   return {
     id: `onchain-poll-${row.pda}`,
-    user: placeholderUser(row.creator_tid, cityId),
+    user: resolveUser(row.creator_tid, row.creator_username, cityId),
     question: row.off_question ?? `On-chain poll #${row.poll_id}`,
     options,
     duration: 7 * 24 * 60 * 60, // display-only fallback
