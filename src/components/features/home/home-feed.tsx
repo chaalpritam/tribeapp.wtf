@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeFeed } from "@/hooks/use-tribe-feed";
+import { useOnchainEvents } from "@/hooks/use-onchain-events";
 import { tribeTweetToTweet } from "@/lib/tribe";
 import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
@@ -52,6 +53,13 @@ export function HomeFeed() {
   const { tweets: hubTweets, loading: hubLoading } = useTribeFeed({
     enabled: activeTab === "all",
   });
+  // On-chain events from the hub mirror — surfaced on every tab so
+  // anchored events from across users appear alongside seed data.
+  // Each row carries onchainEventPda; the EventCard automatically
+  // routes RSVP through rsvpOnchain when a wallet is connected.
+  const { events: onchainEvents } = useOnchainEvents({
+    cityId: currentCity?.id ?? "",
+  });
 
   const adaptedHubTweets = useMemo(
     () =>
@@ -75,7 +83,25 @@ export function HomeFeed() {
     feedItems.push({ type: "tweet", data: tweet, key: tweet.id });
   });
 
-  events.forEach((event, i) => {
+  // Merge on-chain events first (newest / earliest-starting first),
+  // then seed events. De-dup on id so a freshly-created event that's
+  // already in the seed events array doesn't double-render after the
+  // hub picks it up.
+  const seenEventIds = new Set<string>();
+  const mergedEvents: ExploreItem[] = [];
+  for (const e of onchainEvents) {
+    if (!seenEventIds.has(e.id)) {
+      seenEventIds.add(e.id);
+      mergedEvents.push(e);
+    }
+  }
+  for (const e of events) {
+    if (!seenEventIds.has(e.id)) {
+      seenEventIds.add(e.id);
+      mergedEvents.push(e);
+    }
+  }
+  mergedEvents.forEach((event, i) => {
     const insertAt = Math.min((i + 1) * 2, feedItems.length);
     feedItems.splice(insertAt, 0, { type: "event", data: event, key: event.id });
   });
