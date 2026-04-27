@@ -20,6 +20,12 @@ interface RawOnchainCrowdfund {
   updated_at: string;
   create_tx_signature: string;
   claim_tx_signature: string | null;
+  metadata_hash: string | null;
+  /** Resolved from the off-chain CROWDFUND_ADD envelope via metadata_hash. */
+  off_title: string | null;
+  off_description: string | null;
+  off_image_url: string | null;
+  off_currency: string | null;
 }
 
 interface ListCrowdfundsOptions {
@@ -56,11 +62,11 @@ function relativeTime(iso: string): string {
 
 /**
  * Map an on-chain crowdfund row into the home feed's Crowdfund
- * shape. Goal + raised + pledge_count come from the chain
- * directly. Title / description live in the off-chain CROWDFUND_ADD
- * envelope (separate metadata-hash bridge); placeholder copy renders
- * meaningful info while the on-chain pledge flow stays live via
- * CrowdfundCard's pledgeOnchain branch.
+ * shape. Title / description / image come from the off-chain
+ * CROWDFUND_ADD envelope, JOINed in by the hub via the metadata-
+ * hash bridge. Falls back to placeholder copy when the envelope
+ * hasn't been captured yet. Goal + raised + pledge_count always
+ * come from the chain directly.
  */
 function adaptOnchainCrowdfund(
   row: RawOnchainCrowdfund,
@@ -78,9 +84,12 @@ function adaptOnchainCrowdfund(
   return {
     id: `onchain-crowdfund-${row.pda}`,
     user: placeholderUser(row.creator_tid, cityId),
-    title: `On-chain crowdfund #${row.crowdfund_id}`,
-    description: `Anchored on Solana. ${row.pledge_count} backers pledged so far.`,
+    title: row.off_title ?? `On-chain crowdfund #${row.crowdfund_id}`,
+    description:
+      row.off_description ??
+      `Anchored on Solana. ${row.pledge_count} backers pledged so far.`,
     icon: "heart",
+    imageUrl: row.off_image_url ?? undefined,
     location: "On-chain",
     goal: goalSol,
     raised: raisedSol,

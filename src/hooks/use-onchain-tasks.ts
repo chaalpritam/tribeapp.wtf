@@ -19,6 +19,11 @@ interface RawOnchainTask {
   claimed_at: string | null;
   completed_at: string | null;
   updated_at: string;
+  metadata_hash: string | null;
+  /** Resolved from the off-chain TASK_ADD envelope via metadata_hash. */
+  off_title: string | null;
+  off_description: string | null;
+  off_reward_text: string | null;
 }
 
 interface ListTasksOptions {
@@ -55,30 +60,34 @@ function relativeTime(iso: string): string {
 
 /**
  * Map an on-chain task row into the home feed's Task shape. Title
- * and description live in the off-chain TASK_ADD envelope (separate
- * metadata-hash bridge); placeholder copy here renders something
- * meaningful while the on-chain claim flow stays live via TaskCard's
- * claimOnchain branch.
+ * and description come from the off-chain TASK_ADD envelope, JOINed
+ * in by the hub via the metadata-hash bridge. Falls back to
+ * placeholder copy when the envelope hasn't been captured yet.
+ *
+ * The reward chip prefers the on-chain SOL escrow when present, then
+ * the envelope's reward_text, then 'Gratitude' as a final fallback.
  */
 function adaptOnchainTask(row: RawOnchainTask, cityId: string): Task {
   const rewardLamports = BigInt(row.reward_amount.toString());
   const rewardSol = Number(rewardLamports) / LAMPORTS_PER_SOL;
+  const fallbackDescription =
+    rewardLamports > BigInt(0)
+      ? `Anchored on Solana. Reward escrowed in the Task PDA.`
+      : `Anchored on Solana. Gratitude only.`;
+  const rewardLabel =
+    rewardLamports > BigInt(0)
+      ? `${rewardSol.toFixed(4)} SOL`
+      : row.off_reward_text ?? "Gratitude";
   return {
     id: `onchain-task-${row.pda}`,
     user: placeholderUser(row.creator_tid, cityId),
-    title: `On-chain task #${row.task_id}`,
-    description:
-      rewardLamports > BigInt(0)
-        ? `Anchored on Solana. Reward escrowed in the Task PDA.`
-        : `Anchored on Solana. Gratitude only.`,
+    title: row.off_title ?? `On-chain task #${row.task_id}`,
+    description: row.off_description ?? fallbackDescription,
     icon: "alert",
     location: "On-chain",
     helpers: row.claimer_tid !== null ? 1 : 0,
     timeAgo: relativeTime(row.created_at),
-    reward:
-      rewardLamports > BigInt(0)
-        ? `${rewardSol.toFixed(4)} SOL`
-        : "Gratitude",
+    reward: rewardLabel,
     isUrgent: false,
     onchainTaskPda: row.pda,
     onchainRewardLamports:

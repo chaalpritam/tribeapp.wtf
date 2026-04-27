@@ -12,6 +12,11 @@ interface RawOnchainPoll {
   option_count: number;
   created_at: string;
   create_tx_signature: string;
+  metadata_hash: string | null;
+  /** Resolved from the off-chain POLL_ADD envelope via metadata_hash. */
+  off_question: string | null;
+  /** TEXT[] from Postgres comes through as a JS string[]. */
+  off_options: string[] | null;
   total_votes: number;
 }
 
@@ -34,20 +39,24 @@ function placeholderUser(tid: string | number, cityId: string): User {
 
 /**
  * Map an on-chain poll row into the home feed's Poll shape. Real
- * question + per-option labels live in the off-chain POLL_ADD
- * envelope (resolved via metadata-hash; separate follow-up). For
- * now the card shows generic "Option N" labels — votes still settle
- * on chain via the existing voteOnchain path on PollCard.
+ * question + per-option labels come from the off-chain POLL_ADD
+ * envelope, JOINed in by the hub via the metadata-hash bridge.
+ * Falls back to placeholder copy when the envelope hasn't been
+ * captured yet.
  */
 function adaptOnchainPoll(row: RawOnchainPoll, cityId: string): Poll {
+  // Prefer the envelope's option labels when present; pad / trim to
+  // option_count so the on-chain Vote PDA's option_index lines up
+  // with the rendered choices.
+  const labels = row.off_options ?? [];
   const options = Array.from({ length: row.option_count }, (_, i) => ({
     id: `option-${i}`,
-    text: `Option ${i + 1}`,
+    text: labels[i] ?? `Option ${i + 1}`,
   }));
   return {
     id: `onchain-poll-${row.pda}`,
     user: placeholderUser(row.creator_tid, cityId),
-    question: `On-chain poll #${row.poll_id}`,
+    question: row.off_question ?? `On-chain poll #${row.poll_id}`,
     options,
     duration: 7 * 24 * 60 * 60, // display-only fallback
     timestamp: new Date(row.created_at).toLocaleDateString(),
