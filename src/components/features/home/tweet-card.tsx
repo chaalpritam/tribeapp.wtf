@@ -23,6 +23,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { useComments } from "@/hooks/use-comments";
 import { useTribeBookmark } from "@/hooks/use-tribe-bookmark";
 import { useTribeTip } from "@/hooks/use-tribe-tip";
+import { useOnchainTipsForTarget } from "@/hooks/use-onchain-tips";
 
 const DEFAULT_TIP_AMOUNT = 1;
 
@@ -182,6 +183,11 @@ export function TweetCard({ tweet }: TweetCardProps) {
   const { tip, pending: tipPending, ready: tipReady } = useTribeTip();
   const [tipped, setTipped] = useState(false);
   const recipientTid = tidFromUserId(tweet.user.id);
+  const {
+    tipCount: onchainTipCount,
+    totalSol: onchainTipSol,
+    refresh: refreshTipAggregate,
+  } = useOnchainTipsForTarget(tweet.id);
   const { showToast: showShareToast } = useShare();
   const {
     comments,
@@ -362,15 +368,17 @@ export function TweetCard({ tweet }: TweetCardProps) {
                     await tip(recipientTid, DEFAULT_TIP_AMOUNT, {
                       targetHash: tweet.id,
                     });
+                    void refreshTipAggregate();
                   } catch {
                     setTipped(false);
                   }
                 }
               }}
               disabled={tipPending || tipped}
-              title={`Tip $${DEFAULT_TIP_AMOUNT} to tid:${recipientTid}`}
+              title={`Tip ${DEFAULT_TIP_AMOUNT} SOL to tid:${recipientTid}`}
               className={cn(
-                "p-2 rounded-full transition-all active:scale-90",
+                "flex items-center gap-1.5 rounded-full transition-all active:scale-90",
+                onchainTipCount > 0 ? "px-3 py-2" : "p-2",
                 tipped
                   ? "bg-amber-50 text-amber-500"
                   : "hover:bg-[#f5f5f5] text-[#666]"
@@ -380,6 +388,13 @@ export function TweetCard({ tweet }: TweetCardProps) {
                 <Loader2 className="h-5 w-5 animate-spin" />
               ) : (
                 <Zap className={cn("h-5 w-5", tipped && "fill-current")} />
+              )}
+              {onchainTipCount > 0 && (
+                <span className="text-[13px] font-bold tabular-nums">
+                  {onchainTipSol >= 0.01
+                    ? `${onchainTipSol.toFixed(2)}◎`
+                    : onchainTipCount}
+                </span>
               )}
             </button>
           )}
