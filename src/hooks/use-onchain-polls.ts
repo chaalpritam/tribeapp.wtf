@@ -18,6 +18,12 @@ interface RawOnchainPoll {
   /** TEXT[] from Postgres comes through as a JS string[]. */
   off_options: string[] | null;
   total_votes: number;
+  /**
+   * Per-option vote counts, keyed by option_index as a string (JSON
+   * object keys are always strings). Missing keys mean zero votes for
+   * that option.
+   */
+  option_tallies: Record<string, number> | null;
 }
 
 interface ListPollsOptions {
@@ -53,6 +59,7 @@ function adaptOnchainPoll(row: RawOnchainPoll, cityId: string): Poll {
     id: `option-${i}`,
     text: labels[i] ?? `Option ${i + 1}`,
   }));
+  const tallies = row.option_tallies ?? {};
   return {
     id: `onchain-poll-${row.pda}`,
     user: placeholderUser(row.creator_tid, cityId),
@@ -60,7 +67,9 @@ function adaptOnchainPoll(row: RawOnchainPoll, cityId: string): Poll {
     options,
     duration: 7 * 24 * 60 * 60, // display-only fallback
     timestamp: new Date(row.created_at).toLocaleDateString(),
-    votes: Object.fromEntries(options.map((o) => [o.id, 0])),
+    votes: Object.fromEntries(
+      options.map((o, i) => [o.id, tallies[String(i)] ?? 0])
+    ),
     onchainPollPda: row.pda,
   };
 }
