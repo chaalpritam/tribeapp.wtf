@@ -5,6 +5,9 @@ import { Plus, Loader2 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useOnchainEvents } from "@/hooks/use-onchain-events";
+import { useOnchainPolls } from "@/hooks/use-onchain-polls";
+import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
+import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
 import { tribeTweetToTweet } from "@/lib/tribe";
 import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
@@ -53,13 +56,17 @@ export function HomeFeed() {
   const { tweets: hubTweets, loading: hubLoading } = useTribeFeed({
     enabled: activeTab === "all",
   });
-  // On-chain events from the hub mirror — surfaced on every tab so
-  // anchored events from across users appear alongside seed data.
-  // Each row carries onchainEventPda; the EventCard automatically
-  // routes RSVP through rsvpOnchain when a wallet is connected.
-  const { events: onchainEvents } = useOnchainEvents({
-    cityId: currentCity?.id ?? "",
-  });
+  // On-chain content from the hub mirrors — surfaced on every tab
+  // so anchored content from across users appears alongside seed
+  // data. Each adapted row carries the on-chain PDA so the
+  // existing card components automatically route their primary
+  // action (RSVP / vote / claim / pledge) through the on-chain
+  // path when a wallet is connected.
+  const cityId = currentCity?.id ?? "";
+  const { events: onchainEvents } = useOnchainEvents({ cityId });
+  const { polls: onchainPolls } = useOnchainPolls({ cityId });
+  const { tasks: onchainTasks } = useOnchainTasks({ cityId });
+  const { crowdfunds: onchainCrowdfunds } = useOnchainCrowdfunds({ cityId });
 
   const adaptedHubTweets = useMemo(
     () =>
@@ -83,40 +90,42 @@ export function HomeFeed() {
     feedItems.push({ type: "tweet", data: tweet, key: tweet.id });
   });
 
-  // Merge on-chain events first (newest / earliest-starting first),
-  // then seed events. De-dup on id so a freshly-created event that's
-  // already in the seed events array doesn't double-render after the
-  // hub picks it up.
-  const seenEventIds = new Set<string>();
-  const mergedEvents: ExploreItem[] = [];
-  for (const e of onchainEvents) {
-    if (!seenEventIds.has(e.id)) {
-      seenEventIds.add(e.id);
-      mergedEvents.push(e);
+  // Merge on-chain rows first, then seed rows of the same type.
+  // De-dup on id so a freshly-created item that's already in the
+  // local store doesn't double-render after the hub picks it up.
+  function dedup<T extends { id: string }>(onchain: T[], seed: T[]): T[] {
+    const seen = new Set<string>();
+    const merged: T[] = [];
+    for (const item of [...onchain, ...seed]) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        merged.push(item);
+      }
     }
+    return merged;
   }
-  for (const e of events) {
-    if (!seenEventIds.has(e.id)) {
-      seenEventIds.add(e.id);
-      mergedEvents.push(e);
-    }
-  }
+
+  const mergedEvents = dedup(onchainEvents, events);
+  const mergedPolls = dedup(onchainPolls, polls);
+  const mergedTasks = dedup(onchainTasks, tasks);
+  const mergedCrowdfunds = dedup(onchainCrowdfunds, crowdfunds);
+
   mergedEvents.forEach((event, i) => {
     const insertAt = Math.min((i + 1) * 2, feedItems.length);
     feedItems.splice(insertAt, 0, { type: "event", data: event, key: event.id });
   });
 
-  polls.forEach((poll, i) => {
+  mergedPolls.forEach((poll, i) => {
     const insertAt = Math.min((i + 1) * 3 + 1, feedItems.length);
     feedItems.splice(insertAt, 0, { type: "poll", data: poll, key: poll.id });
   });
 
-  tasks.forEach((task, i) => {
+  mergedTasks.forEach((task, i) => {
     const insertAt = Math.min((i + 1) * 4 + 2, feedItems.length);
     feedItems.splice(insertAt, 0, { type: "task", data: task, key: task.id });
   });
 
-  crowdfunds.forEach((cf, i) => {
+  mergedCrowdfunds.forEach((cf, i) => {
     const insertAt = Math.min((i + 1) * 5 + 3, feedItems.length);
     feedItems.splice(insertAt, 0, { type: "crowdfund", data: cf, key: cf.id });
   });
