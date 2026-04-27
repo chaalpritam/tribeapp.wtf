@@ -23,8 +23,9 @@ import { useTribePublish } from "@/hooks/use-tribe-publish";
 import { useTribeEvent } from "@/hooks/use-tribe-event";
 import { useTribePoll } from "@/hooks/use-tribe-poll";
 import { useTribeTask } from "@/hooks/use-tribe-task";
+import { useTribeCrowdfund } from "@/hooks/use-tribe-crowdfund";
 import { uploadMedia, listChannels, type ChannelInfo } from "@/lib/tribe";
-import type { Tweet, ExploreItem, Poll, Task } from "@/types";
+import type { Tweet, ExploreItem, Poll, Task, Crowdfund } from "@/types";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { AppHeader } from "@/components/layout/app-header";
 import { cn } from "@/lib/utils";
@@ -148,6 +149,15 @@ function newContentId(prefix: string): string {
 const newEventId = () => newContentId("event");
 const newPollId = () => newContentId("poll");
 const newTaskId = () => newContentId("task");
+const newCrowdfundId = () => newContentId("crowdfund");
+
+/** Default crowdfund deadline = 30 days out, rounded to start-of-day. */
+function defaultCrowdfundDeadline(): string {
+  const d = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000);
+  d.setHours(23, 59, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
 
 const MIN_POLL_OPTIONS = 2;
 const MAX_POLL_OPTIONS = 8;
@@ -164,7 +174,14 @@ function defaultStartsAt(): string {
 
 export default function CreatePage() {
   const router = useRouter();
-  const { currentCity, currentUser, addEvent, addPoll, addTask } = useTribeStore();
+  const {
+    currentCity,
+    currentUser,
+    addEvent,
+    addPoll,
+    addTask,
+    addCrowdfund,
+  } = useTribeStore();
   const { isAuthenticated } = useAuth();
   const { publish, publishing, error: publishError } = useTribePublish();
   const {
@@ -182,6 +199,11 @@ export default function CreatePage() {
     pending: taskPending,
     walletReady: taskWalletReady,
   } = useTribeTask();
+  const {
+    create: createCrowdfund,
+    pending: crowdfundPending,
+    walletReady: crowdfundWalletReady,
+  } = useTribeCrowdfund();
   const [mode, setMode] = useState<Mode>("menu");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -209,6 +231,14 @@ export default function CreatePage() {
   const [taskDescription, setTaskDescription] = useState("");
   const [taskRewardSol, setTaskRewardSol] = useState<string>("");
   const [taskIsUrgent, setTaskIsUrgent] = useState(false);
+
+  // Crowdfund state
+  const [crowdfundTitle, setCrowdfundTitle] = useState("");
+  const [crowdfundDescription, setCrowdfundDescription] = useState("");
+  const [crowdfundGoalSol, setCrowdfundGoalSol] = useState<string>("");
+  const [crowdfundDeadline, setCrowdfundDeadline] = useState<string>(
+    defaultCrowdfundDeadline()
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -869,9 +899,174 @@ export default function CreatePage() {
     );
   }
 
-  // Fallback for crowdfund / channel — same composer pattern is on
-  // the way; events + polls + tasks shipped first as the smallest
-  // visible verticals to validate the chain → store → feed loop.
+  if (mode === "crowdfund") {
+    const goalSolNum = Number(crowdfundGoalSol);
+    const goalValid =
+      crowdfundGoalSol.trim() !== "" &&
+      Number.isFinite(goalSolNum) &&
+      goalSolNum > 0;
+    const deadlineUnix = crowdfundDeadline
+      ? Math.floor(new Date(crowdfundDeadline + "T23:59:59").getTime() / 1000)
+      : 0;
+    const deadlineValid =
+      deadlineUnix > 0 && deadlineUnix > Math.floor(Date.now() / 1000);
+    const canSubmitCrowdfund =
+      !!crowdfundTitle.trim() && goalValid && deadlineValid;
+
+    const handleCrowdfundSubmit = async () => {
+      if (!canSubmitCrowdfund || !currentCity) return;
+      if (!isAuthenticated) {
+        setSubmitError("Sign in with Tribe to create crowdfunds");
+        return;
+      }
+      setIsSubmitting(true);
+      setSubmitError(null);
+      try {
+        const offchainId = newCrowdfundId();
+        // The off-chain envelope wants a goal in the campaign's
+        // display currency. We use SOL across the wire here so the
+        // off-chain feed and on-chain escrow agree on units; the
+        // existing CrowdfundCard happily renders any number.
+        const result = await createCrowdfund(
+          offchainId,
+          crowdfundTitle.trim(),
+          goalSolNum,
+          {
+            description: crowdfundDescription.trim() || undefined,
+            currency: "SOL",
+            deadlineAtUnix: deadlineUnix,
+          }
+        );
+
+        const newCampaign: Crowdfund = {
+          id: offchainId,
+          user: currentUser ?? {
+            id: "self",
+            username: "you",
+            displayName: "You",
+            avatarUrl: "",
+            cityId: currentCity.id,
+            isVerified: false,
+          },
+          title: crowdfundTitle.trim(),
+          description: crowdfundDescription.trim() || "",
+          icon: "heart",
+          location: currentCity.name,
+          goal: goalSolNum,
+          raised: 0,
+          contributors: 0,
+          timeAgo: "just now",
+          onchainCrowdfundPda: result.crowdfundPda,
+          // Sensible default per-pledge size: 5% of goal, capped at
+          // 1 SOL to keep the one-click button friendly.
+          onchainPledgeAmountSol: Math.min(goalSolNum * 0.05, 1) || 0.01,
+        };
+        addCrowdfund(newCampaign);
+        router.push("/home");
+      } catch (err) {
+        setSubmitError(err instanceof Error ? err.message : String(err));
+      } finally {
+        setIsSubmitting(false);
+      }
+    };
+
+    return (
+      <FormLayout
+        title="Create Crowdfund"
+        onSubmit={handleCrowdfundSubmit}
+        canSubmit={canSubmitCrowdfund}
+        isSubmitting={isSubmitting || crowdfundPending}
+        currentCity={currentCity}
+        setMode={setMode}
+      >
+        <div className="space-y-6">
+          <input
+            type="text"
+            placeholder="What are you fundraising for?"
+            value={crowdfundTitle}
+            onChange={(e) => setCrowdfundTitle(e.target.value)}
+            autoFocus
+            className="w-full bg-transparent text-2xl font-black tracking-tight outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <textarea
+            placeholder="Tell backers why this matters (optional)"
+            value={crowdfundDescription}
+            onChange={(e) => setCrowdfundDescription(e.target.value)}
+            rows={3}
+            className="w-full resize-none bg-transparent text-[15px] font-medium outline-none placeholder:text-[#ccc] border-none p-0"
+          />
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label
+                htmlFor="cf-goal"
+                className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2"
+              >
+                Goal (SOL)
+              </label>
+              <input
+                id="cf-goal"
+                type="number"
+                min="0"
+                step="0.001"
+                placeholder="1"
+                value={crowdfundGoalSol}
+                onChange={(e) => setCrowdfundGoalSol(e.target.value)}
+                className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
+              />
+            </div>
+            <div className="space-y-2">
+              <label
+                htmlFor="cf-deadline"
+                className="text-[11px] font-bold uppercase tracking-widest text-[#999] px-2"
+              >
+                Deadline
+              </label>
+              <input
+                id="cf-deadline"
+                type="date"
+                value={crowdfundDeadline}
+                onChange={(e) => setCrowdfundDeadline(e.target.value)}
+                className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5"
+              />
+            </div>
+          </div>
+
+          {isAuthenticated ? (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                {crowdfundWalletReady
+                  ? `On submit, this campaign will be anchored on Solana via crowdfund-registry. Pledges escrow lamports into the on-chain Crowdfund PDA; on success you can claim the vault, on failure backers can refund.`
+                  : "Connect a Solana wallet to anchor this campaign on chain. Without one, only the off-chain envelope is published (pledges become signal-only)."}
+              </p>
+            </div>
+          ) : (
+            <div className="rounded-2xl bg-amber-50 border border-amber-100 p-4">
+              <p className="text-[13px] font-bold text-amber-800">
+                Sign in with Tribe to create crowdfunds
+              </p>
+              <a
+                href="/onboarding/connect"
+                className="text-[12px] font-bold text-amber-600 underline mt-1 inline-block"
+              >
+                Sign in now
+              </a>
+            </div>
+          )}
+
+          {submitError && (
+            <p className="text-[12px] text-red-500 font-bold px-2">
+              {submitError}
+            </p>
+          )}
+        </div>
+      </FormLayout>
+    );
+  }
+
+  // Fallback for channel — composer pattern is on the way; the four
+  // community primitives (event/poll/task/crowdfund) ship first.
   if (mode !== "menu") {
     return (
       <FormLayout
