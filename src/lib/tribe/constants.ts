@@ -25,6 +25,7 @@ export const PROGRAM_IDS = {
   pollRegistry: new PublicKey("HPd8FqxVfoeBxwBr7wuKDeahgGX1V9UewxEWzjZY2SAm"),
   crowdfundRegistry: new PublicKey("CrowdF11111111111111111111111111111111111111"),
   taskRegistry: new PublicKey("TaskReg111111111111111111111111111111111111"),
+  channelRegistry: new PublicKey("ChanReg111111111111111111111111111111111111"),
 };
 
 // Network discriminator used by message envelopes.

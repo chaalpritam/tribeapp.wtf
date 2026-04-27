@@ -70,6 +70,10 @@ const DISC = {
   taskClaim:             Buffer.from([ 49, 222, 219, 238, 155,  68, 221, 136]),
   taskComplete:          Buffer.from([109, 167, 192,  41, 129, 108, 220, 196]),
   taskCancel:            Buffer.from([ 69, 228, 134, 187, 134, 105, 238,  48]),
+  // channel-registry — first-write-wins ownership of a slug.
+  channelRegister:       Buffer.from([  9, 188, 246, 127,  89,  91, 103,  50]),
+  channelUpdate:         Buffer.from([ 75, 204,  94, 165,  60, 180, 193, 217]),
+  channelTransfer:       Buffer.from([ 27,  30, 166, 145, 255, 253, 146, 226]),
 };
 
 // ── PDA Helpers ──────────────────────────────────────────────────────
@@ -1321,4 +1325,99 @@ export async function cancelTaskOnchain(
   });
   const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
   return { txSig };
+}
+
+// ── channel-registry helpers ─────────────────────────────────────────
+
+/** Channel-id slug regex — matches the program's validate_channel_id. */
+const CHANNEL_ID_REGEX = /^[a-z0-9-]+$/;
+/** Reserved id rejected by the program; "general" is the always-on default. */
+const RESERVED_GENERAL_ID = "general";
+
+export const CHANNEL_KIND_CITY = 2;
+export const CHANNEL_KIND_INTEREST = 3;
+
+/** Run the same checks the program does so we fail fast in the
+ *  browser before the wallet pops up a sign sheet. */
+export function validateChannelId(id: string): void {
+  if (!id) throw new Error("channel id must not be empty");
+  if (id.length > 32) throw new Error("on-chain channel id is capped at 32 bytes");
+  if (!CHANNEL_ID_REGEX.test(id)) {
+    throw new Error("channel id must match /^[a-z0-9-]+$/");
+  }
+  if (id === RESERVED_GENERAL_ID) {
+    throw new Error('"general" is reserved for the hub-seeded default channel');
+  }
+}
+
+function getChannelPda(id: string): PublicKey {
+  return PublicKey.findProgramAddressSync(
+    [Buffer.from("channel"), Buffer.from(id)],
+    PROGRAM_IDS.channelRegistry
+  )[0];
+}
+
+/**
+ * Claim ownership of an unregistered channel slug on chain. First-
+ * write-wins: the PDA is seeded by the literal id bytes so each id
+ * maps to exactly one ChannelRecord across the whole network.
+ *
+ * `metadataHash` should be the BLAKE3 hash of the off-chain
+ * CHANNEL_ADD envelope so the on-chain ChannelRecord points back to
+ * the envelope (apps fetch /v1/messages/:hash for name + description).
+ */
+export async function registerChannelOnchain(
+  provider: AnchorProvider,
+  args: {
+    id: string;
+    kind: typeof CHANNEL_KIND_CITY | typeof CHANNEL_KIND_INTEREST;
+    ownerTid: number;
+    latitude?: number;
+    longitude?: number;
+    /** 32-byte BLAKE3 hash. Pass an all-zero buffer to skip the link. */
+    metadataHash: Uint8Array;
+  }
+): Promise<{ txSig: string; channelPda: PublicKey }> {
+  validateChannelId(args.id);
+  if (args.metadataHash.length !== 32) {
+    throw new Error("metadataHash must be exactly 32 bytes");
+  }
+
+  const owner = provider.wallet.publicKey;
+  const channelPda = getChannelPda(args.id);
+  const hasLocation =
+    args.latitude !== undefined || args.longitude !== undefined;
+
+  // Args layout (mirrors register_channel signature):
+  //   id String (4-byte len + bytes)
+  //   | kind u8 | owner_tid u64 | latitude f64 | longitude f64
+  //   | has_location u8 | metadata_hash [u8;32]
+  const idBytes = Buffer.from(args.id, "utf8");
+  const idLenBuf = Buffer.alloc(4);
+  idLenBuf.writeUInt32LE(idBytes.length, 0);
+
+  const data = Buffer.concat([
+    DISC.channelRegister,
+    idLenBuf,
+    idBytes,
+    Buffer.from([args.kind]),
+    bnToLeBuffer(args.ownerTid, 8),
+    writeFloat64LE(args.latitude ?? 0),
+    writeFloat64LE(args.longitude ?? 0),
+    Buffer.from([hasLocation ? 1 : 0]),
+    Buffer.from(args.metadataHash),
+  ]);
+
+  const ix = new TransactionInstruction({
+    programId: PROGRAM_IDS.channelRegistry,
+    keys: [
+      { pubkey: channelPda, isSigner: false, isWritable: true },
+      { pubkey: owner, isSigner: true, isWritable: true },
+      { pubkey: SystemProgram.programId, isSigner: false, isWritable: false },
+    ],
+    data,
+  });
+
+  const txSig = await provider.sendAndConfirm(new Transaction().add(ix));
+  return { txSig, channelPda };
 }
