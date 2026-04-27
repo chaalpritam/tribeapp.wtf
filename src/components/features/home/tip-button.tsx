@@ -4,7 +4,6 @@ import { useState } from "react";
 import { Loader2, Send, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useTribeTip } from "@/hooks/use-tribe-tip";
-import { useOnchainTipsForTarget } from "@/hooks/use-onchain-tips";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -21,18 +20,24 @@ interface TipButtonProps {
   recipientTid: number;
   /** Base64 blake3 of the tweet — used to scope the on-chain aggregate. */
   targetHash: string;
+  /** On-chain tip count + total SOL for this target, lifted from the parent. */
+  tipCount: number;
+  totalSol: number;
+  /** Called after a successful tip so the parent can refresh aggregates. */
+  onTipped: () => void;
 }
 
-export function TipButton({ recipientTid, targetHash }: TipButtonProps) {
+export function TipButton({
+  recipientTid,
+  targetHash,
+  tipCount,
+  totalSol,
+  onTipped,
+}: TipButtonProps) {
   const { tip, pending: tipPending, ready: tipReady } = useTribeTip();
   const [tipped, setTipped] = useState(false);
   const [open, setOpen] = useState(false);
   const [customAmount, setCustomAmount] = useState("");
-  const {
-    tipCount,
-    totalSol,
-    refresh: refreshAggregate,
-  } = useOnchainTipsForTarget(targetHash);
 
   const sendTip = async (amountSol: number) => {
     if (!tipReady || tipped || tipPending) return;
@@ -40,7 +45,7 @@ export function TipButton({ recipientTid, targetHash }: TipButtonProps) {
     setTipped(true);
     try {
       await tip(recipientTid, amountSol, { targetHash });
-      void refreshAggregate();
+      onTipped();
     } catch {
       setTipped(false);
     }

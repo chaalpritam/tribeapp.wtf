@@ -21,7 +21,9 @@ import { useShare } from "@/hooks/use-share";
 import { useAuth } from "@/hooks/use-auth";
 import { useComments } from "@/hooks/use-comments";
 import { useTribeBookmark } from "@/hooks/use-tribe-bookmark";
+import { useOnchainTipsForTarget } from "@/hooks/use-onchain-tips";
 import { TipButton } from "./tip-button";
+import { TippersRow } from "./tippers-row";
 
 function tidFromUserId(id: string): number | null {
   const match = id.match(/^tid-(\d+)$/);
@@ -177,6 +179,12 @@ export function TweetCard({ tweet }: TweetCardProps) {
   );
   const { setBookmarked, ready: bookmarkReady } = useTribeBookmark();
   const recipientTid = tidFromUserId(tweet.user.id);
+  const {
+    tipCount: onchainTipCount,
+    totalSol: onchainTipSol,
+    tippers: onchainTippers,
+    refresh: refreshTipAggregate,
+  } = useOnchainTipsForTarget(tweet.id);
   const { showToast: showShareToast } = useShare();
   const {
     comments,
@@ -310,6 +318,9 @@ export function TweetCard({ tweet }: TweetCardProps) {
         </div>
       )}
 
+      {/* Recent on-chain tippers */}
+      <TippersRow tipCount={onchainTipCount} tippers={onchainTippers} />
+
       {/* Interactions Bar */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-1">
@@ -348,7 +359,13 @@ export function TweetCard({ tweet }: TweetCardProps) {
 
         <div className="flex items-center gap-2">
           {recipientTid !== null && (
-            <TipButton recipientTid={recipientTid} targetHash={tweet.id} />
+            <TipButton
+              recipientTid={recipientTid}
+              targetHash={tweet.id}
+              tipCount={onchainTipCount}
+              totalSol={onchainTipSol}
+              onTipped={refreshTipAggregate}
+            />
           )}
           <button
             onClick={async () => {
