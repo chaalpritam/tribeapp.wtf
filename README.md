@@ -66,15 +66,17 @@ URLs at your nodes (see env vars below).
 
 If your hub + ER server run on a different Mac on the same Wi-Fi, no `tribe`
 install is needed on this dev laptop — just paste two env vars into your local
-`.env` (or `.env.local`):
+`.env` (or `.env.local`). Use the **LAN IP**, not the `*.local` hostname —
+Chrome's `fetch()` trips on macOS' IPv6 link-local record for `.local` names
+and surfaces `ERR_ADDRESS_UNREACHABLE`. The IPv4 has no such hazard:
 
 ```bash
 NEXT_PUBLIC_SEED_DATA=false
-NEXT_PUBLIC_HUB_URL=http://yourmac.local:4000
-NEXT_PUBLIC_ER_SERVER_URL=http://yourmac.local:3003
+NEXT_PUBLIC_HUB_URL=http://192.168.1.6:4000
+NEXT_PUBLIC_ER_SERVER_URL=http://192.168.1.6:3003
 ```
 
-Run `tribe share` on the machine running the hub to get the exact URLs (it
+Run `tribe share` on the machine running the hub to get the exact IP (it
 prints them in this same shape so you can copy-paste). See the
 [parent README](../Readme.md#cross-device-development-on-one-wi-fi)
 for the full flow + troubleshooting.
