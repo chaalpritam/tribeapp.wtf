@@ -62,6 +62,16 @@ in-repo dummy data — no API keys, no running hub or ER server required.
 To run against a real backend, set `NEXT_PUBLIC_SEED_DATA=false` and point the
 URLs at your nodes (see env vars below).
 
+### Cross-device dev (same Wi-Fi)
+
+If your hub + ER server run on a different Mac on the same Wi-Fi, the parent
+repo's `tribe link http://yourmac.local:4000` writes the right `NEXT_PUBLIC_*`
+URLs into `tribe-app/.env.local`. For *this* app (`tribeapp.wtf`), copy those
+values into the local `.env` (or `.env.local`) and set
+`NEXT_PUBLIC_SEED_DATA=false`. Run `tribe share` on the hub machine to get the
+URL. See the [parent README](../Readme.md#cross-device-development-on-one-wi-fi)
+for the full flow.
+
 ## Environment
 
 | Variable | Default | Description |
