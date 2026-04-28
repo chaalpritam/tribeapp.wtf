@@ -64,13 +64,20 @@ URLs at your nodes (see env vars below).
 
 ### Cross-device dev (same Wi-Fi)
 
-If your hub + ER server run on a different Mac on the same Wi-Fi, the parent
-repo's `tribe link http://yourmac.local:4000` writes the right `NEXT_PUBLIC_*`
-URLs into `tribe-app/.env.local`. For *this* app (`tribeapp.wtf`), copy those
-values into the local `.env` (or `.env.local`) and set
-`NEXT_PUBLIC_SEED_DATA=false`. Run `tribe share` on the hub machine to get the
-URL. See the [parent README](../Readme.md#cross-device-development-on-one-wi-fi)
-for the full flow.
+If your hub + ER server run on a different Mac on the same Wi-Fi, no `tribe`
+install is needed on this dev laptop — just paste two env vars into your local
+`.env` (or `.env.local`):
+
+```bash
+NEXT_PUBLIC_SEED_DATA=false
+NEXT_PUBLIC_HUB_URL=http://yourmac.local:4000
+NEXT_PUBLIC_ER_SERVER_URL=http://yourmac.local:3003
+```
+
+Run `tribe share` on the machine running the hub to get the exact URLs (it
+prints them in this same shape so you can copy-paste). See the
+[parent README](../Readme.md#cross-device-development-on-one-wi-fi)
+for the full flow + troubleshooting.
 
 ## Environment
 
