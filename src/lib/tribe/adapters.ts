@@ -1,8 +1,47 @@
-import type { Tweet } from "@/types";
-import type { TribeTweet } from "./api";
+import type { City, Tweet, User } from "@/types";
+import type { TribeTweet, TribeUserSummary } from "./api";
 
 const FALLBACK_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop";
+
+/**
+ * Build the local `User` shape used by the UI from a signed-in
+ * TribeIdentity, the active city, and (optionally) the hub-resolved
+ * profile metadata. Bio / display name / avatar fall back to identity
+ * fields and finally to the shared fallback avatar so a guest who
+ * just registered still gets a renderable card.
+ */
+export function tribeIdentityToUser(args: {
+  identity: { tid: number; username?: string | null; custodyWallet: string };
+  city: Pick<City, "id">;
+  profile?: TribeUserSummary | null;
+}): User {
+  const { identity, city, profile } = args;
+  const username =
+    profile?.username ?? identity.username ?? `tid${identity.tid}`;
+  const displayName =
+    profile?.displayName ?? identity.username ?? `TID ${identity.tid}`;
+
+  return {
+    id: `tid-${identity.tid}`,
+    username,
+    displayName,
+    avatarUrl: profile?.pfpUrl ?? FALLBACK_AVATAR,
+    cityId: city.id,
+    isVerified: false,
+    bio: profile?.bio ?? undefined,
+  };
+}
+
+/**
+ * The hub stores city channels under their slug (channel kind = 2).
+ * tribeapp.wtf's seed data already uses the city id as a slug, so the
+ * mapping is identity. Kept as a helper so the convention lives in
+ * one file if it ever changes.
+ */
+export function cityChannelId(cityId: string): string {
+  return cityId;
+}
 
 function relativeTimestamp(unixSeconds: number): string {
   const ms = unixSeconds * 1000;

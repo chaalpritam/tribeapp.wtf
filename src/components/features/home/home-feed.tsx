@@ -8,7 +8,7 @@ import { useOnchainEvents } from "@/hooks/use-onchain-events";
 import { useOnchainPolls } from "@/hooks/use-onchain-polls";
 import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
-import { tribeTweetToTweet } from "@/lib/tribe";
+import { tribeTweetToTweet, cityChannelId } from "@/lib/tribe";
 import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
 import { EventCard } from "./event-card";
@@ -51,11 +51,24 @@ type FeedTab = "all" | "city" | "following";
 export function HomeFeed() {
   const { tweets, polls, events, tasks, crowdfunds, currentCity, tribes } =
     useTribeStore();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, tid: myTid } = useAuth();
   const [activeTab, setActiveTab] = useState<FeedTab>("city");
-  const { tweets: hubTweets, loading: hubLoading } = useTribeFeed({
-    enabled: activeTab === "all",
-  });
+
+  // The home feed pulls live tweets from the hub on every tab. The
+  // shape of the request is what changes:
+  //   all       → /v1/feed (global)
+  //   city      → /v1/feed/channel/<cityChannelId>
+  //   following → /v1/feed/<myTid> (personalized — tweets from
+  //               people I follow, materialized server-side)
+  // The personalized feed only enables when the caller has signed in.
+  const cityChannel = currentCity ? cityChannelId(currentCity.id) : undefined;
+  const { tweets: hubTweets, loading: hubLoading } = useTribeFeed(
+    activeTab === "all"
+      ? {}
+      : activeTab === "city"
+        ? { channelId: cityChannel, enabled: !!cityChannel }
+        : { tid: myTid != null ? String(myTid) : undefined, enabled: myTid != null }
+  );
   // On-chain content from the hub mirrors — surfaced on every tab
   // so anchored content from across users appears alongside seed
   // data. Each adapted row carries the on-chain PDA so the
@@ -76,15 +89,15 @@ export function HomeFeed() {
     [hubTweets, currentCity?.id]
   );
 
-  // Build mixed feed: real hub tweets first (when on the All tab),
-  // then seed content interleaved.
+  // Build mixed feed: real hub tweets first (every tab now), then
+  // seed content interleaved. The same store-side seed list backs
+  // every tab in seed mode; in production mode it's empty and the
+  // hub tweets are the whole feed.
   const feedItems: { type: string; data: FeedItemData; key: string }[] = [];
 
-  if (activeTab === "all") {
-    adaptedHubTweets.forEach((tweet) => {
-      feedItems.push({ type: "tweet", data: tweet, key: `hub-${tweet.id}` });
-    });
-  }
+  adaptedHubTweets.forEach((tweet) => {
+    feedItems.push({ type: "tweet", data: tweet, key: `hub-${tweet.id}` });
+  });
 
   tweets.forEach((tweet) => {
     feedItems.push({ type: "tweet", data: tweet, key: tweet.id });
@@ -207,7 +220,7 @@ export function HomeFeed() {
       </div>
 
       <div className="px-3 sm:px-6 max-w-2xl mx-auto">
-        {activeTab === "all" && hubLoading && adaptedHubTweets.length === 0 && (
+        {hubLoading && adaptedHubTweets.length === 0 && (
           <div className="flex items-center gap-2 mb-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
             loading from hub…
