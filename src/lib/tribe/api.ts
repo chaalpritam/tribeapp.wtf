@@ -151,6 +151,42 @@ export function getMediaUrl(hash: string): string {
   return `${getHubBaseUrl()}/v1/media/${hash}`;
 }
 
+/**
+ * Canonical reference form for hub-hosted media. Stored verbatim in
+ * embeds and profile fields so a hub-IP change (DHCP renewal, moving
+ * the stack to a new machine, swapping `tribe link` targets) doesn't
+ * strand every image at the old address. Render side calls
+ * `resolveMediaUrl` against the *current* NEXT_PUBLIC_HUB_URL.
+ */
+export function mediaRef(hash: string): string {
+  return `media:${hash}`;
+}
+
+/**
+ * Render-time helper: turn whatever was stored in an embed / pfpUrl
+ * into a real URL for an `<Image>` src. Handles three input shapes:
+ *
+ *   1. `media:<hash>` — canonical form (written by tribe-app and
+ *      newer publishers).
+ *   2. `http(s)://…/v1/media/<hash>` — legacy absolute URL stored by
+ *      pre-`mediaRef` versions of the app. We re-extract the hash
+ *      and re-resolve so a stale IP burnt in at compose time gets
+ *      replaced with the current hub.
+ *   3. Any other URL — passed through as-is (external links,
+ *      unsplash placeholders, etc.).
+ */
+export function resolveMediaUrl(
+  value: string | null | undefined
+): string | null {
+  if (!value) return null;
+  if (value.startsWith("media:")) {
+    return getMediaUrl(value.slice("media:".length));
+  }
+  const match = value.match(/\/v1\/media\/([0-9a-fA-F]{64})/);
+  if (match) return getMediaUrl(match[1]);
+  return value;
+}
+
 export interface UploadResult {
   hash: string;
   url: string;

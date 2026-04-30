@@ -57,6 +57,7 @@ export function PollCard({ poll }: PollCardProps) {
             src={poll.imageUrl}
             alt=""
             fill
+            unoptimized
             className="object-cover"
           />
         </div>

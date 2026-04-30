@@ -13,7 +13,7 @@ import { useTribeKarma } from "@/hooks/use-tribe-karma";
 import { useTribeOnchainKarma } from "@/hooks/use-tribe-onchain-karma";
 import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useTribeFollowList, type FollowListKind } from "@/hooks/use-tribe-follow-list";
-import { tribeTweetToTweet } from "@/lib/tribe";
+import { resolveMediaUrl, tribeTweetToTweet } from "@/lib/tribe";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -56,6 +56,7 @@ function ActivityGrid({ tweets, isLoading }: { tweets: Tweet[]; isLoading?: bool
             src={tweet.imageUrl!}
             alt={tweet.caption}
             fill
+            unoptimized
             className="object-cover transition-transform group-hover:scale-110 duration-500"
             sizes="(max-width: 640px) 33vw, 200px"
           />
@@ -195,7 +196,7 @@ export default function ProfilePage() {
   const displayBio = hubProfile.bio || currentUser?.bio || "";
 
   const displayAvatar =
-    hubProfile.pfpUrl ||
+    resolveMediaUrl(hubProfile.pfpUrl) ||
     profile?.image ||
     currentUser?.avatarUrl ||
     "/default-avatar.png";
@@ -254,6 +255,7 @@ export default function ProfilePage() {
                   src={displayAvatar}
                   alt={displayName || "Profile"}
                   fill
+                  unoptimized
                   className="object-cover"
                 />
               </div>

@@ -1,5 +1,5 @@
 import type { City, Tribe, Tweet, User } from "@/types";
-import type { TribeTweet, TribeUserSummary } from "./api";
+import { resolveMediaUrl, type TribeTweet, type TribeUserSummary } from "./api";
 import type { ChannelInfo } from "./channels";
 
 const FALLBACK_AVATAR =
@@ -27,7 +27,7 @@ export function tribeIdentityToUser(args: {
     id: `tid-${identity.tid}`,
     username,
     displayName,
-    avatarUrl: profile?.pfpUrl ?? FALLBACK_AVATAR,
+    avatarUrl: resolveMediaUrl(profile?.pfpUrl) ?? FALLBACK_AVATAR,
     cityId: city.id,
     isVerified: false,
     bio: profile?.bio ?? undefined,
@@ -64,14 +64,10 @@ export function channelInfoToTribe(
     cityId: defaults.cityId,
     name: info.name?.trim() || `#${info.id}`,
     description: info.description ?? "",
-    category: "general",
     icon: isCity ? "map-pin" : "users",
     color: isCity ? "10B981" : "6366F1",
     members: info.member_count ?? 0,
     isPrivate: false,
-    moderators: info.created_by ? [info.created_by] : [],
-    rules: [],
-    subchannels: [],
     isJoined: defaults.isJoined ?? false,
   };
 }
@@ -87,7 +83,13 @@ function relativeTimestamp(unixSeconds: number): string {
 
 function pickImageEmbed(embeds?: string[]): string | undefined {
   if (!embeds) return undefined;
-  return embeds.find((e) => /\.(png|jpe?g|gif|webp|avif)(\?|#|$)/i.test(e));
+  const hit = embeds.find(
+    (e) =>
+      e.startsWith("media:") ||
+      /\/v1\/media\/[0-9a-fA-F]{64}/.test(e) ||
+      /\.(png|jpe?g|gif|webp|avif)(\?|#|$)/i.test(e)
+  );
+  return hit ? resolveMediaUrl(hit) ?? undefined : undefined;
 }
 
 /**
@@ -120,7 +122,7 @@ export function tribeTweetToTweet(
       id: `tid-${hubTweet.tid}`,
       username,
       displayName,
-      avatarUrl: rawPfp ?? FALLBACK_AVATAR,
+      avatarUrl: resolveMediaUrl(rawPfp) ?? FALLBACK_AVATAR,
       cityId: defaults.cityId,
       isVerified: false,
     },
@@ -134,7 +136,9 @@ export function tribeTweetToTweet(
     totalTips: 0,
     cityId: defaults.cityId,
     imageUrl: pickImageEmbed(hubTweet.embeds),
-    embeds: hubTweet.embeds?.map((url) => ({ url })),
+    embeds: hubTweet.embeds?.map((url) => ({
+      url: resolveMediaUrl(url) ?? url,
+    })),
     channel: hubTweet.channel_id
       ? { id: hubTweet.channel_id, name: hubTweet.channel_id }
       : undefined,

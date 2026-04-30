@@ -255,6 +255,7 @@ export function TweetCard({ tweet }: TweetCardProps) {
                 src={tweet.user.avatarUrl}
                 alt={tweet.user.displayName}
                 fill
+                unoptimized
                 className="object-cover"
               />
             </div>
@@ -311,6 +312,7 @@ export function TweetCard({ tweet }: TweetCardProps) {
             src={tweet.imageUrl}
             alt={tweet.caption || "Tweet image"}
             fill
+            unoptimized
             className="object-cover transition-transform group-hover:scale-[1.02] duration-700"
             sizes="(max-width: 768px) 100vw, 600px"
             priority={false}

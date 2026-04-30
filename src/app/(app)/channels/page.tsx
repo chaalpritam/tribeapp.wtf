@@ -10,11 +10,8 @@ export default function ChannelsPage() {
   const { tribes } = useTribeStore();
   const [search, setSearch] = useState("");
 
-  // Channels are tribes with subchannels
-  const channels = tribes.filter(
-    (t) =>
-      t.subchannels.length > 0 &&
-      t.name.toLowerCase().includes(search.toLowerCase())
+  const channels = tribes.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase())
   );
 
   return (
@@ -52,7 +49,7 @@ export default function ChannelsPage() {
                 {channel.isPrivate && <Lock className="h-3 w-3 text-muted-foreground" />}
               </div>
               <p className="text-xs text-muted-foreground">
-                {channel.subchannels.length} subchannels &middot; {formatNumber(channel.members)} members
+                {formatNumber(channel.members)} members
               </p>
             </div>
           </Link>

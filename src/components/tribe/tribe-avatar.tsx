@@ -92,6 +92,7 @@ export function TribeAvatar({
             alt={name || "Avatar"}
             width={pixelSize}
             height={pixelSize}
+            unoptimized
             className="aspect-square size-full object-cover"
           />
         ) : (

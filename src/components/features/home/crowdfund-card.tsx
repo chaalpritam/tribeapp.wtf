@@ -104,6 +104,7 @@ export function CrowdfundCard({ crowdfund }: CrowdfundCardProps) {
             src={crowdfund.imageUrl}
             alt={crowdfund.title}
             fill
+            unoptimized
             className="object-cover transition-transform group-hover:scale-105 duration-700"
           />
         </div>

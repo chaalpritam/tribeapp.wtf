@@ -3,11 +3,11 @@
 import { use, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
-import { ArrowLeft, Hash, Users, Heart, MessageCircle, Share2 } from "lucide-react";
+import { ArrowLeft, Heart, MessageCircle, Share2 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { formatNumber } from "@/lib/utils";
 
-const tabs = ["Posts", "Subchannels", "About"];
+const tabs = ["Posts", "About"];
 
 const mockChannelPosts = [
   {
@@ -127,33 +127,9 @@ export default function ChannelDetailPage({ params }: { params: Promise<{ id: st
           </div>
         )}
 
-        {activeTab === "Subchannels" && (
-          <div className="space-y-2">
-            {channel.subchannels.map((sub) => (
-              <div key={sub.id} className="flex items-center gap-3 rounded-xl border p-3">
-                <Hash className="h-5 w-5 text-muted-foreground" />
-                <div className="flex-1">
-                  <p className="text-sm font-medium">{sub.name}</p>
-                  <p className="text-xs text-muted-foreground">{sub.description}</p>
-                </div>
-                <span className="text-xs text-muted-foreground">
-                  <Users className="mr-1 inline h-3 w-3" />
-                  {formatNumber(sub.members)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-
         {activeTab === "About" && (
           <div>
-            <p className="mb-4 text-sm text-muted-foreground">{channel.description}</p>
-            <h3 className="mb-2 text-sm font-semibold">Rules</h3>
-            <ul className="space-y-1 text-sm text-muted-foreground">
-              {channel.rules.map((rule, i) => (
-                <li key={i}>&bull; {rule}</li>
-              ))}
-            </ul>
+            <p className="text-sm text-muted-foreground">{channel.description}</p>
           </div>
         )}
       </div>

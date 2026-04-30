@@ -99,6 +99,7 @@ export function TaskCard({ task }: TaskCardProps) {
             src={task.imageUrl}
             alt={task.title}
             fill
+            unoptimized
             className="object-cover transition-transform group-hover:scale-105 duration-700"
           />
         </div>
@@ -108,7 +109,7 @@ export function TaskCard({ task }: TaskCardProps) {
       <div className="flex items-center justify-between border-t border-[#f0f0f0] pt-6">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-full bg-muted overflow-hidden relative border border-[#f0f0f0]">
-            <Image src={task.user.avatarUrl} alt="" fill className="object-cover" />
+            <Image src={task.user.avatarUrl} alt="" fill unoptimized className="object-cover" />
           </div>
           <span className="text-[13px] font-bold tracking-tight">@{task.user.username}</span>
         </div>
