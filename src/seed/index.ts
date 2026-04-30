@@ -19,7 +19,6 @@ export {
   user15,
   achievements,
 } from "./users";
-export { tribes } from "./tribes";
 export { chatMessages } from "./chat";
 export { nearbyUsers, mapEvents } from "./map";
 export { userProfile, activityItems, notifications } from "./profile";

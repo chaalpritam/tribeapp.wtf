@@ -8,9 +8,8 @@ import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeChannels } from "@/hooks/use-tribe-channels";
 import { useHubChannels } from "@/hooks/use-hub-channels";
 import { useAuth } from "@/hooks/use-auth";
-import { tribeCategoryConfig } from "@/lib/theme";
 import { formatNumber } from "@/lib/utils";
-import type { TribeCategory, Tribe, City } from "@/types";
+import type { Tribe, City } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
 import { cities } from "@/seed/cities";
 import { loadCityData } from "@/lib/city-data";
@@ -19,50 +18,36 @@ import { cn } from "@/lib/utils";
 import { channelInfoToTribe } from "@/lib/tribe";
 
 export default function TribesPage() {
-  const { tribes, currentCity } = useTribeStore();
+  const { currentCity } = useTribeStore();
   const { tid } = useAuth();
   const [search, setSearch] = useState("");
-  const [activeCategory, setActiveCategory] = useState<"all" | TribeCategory>("all");
 
-  // Hub-fetched channels — the protocol's source of truth. Merged
-  // with the seed tribes so the demo experience still has rich
-  // category/icon metadata in seed mode while real channels appear
-  // alongside in production mode.
+  // The protocol's channel list is the single source of truth.
+  // Two reads: the global directory and the user's joined set; the
+  // latter only fires once the caller has signed in.
   const { channels: hubChannels } = useHubChannels({});
   const { channels: joinedHubChannels } = useHubChannels({
     memberOf: tid ?? null,
     enabled: tid != null,
   });
 
-  const mergedTribes = useMemo<Tribe[]>(() => {
+  const allTribes = useMemo<Tribe[]>(() => {
     const joinedIds = new Set(joinedHubChannels.map((c) => c.id));
-    const seedIds = new Set(tribes.map((t) => t.id));
-    const adapted = hubChannels
-      .filter((c) => !seedIds.has(c.id))
-      .map((c) =>
-        channelInfoToTribe(c, {
-          cityId: currentCity?.id ?? "",
-          isJoined: joinedIds.has(c.id),
-        })
-      );
-    // Patch the seed tribe with the live join state when the user
-    // has actually joined that channel on the hub.
-    const seedWithLiveJoins = tribes.map((t) =>
-      joinedIds.has(t.id) ? { ...t, isJoined: true } : t
+    return hubChannels.map((c) =>
+      channelInfoToTribe(c, {
+        cityId: currentCity?.id ?? "",
+        isJoined: joinedIds.has(c.id),
+      })
     );
-    return [...seedWithLiveJoins, ...adapted];
-  }, [tribes, hubChannels, joinedHubChannels, currentCity?.id]);
+  }, [hubChannels, joinedHubChannels, currentCity?.id]);
 
-  const filtered = mergedTribes.filter((t) => {
-    const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = activeCategory === "all" || t.category === activeCategory;
-    return matchesSearch && matchesCategory;
-  });
+  const filtered = allTribes.filter((t) =>
+    t.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   const joinedTribes = filtered.filter((t) => t.isJoined);
   const discoverTribes = filtered.filter((t) => !t.isJoined);
 
-  const categories = Array.from(new Set(mergedTribes.map((t) => t.category)));
   const [cityFilter, setCityFilter] = useState<"india" | "international">("india");
 
   const filteredCities = cities.filter(c => {
@@ -76,8 +61,8 @@ export default function TribesPage() {
     <div className="bg-[#fcfcfc] min-h-screen">
       <AppHeader title="Tribes" />
 
-      {/* Search & Categories Bar */}
-      <div className="sticky top-[73px] z-30 bg-white/80 backdrop-blur-md px-6 py-4 space-y-4 border-b border-[#f0f0f0]">
+      {/* Search Bar */}
+      <div className="sticky top-[73px] z-30 bg-white/80 backdrop-blur-md px-6 py-4 border-b border-[#f0f0f0]">
         <div className="relative">
           <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <input
@@ -87,29 +72,6 @@ export default function TribesPage() {
             onChange={(e) => setSearch(e.target.value)}
             className="w-full rounded-2xl border border-[#f0f0f0] bg-[#f9f9f9] py-3.5 pl-12 pr-4 text-[15px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5"
           />
-        </div>
-        <div className="flex gap-2 overflow-x-auto no-scrollbar">
-          <button
-            onClick={() => setActiveCategory("all")}
-            className={`whitespace-nowrap rounded-full px-5 py-2 text-[13px] font-bold transition-all active:scale-95 ${activeCategory === "all"
-              ? "bg-black text-white shadow-lg shadow-black/10"
-              : "bg-white border border-[#f0f0f0] text-muted-foreground hover:bg-muted/30"
-              }`}
-          >
-            All
-          </button>
-          {categories.map((cat) => (
-            <button
-              key={cat}
-              onClick={() => setActiveCategory(cat)}
-              className={`whitespace-nowrap rounded-full px-5 py-2 text-[13px] font-bold transition-all active:scale-95 ${activeCategory === cat
-                ? "bg-black text-white shadow-lg shadow-black/10"
-                : "bg-white border border-[#f0f0f0] text-muted-foreground hover:bg-muted/30"
-                }`}
-            >
-              {tribeCategoryConfig[cat]?.label || cat}
-            </button>
-          ))}
         </div>
       </div>
 

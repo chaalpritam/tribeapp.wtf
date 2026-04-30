@@ -1,49 +1,59 @@
 "use client";
 
-import { use, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { Users, Lock, Shield, Hash, Share2, MapPin, Calendar, Crown, MessageSquare } from "lucide-react";
-import { useTribeStore } from "@/store/use-tribe-store";
+import { use, useMemo, useState } from "react";
+import { Lock, Share2, Calendar, MessageSquare, Loader2 } from "lucide-react";
 import { useTribeChannels } from "@/hooks/use-tribe-channels";
+import { useHubChannel } from "@/hooks/use-hub-channel";
+import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useShare } from "@/hooks/use-share";
 import { formatNumber, cn } from "@/lib/utils";
 import { TweetCard } from "@/components/features/home/tweet-card";
-import { EventCard } from "@/components/features/home/event-card";
-import type { User } from "@/types";
+import { channelInfoToTribe, tribeTweetToTweet } from "@/lib/tribe";
 import { AppHeader } from "@/components/layout/app-header";
 
-const tabs = ["Feed", "Events", "Members", "About"];
+const tabs = ["Feed", "Events", "About"];
 
 export default function TribeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
-  const { tribes, joinTribe, leaveTribe, tweets, events } = useTribeStore();
   const { join: joinChannel, leave: leaveChannel, ready: chReady } =
     useTribeChannels();
   const { share, showToast } = useShare();
   const [activeTab, setActiveTab] = useState("Feed");
-  const [members, setMembers] = useState<User[]>([]);
+  const [optimisticJoined, setOptimisticJoined] = useState<boolean | null>(null);
 
-  const tribe = tribes.find((t) => t.id === id);
+  const { channel, loading: channelLoading } = useHubChannel(id);
+  const { tweets: hubTweets, loading: feedLoading } = useTribeFeed({
+    channelId: id,
+    enabled: !!channel,
+  });
 
-  const [prevId, setPrevId] = useState(id);
-  if (id !== prevId) {
-    setPrevId(id);
-    setMembers([]);
+  const tribe = useMemo(() => {
+    if (!channel) return null;
+    return channelInfoToTribe(channel, {
+      cityId: "",
+      isJoined: optimisticJoined ?? false,
+    });
+  }, [channel, optimisticJoined]);
+
+  if (channelLoading && !tribe) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="text-muted-foreground">Loading channel…</p>
+      </div>
+    );
   }
 
   if (!tribe) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="text-muted-foreground">Tribe not found</p>
+        <p className="text-muted-foreground">Channel not found</p>
       </div>
     );
   }
 
-  const tribeTweets = tweets.filter((c) => c.tribeId === tribe.id);
-  const cityTweets = tweets.filter((c) => c.cityId === tribe.cityId);
-  const feedTweets = tribeTweets.length > 0 ? tribeTweets : cityTweets.slice(0, 5);
-  const tribeEvents = events.filter((e) => e.cityId === tribe.cityId);
+  const feedTweets = hubTweets.map((t) =>
+    tribeTweetToTweet(t, { cityId: "" })
+  );
 
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
@@ -53,27 +63,25 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
       <div className="max-w-2xl mx-auto">
         <div className="px-6 py-8">
           <div className="bg-white rounded-[40px] border border-[#f0f0f0] overflow-hidden shadow-sm">
-            {tribe.imageUrl && (
-              <div className="relative h-56 w-full">
-                <Image src={tribe.imageUrl} alt={tribe.name} fill className="object-cover" sizes="(max-width: 800px) 100vw, 800px" />
-                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                <div className="absolute bottom-8 left-8 right-8">
-                  <div className="flex items-center gap-3">
-                    <h2 className="text-3xl font-black text-white tracking-tighter leading-none">{tribe.name}</h2>
-                    {tribe.isPrivate && <div className="h-6 w-6 rounded-full bg-white/20 backdrop-blur-md flex items-center justify-center"><Lock className="h-3 w-3 text-white" /></div>}
+            <div className="px-8 pt-8 pb-2">
+              <div className="flex items-center gap-3">
+                <h2 className="text-3xl font-black tracking-tighter leading-none">{tribe.name}</h2>
+                {tribe.isPrivate && (
+                  <div className="h-6 w-6 rounded-full bg-[#f5f5f5] flex items-center justify-center">
+                    <Lock className="h-3 w-3" />
                   </div>
-                  <div className="flex items-center gap-3 mt-4">
-                    <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-[11px] font-bold text-white uppercase tracking-widest border border-white/10">
-                      {formatNumber(tribe.members)} Members
-                    </span>
-                    <span className="h-1 w-1 rounded-full bg-white/40" />
-                    <span className="text-[11px] font-bold text-white/80 uppercase tracking-widest">
-                      Active Now
-                    </span>
-                  </div>
-                </div>
+                )}
               </div>
-            )}
+              <div className="flex items-center gap-3 mt-3">
+                <span className="px-3 py-1 rounded-full bg-[#f5f5f5] text-[11px] font-bold uppercase tracking-widest text-[#666]">
+                  {formatNumber(tribe.members)} Members
+                </span>
+                <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
+                <span className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
+                  #{tribe.id}
+                </span>
+              </div>
+            </div>
 
             <div className="p-8">
               <p className="text-[16px] font-medium text-[#444] leading-relaxed mb-8">
@@ -83,12 +91,18 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
               <div className="flex gap-3">
                 <button
                   onClick={async () => {
-                    if (tribe.isJoined) {
-                      leaveTribe(tribe.id);
-                      if (chReady) { try { await leaveChannel(tribe.id); } catch {} }
-                    } else {
-                      joinTribe(tribe.id);
-                      if (chReady) { try { await joinChannel(tribe.id); } catch {} }
+                    const wasJoined = tribe.isJoined;
+                    setOptimisticJoined(!wasJoined);
+                    if (chReady) {
+                      try {
+                        if (wasJoined) {
+                          await leaveChannel(tribe.id);
+                        } else {
+                          await joinChannel(tribe.id);
+                        }
+                      } catch {
+                        setOptimisticJoined(wasJoined);
+                      }
                     }
                   }}
                   className={cn(
@@ -131,7 +145,11 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
         <div className="px-6 pb-32">
           {activeTab === "Feed" && (
             <div className="flex flex-col gap-6">
-              {feedTweets.length === 0 ? (
+              {feedLoading && feedTweets.length === 0 ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : feedTweets.length === 0 ? (
                 <div className="py-20 text-center space-y-4 bg-white rounded-[40px] border border-[#f0f0f0] p-8">
                   <div className="h-20 w-20 bg-muted/30 rounded-[32px] flex items-center justify-center mx-auto">
                     <MessageSquare className="h-10 w-10 text-muted-foreground/30" />
@@ -150,54 +168,17 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
           )}
 
           {activeTab === "Events" && (
-            <div className="flex flex-col gap-6">
-              {tribeEvents.length === 0 ? (
-                <div className="py-20 text-center space-y-4 bg-white rounded-[40px] border border-[#f0f0f0] p-8">
-                  <div className="h-20 w-20 bg-muted/30 rounded-[32px] flex items-center justify-center mx-auto">
-                    <Calendar className="h-10 w-10 text-muted-foreground/30" />
-                  </div>
-                  <div>
-                    <h4 className="text-xl font-bold tracking-tight">No Upcoming Events</h4>
-                    <p className="text-sm font-medium text-muted-foreground mt-1">Check back soon or gather everyone together!</p>
-                  </div>
-                </div>
-              ) : (
-                tribeEvents.map((event) => (
-                  <EventCard key={event.id} event={event} />
-                ))
-              )}
-            </div>
-          )}
-
-          {activeTab === "Members" && (
-            <div className="flex flex-col gap-3">
-              {members.map((member) => {
-                const isMod = tribe.moderators.includes(member.id);
-                return (
-                  <div key={member.id} className="flex items-center gap-4 p-5 rounded-[28px] bg-white border border-[#f0f0f0] shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03]">
-                    <div className="relative h-14 w-14 flex-none rounded-[20px] overflow-hidden border border-[#f0f0f0]">
-                      <Image src={member.avatarUrl} alt={member.displayName} fill className="object-cover" sizes="56px" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-[16px] font-black tracking-tight truncate">{member.displayName}</span>
-                        {isMod && (
-                          <span className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-500 text-[10px] font-black uppercase tracking-widest border border-amber-100">
-                            <Crown className="h-2.5 w-2.5" /> Mod
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[12px] font-bold text-muted-foreground uppercase tracking-widest">@{member.username}</p>
-                    </div>
-                    {member.karma && (
-                      <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-[#f9f9f9] border border-[#f0f0f0]">
-                        <div className="h-2 w-2 rounded-full" style={{ backgroundColor: getKarmaColor(member.karma.level) }} />
-                        <span className="text-[11px] font-black uppercase tracking-widest text-black">{member.karma.level}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+            <div className="py-20 text-center space-y-4 bg-white rounded-[40px] border border-[#f0f0f0] p-8">
+              <div className="h-20 w-20 bg-muted/30 rounded-[32px] flex items-center justify-center mx-auto">
+                <Calendar className="h-10 w-10 text-muted-foreground/30" />
+              </div>
+              <div>
+                <h4 className="text-xl font-bold tracking-tight">No Upcoming Events</h4>
+                <p className="text-sm font-medium text-muted-foreground mt-1">
+                  Channel-scoped event listings need a hub-side index that
+                  isn&apos;t exposed yet.
+                </p>
+              </div>
             </div>
           )}
 
@@ -205,39 +186,20 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
             <div className="space-y-6">
               <div className="bg-white rounded-[40px] border border-[#f0f0f0] p-8 shadow-sm">
                 <h3 className="text-xl font-black tracking-tighter mb-6">About this Tribe</h3>
-
-                <div className="space-y-8">
-                  {tribe.subchannels.length > 0 && (
-                    <div>
-                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#999] mb-4">Channels</h4>
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {tribe.subchannels.map((sub) => (
-                          <div key={sub.id} className="flex items-start gap-4 p-5 rounded-[28px] bg-[#fcfcfc] border border-[#f0f0f0]">
-                            <Hash className="h-5 w-5 text-primary mt-1" />
-                            <div>
-                              <p className="text-[15px] font-bold tracking-tight">{sub.name}</p>
-                              <p className="text-[12px] font-medium text-muted-foreground mt-1 leading-snug">{sub.description}</p>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {tribe.rules.length > 0 && (
-                    <div>
-                      <h4 className="text-[11px] font-bold uppercase tracking-widest text-[#999] mb-4">Guidelines</h4>
-                      <div className="space-y-3">
-                        {tribe.rules.map((rule, i) => (
-                          <div key={i} className="flex items-center gap-4 p-5 rounded-[24px] bg-[#fcfcfc] border border-[#f0f0f0] text-[15px] font-medium text-[#444]">
-                            <Shield className="h-5 w-5 text-emerald-500" />
-                            {rule}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
+                <p className="text-[15px] font-medium text-[#444] leading-relaxed">
+                  {tribe.description ||
+                    "No description set. The channel creator can publish a USER_DATA-style description envelope when channel metadata grows."}
+                </p>
+                {channel?.kind === 2 && channel.latitude != null && channel.longitude != null && (
+                  <div className="mt-6 rounded-[24px] bg-[#fcfcfc] border border-[#f0f0f0] p-5 flex items-center gap-4">
+                    <span className="text-[11px] font-black uppercase tracking-widest text-[#999]">
+                      Anchored at
+                    </span>
+                    <span className="text-[13px] font-bold tracking-tight">
+                      {channel.latitude.toFixed(3)}, {channel.longitude.toFixed(3)}
+                    </span>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -251,16 +213,4 @@ export default function TribeDetailPage({ params }: { params: Promise<{ id: stri
       )}
     </div>
   );
-}
-
-function getKarmaColor(level: string): string {
-  const colors: Record<string, string> = {
-    newcomer: "#94A3B8",
-    neighbor: "#6366F1",
-    local: "#14B8A6",
-    trusted: "#FB923C",
-    pillar: "#EC4899",
-    legend: "#EAB308",
-  };
-  return colors[level] || "#94A3B8";
 }

@@ -1,4 +1,4 @@
-import type { KarmaLevel, TribeCategory } from "@/types";
+import type { KarmaLevel } from "@/types";
 
 export const colors = {
   primary: "#6366F1",
@@ -91,28 +91,6 @@ export const karmaLevelConfig: Record<
   trusted: { label: "Trusted", icon: "ShieldCheck", color: "#FF9800", minKarma: 1500 },
   pillar: { label: "Pillar", icon: "Landmark", color: "#F44336", minKarma: 5000 },
   legend: { label: "Legend", icon: "Crown", color: "#FFD700", minKarma: 15000 },
-};
-
-export const tribeCategoryConfig: Record<
-  TribeCategory,
-  { label: string; icon: string; color: string }
-> = {
-  cycling: { label: "Cycling", icon: "Bike", color: "#4CAF50" },
-  pets: { label: "Pets", icon: "PawPrint", color: "#FF9800" },
-  film: { label: "Film & Entertainment", icon: "Film", color: "#9C27B0" },
-  crypto: { label: "Crypto & Web3", icon: "Bitcoin", color: "#FFC107" },
-  fitness: { label: "Fitness", icon: "Dumbbell", color: "#F44336" },
-  food: { label: "Food & Dining", icon: "UtensilsCrossed", color: "#E91E63" },
-  gaming: { label: "Gaming", icon: "Gamepad2", color: "#673AB7" },
-  tech: { label: "Technology", icon: "Laptop", color: "#2196F3" },
-  arts: { label: "Arts & Culture", icon: "Palette", color: "#FF5722" },
-  music: { label: "Music", icon: "Music", color: "#00BCD4" },
-  books: { label: "Books", icon: "BookOpen", color: "#795548" },
-  parenting: { label: "Parenting", icon: "Baby", color: "#8BC34A" },
-  photography: { label: "Photography", icon: "Camera", color: "#607D8B" },
-  travel: { label: "Travel", icon: "Plane", color: "#03A9F4" },
-  sports: { label: "Sports", icon: "Trophy", color: "#4CAF50" },
-  general: { label: "General", icon: "MessageCircle", color: "#9E9E9E" },
 };
 
 export function getNextKarmaLevel(level: KarmaLevel): KarmaLevel | null {
