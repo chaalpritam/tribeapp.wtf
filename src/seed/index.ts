@@ -19,20 +19,7 @@ export {
   user15,
   achievements,
 } from "./users";
-export {
-  tweets,
-  bangaloreTweets,
-  mumbaiTweets,
-  delhiTweets,
-  sanFranciscoTweets,
-  londonTweets,
-  newYorkTweets,
-} from "./tweets";
-export { polls } from "./polls";
-export { tasks, getAllTasks } from "./tasks";
-export { crowdfunds } from "./crowdfunds";
 export { tribes } from "./tribes";
-export { exploreItems } from "./explore";
 export { chatMessages } from "./chat";
 export { nearbyUsers, mapEvents } from "./map";
 export { userProfile, activityItems, notifications } from "./profile";

@@ -71,12 +71,10 @@ export function HomeFeed() {
         ? { channelId: cityChannel, enabled: !!cityChannel }
         : { tid: myTid != null ? String(myTid) : undefined, enabled: myTid != null }
   );
-  // On-chain content from the hub mirrors — surfaced on every tab
-  // so anchored content from across users appears alongside seed
-  // data. Each adapted row carries the on-chain PDA so the
-  // existing card components automatically route their primary
-  // action (RSVP / vote / claim / pledge) through the on-chain
-  // path when a wallet is connected.
+  // On-chain content from the hub mirrors — surfaced on every tab.
+  // Each adapted row carries the on-chain PDA so the card components
+  // automatically route their primary action (RSVP / vote / claim /
+  // pledge) through the on-chain path when a wallet is connected.
   const cityId = currentCity?.id ?? "";
   const { events: onchainEvents } = useOnchainEvents({ cityId });
   const { polls: onchainPolls } = useOnchainPolls({ cityId });
@@ -91,10 +89,10 @@ export function HomeFeed() {
     [hubTweets, currentCity?.id]
   );
 
-  // Build mixed feed: real hub tweets first (every tab now), then
-  // seed content interleaved. The same store-side seed list backs
-  // every tab in seed mode; in production mode it's empty and the
-  // hub tweets are the whole feed.
+  // Build mixed feed: hub tweets first, then any locally-staged
+  // tweets the user just published this session (the store keeps a
+  // copy of post-publish writes so the new row is visible before
+  // gossip catches up).
   const feedItems: { type: string; data: FeedItemData; key: string }[] = [];
 
   adaptedHubTweets.forEach((tweet) => {
@@ -105,13 +103,13 @@ export function HomeFeed() {
     feedItems.push({ type: "tweet", data: tweet, key: tweet.id });
   });
 
-  // Merge on-chain rows first, then seed rows of the same type.
+  // Merge on-chain rows with locally-staged rows of the same type.
   // De-dup on id so a freshly-created item that's already in the
   // local store doesn't double-render after the hub picks it up.
-  function dedup<T extends { id: string }>(onchain: T[], seed: T[]): T[] {
+  function dedup<T extends { id: string }>(onchain: T[], local: T[]): T[] {
     const seen = new Set<string>();
     const merged: T[] = [];
-    for (const item of [...onchain, ...seed]) {
+    for (const item of [...onchain, ...local]) {
       if (!seen.has(item.id)) {
         seen.add(item.id);
         merged.push(item);
