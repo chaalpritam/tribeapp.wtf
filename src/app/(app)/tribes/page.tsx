@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Search, Users, Lock, ArrowRight, MapPin, Globe } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeChannels } from "@/hooks/use-tribe-channels";
+import { useHubChannels } from "@/hooks/use-hub-channels";
+import { useAuth } from "@/hooks/use-auth";
 import { tribeCategoryConfig } from "@/lib/theme";
 import { formatNumber } from "@/lib/utils";
 import type { TribeCategory, Tribe, City } from "@/types";
@@ -14,13 +16,44 @@ import { cities } from "@/seed/cities";
 import { loadCityData } from "@/lib/city-data";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
+import { channelInfoToTribe } from "@/lib/tribe";
 
 export default function TribesPage() {
   const { tribes, currentCity } = useTribeStore();
+  const { tid } = useAuth();
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<"all" | TribeCategory>("all");
 
-  const filtered = tribes.filter((t) => {
+  // Hub-fetched channels — the protocol's source of truth. Merged
+  // with the seed tribes so the demo experience still has rich
+  // category/icon metadata in seed mode while real channels appear
+  // alongside in production mode.
+  const { channels: hubChannels } = useHubChannels({});
+  const { channels: joinedHubChannels } = useHubChannels({
+    memberOf: tid ?? null,
+    enabled: tid != null,
+  });
+
+  const mergedTribes = useMemo<Tribe[]>(() => {
+    const joinedIds = new Set(joinedHubChannels.map((c) => c.id));
+    const seedIds = new Set(tribes.map((t) => t.id));
+    const adapted = hubChannels
+      .filter((c) => !seedIds.has(c.id))
+      .map((c) =>
+        channelInfoToTribe(c, {
+          cityId: currentCity?.id ?? "",
+          isJoined: joinedIds.has(c.id),
+        })
+      );
+    // Patch the seed tribe with the live join state when the user
+    // has actually joined that channel on the hub.
+    const seedWithLiveJoins = tribes.map((t) =>
+      joinedIds.has(t.id) ? { ...t, isJoined: true } : t
+    );
+    return [...seedWithLiveJoins, ...adapted];
+  }, [tribes, hubChannels, joinedHubChannels, currentCity?.id]);
+
+  const filtered = mergedTribes.filter((t) => {
     const matchesSearch = t.name.toLowerCase().includes(search.toLowerCase());
     const matchesCategory = activeCategory === "all" || t.category === activeCategory;
     return matchesSearch && matchesCategory;
@@ -29,7 +62,7 @@ export default function TribesPage() {
   const joinedTribes = filtered.filter((t) => t.isJoined);
   const discoverTribes = filtered.filter((t) => !t.isJoined);
 
-  const categories = Array.from(new Set(tribes.map((t) => t.category)));
+  const categories = Array.from(new Set(mergedTribes.map((t) => t.category)));
   const [cityFilter, setCityFilter] = useState<"india" | "international">("india");
 
   const filteredCities = cities.filter(c => {

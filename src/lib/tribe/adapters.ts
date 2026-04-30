@@ -1,5 +1,6 @@
-import type { City, Tweet, User } from "@/types";
+import type { City, Tribe, Tweet, User } from "@/types";
 import type { TribeTweet, TribeUserSummary } from "./api";
+import type { ChannelInfo } from "./channels";
 
 const FALLBACK_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop";
@@ -41,6 +42,38 @@ export function tribeIdentityToUser(args: {
  */
 export function cityChannelId(cityId: string): string {
   return cityId;
+}
+
+/**
+ * Convert a hub-shape ChannelInfo into the local Tribe shape used by
+ * the Tribes / Channels list pages. The protocol's channel concept is
+ * narrower than the seed's Tribe (no category, moderators, rules,
+ * subchannels), so the seed-only fields default. The seed Tribe's
+ * `members` doubles as both members and tweet activity from the hub.
+ */
+export function channelInfoToTribe(
+  info: ChannelInfo,
+  defaults: { cityId: string; isJoined?: boolean } = { cityId: "" }
+): Tribe {
+  // Lightweight color/icon defaults so the existing card components
+  // render something visually distinct per kind without forcing the
+  // hub to carry a palette.
+  const isCity = info.kind === 2;
+  return {
+    id: info.id,
+    cityId: defaults.cityId,
+    name: info.name?.trim() || `#${info.id}`,
+    description: info.description ?? "",
+    category: "general",
+    icon: isCity ? "map-pin" : "users",
+    color: isCity ? "10B981" : "6366F1",
+    members: info.member_count ?? 0,
+    isPrivate: false,
+    moderators: info.created_by ? [info.created_by] : [],
+    rules: [],
+    subchannels: [],
+    isJoined: defaults.isJoined ?? false,
+  };
 }
 
 function relativeTimestamp(unixSeconds: number): string {
