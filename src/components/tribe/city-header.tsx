@@ -46,7 +46,7 @@ export function CityHeader({
           <span className="text-sm font-bold leading-tight">{city.name}</span>
           <span className="text-[10px] text-muted-foreground flex items-center gap-0.5">
             <Users className="size-2.5" />
-            {city.memberCount.toLocaleString()} members
+            {city.country}
           </span>
         </div>
         <ChevronDown className="size-3.5 text-muted-foreground ml-0.5" />

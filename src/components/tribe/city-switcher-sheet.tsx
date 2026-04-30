@@ -92,7 +92,7 @@ export function CitySwitcherSheet({
                   </span>
                   <span className="text-[10px] text-muted-foreground flex items-center gap-1">
                     <MapPin className="size-2.5" />
-                    {city.memberCount.toLocaleString()} members
+                    {city.country}
                   </span>
                 </div>
               </button>

@@ -8,7 +8,7 @@ import { MapPin, Search, Globe } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useMounted } from "@/hooks/use-mounted";
-import { cities } from "@/seed/cities";
+import { cities } from "@/lib/cities";
 import { cn } from "@/lib/utils";
 
 export default function CitySelectionPage() {

@@ -6,7 +6,7 @@ import { Check, MapPin, Search, Globe } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { loadCityData } from "@/lib/city-data";
-import { cities } from "@/seed/cities";
+import { cities } from "@/lib/cities";
 import {
     Dialog,
     DialogContent,

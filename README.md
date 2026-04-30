@@ -3,35 +3,34 @@
 Hyperlocal flavor of the Tribe web client — the consumer-facing app at
 [tribeapp.wtf](https://tribeapp.wtf). Doubles as the protocol's landing page.
 
-The app ships with a full bundled seed dataset, so every screen can be explored
-without running a backend. Wire it to a real hub + ER server (or talk straight
-to Solana) by flipping a single env var.
+The app talks to the Tribe protocol end-to-end. Identity is a Solana TID +
+ed25519 app key, content lives in a tribe-hub mesh, fast follows ride the
+ER sequencer. There is no bundled demo dataset — every screen renders what
+the protocol has and nothing else.
 
 ## What's in here
 
 - **Landing page** (`/`) — pitch, feature tour, and a "the protocol is the
   point" section linking to the underlying repos (tribe-protocol, tribe-sdk,
-  tribe-hub, tribe-er-server, tribeapp.wtf, root TribeEco).
-- **Onboarding** (`/onboarding/connect`, `/city`, `/signup`) — wallet connect,
-  pick a city, optional profile setup. Funnels into `/home`.
+  tribe-hub, tribe-er-server, tribe-app, root TribeEco).
+- **Onboarding** (`/onboarding/connect`, `/city`, `/signup`) — wallet connect
+  → register-or-recover TID on Solana → generate app key → optional username
+  → pick a city. Funnels into `/home`.
 - **App** (`/(app)/...`) — the in-app experience:
 
-  | Route             | Description                                      |
-  |-------------------|--------------------------------------------------|
-  | `/home`           | Hyperlocal feed                                  |
-  | `/explore`        | Discover people, tribes, places                  |
-  | `/map`            | Map view of nearby activity                      |
-  | `/tribes`         | Tribes you're in / can join                      |
-  | `/channels`       | Group/community channels                         |
-  | `/chat`           | DM list and threads                              |
-  | `/profile`        | Your profile (karma, followers, following)       |
-  | `/notifications`  | Activity from the hub                            |
-  | `/wallet`         | Wallet view (tips, balances)                     |
-  | `/create`         | Composer for tweets / events / tasks / polls    |
-  | `/settings`       | Settings + theme                                 |
-
-- **Conference** (`/conference`) — Devconnect demo with schedule, speakers,
-  venues, and networking tabs. Used as a real-world demo of the hyperlocal flow.
+  | Route             | Description                                                                 |
+  |-------------------|-----------------------------------------------------------------------------|
+  | `/home`           | Per-tab hub feed: All / City channel / Mine                                 |
+  | `/explore`        | Debounced cross-primitive hub search (tweets, users, channels)              |
+  | `/map`            | Geo-anchored city channels (kind = 2 with lat / lng)                        |
+  | `/tribes`         | Hub channels (`/v1/channels`); join state from `/v1/channels/member/:tid`   |
+  | `/channels`       | Sub-channel browser                                                         |
+  | `/chat`           | NaCl-box DMs over `/v1/dm/*`                                                |
+  | `/profile`        | Hub user + karma + on-chain karma + own posts; in-place USER_DATA editor    |
+  | `/notifications`  | `/v1/notifications/:tid` + locally-staged events                            |
+  | `/wallet`         | SOL balance from the connected wallet + on-chain tip ledger                 |
+  | `/create`         | Signed-envelope composer for tweets, events, polls, tasks, crowdfunds, channels |
+  | `/settings`       | Settings + theme                                                            |
 
 ## Stack
 
@@ -43,7 +42,7 @@ to Solana) by flipping a single env var.
 | State        | Zustand (with persistence)                             |
 | Theming      | next-themes + city-dynamic accents                     |
 | Solana       | `@solana/wallet-adapter-*`, `@solana/web3.js`, Anchor  |
-| Crypto       | tweetnacl (ed25519), blake3                            |
+| Crypto       | tweetnacl (ed25519 + nacl.box), blake3                 |
 | Testing      | Vitest, Testing Library                                |
 
 ## Quick start
@@ -56,25 +55,22 @@ npm run dev
 
 Open <http://localhost:3000>.
 
-The app boots with `NEXT_PUBLIC_SEED_DATA=true` so every screen is wired to
-in-repo dummy data — no API keys, no running hub or ER server required.
-
-To run against a real backend, set `NEXT_PUBLIC_SEED_DATA=false` and point the
-URLs at your nodes (see env vars below).
+You'll need a hub + ER server reachable at the URLs in `.env`. The defaults
+assume a local stack — run `bin/tribe start` from the parent repo.
 
 ### Cross-device dev (same Wi-Fi)
 
 If your hub + ER server run on a different Mac on the same Wi-Fi, no `tribe`
-install is needed on this dev laptop — just paste two env vars into your local
-`.env` (or `.env.local`). Use the **LAN IP**, not the `*.local` hostname —
-Chrome's `fetch()` trips on macOS' IPv6 link-local record for `.local` names
-and surfaces `ERR_ADDRESS_UNREACHABLE`. The IPv4 has no such hazard:
+install is needed on this dev laptop — just point two env vars at the LAN IP:
 
 ```bash
-NEXT_PUBLIC_SEED_DATA=false
 NEXT_PUBLIC_HUB_URL=http://192.168.1.6:4000
 NEXT_PUBLIC_ER_SERVER_URL=http://192.168.1.6:3003
 ```
+
+Use the **LAN IP**, not the `*.local` hostname — Chrome's `fetch()` trips on
+macOS' IPv6 link-local record for `.local` names and surfaces
+`ERR_ADDRESS_UNREACHABLE`.
 
 Run `tribe share` on the machine running the hub to get the exact IP (it
 prints them in this same shape so you can copy-paste). See the
@@ -85,13 +81,12 @@ for the full flow + troubleshooting.
 
 | Variable | Default | Description |
 |---|---|---|
-| `NEXT_PUBLIC_SEED_DATA` | `true` | Use bundled seed data instead of live backends |
 | `NEXT_PUBLIC_SOLANA_RPC_URL` | devnet | Solana JSON-RPC |
 | `NEXT_PUBLIC_HUB_URL` | `http://localhost:4000` | Hub HTTP endpoint |
 | `NEXT_PUBLIC_ER_SERVER_URL` | `http://localhost:3003` | ER server HTTP endpoint |
 | `NEXT_PUBLIC_HUB_URLS` | (empty) | Comma-separated hubs for multi-node failover |
 | `NEXT_PUBLIC_ER_SERVER_URLS` | (empty) | Comma-separated ER servers for multi-node failover |
-| `NEYNAR_API_KEY` | (empty) | Optional Farcaster integration; blank stays on seed data |
+| `NEYNAR_API_KEY` | (empty) | Optional Farcaster integration |
 | `NEXT_PUBLIC_NEYNAR_CLIENT_ID` | (empty) | Optional Farcaster client ID |
 | `NEXT_PUBLIC_XMTP_ENV` | `production` | `dev` / `production` / `local` |
 
@@ -116,13 +111,14 @@ src/
     page.tsx                # Landing page (protocol pitch + feature tour)
     layout.tsx
     onboarding/             # /connect, /city, /signup
-    conference/             # Devconnect demo
     (app)/                  # In-app routes (home, chat, tribes, …)
   components/               # UI primitives + feature components
-  lib/                      # Helpers (Solana, hub client, formatting)
-  store/                    # Zustand stores
-  hooks/
-  seed/                     # Bundled dummy data driving the demo build
+  hooks/                    # Tribe-specific hooks (use-tribe-*, useHub*, etc.)
+  lib/
+    cities.ts               # Curated catalog of cities the app scopes to
+    tribe/                  # Hub client (api, dm, channels, messages, onchain)
+    …
+  store/                    # Zustand stores (tribe, identity, notifications, ui)
   types/
 public/                     # Static assets
 ```
@@ -140,6 +136,7 @@ in the ER server. Swap any layer and this app keeps working.
 | [tribe-hub](../tribe-hub) | Decentralized hub — message storage, indexing, gossip |
 | [tribe-er-server](../tribe-er-server) | Ephemeral Rollup sequencer — instant follows |
 | [tribe-app](../tribe-app) | The protocol-first reference client |
+| [tribe-ios](../tribe-ios) | Native SwiftUI iOS client |
 
 ## License
 

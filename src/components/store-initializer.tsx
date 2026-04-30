@@ -31,7 +31,7 @@ export function StoreInitializer() {
 
   useEffect(() => {
     if (currentCity) return;
-    import("@/seed/cities").then(({ cities }) => {
+    import("@/lib/cities").then(({ cities }) => {
       const savedCityId = localStorage.getItem("tribe-selected-city");
       const city =
         cities.find((c) => c.id === savedCityId) || cities[0];

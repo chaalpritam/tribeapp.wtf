@@ -11,7 +11,7 @@ import { useAuth } from "@/hooks/use-auth";
 import { formatNumber } from "@/lib/utils";
 import type { Tribe, City } from "@/types";
 import { AppHeader } from "@/components/layout/app-header";
-import { cities } from "@/seed/cities";
+import { cities } from "@/lib/cities";
 import { loadCityData } from "@/lib/city-data";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
@@ -266,8 +266,6 @@ function ChannelCard({ city }: { city: City }) {
         <div className="flex items-center gap-2 text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
           <MapPin className="h-3 w-3" />
           {city.country}
-          <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-          {city.memberCountDisplay || formatNumber(city.memberCount)} Members
         </div>
       </div>
 
