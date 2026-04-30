@@ -6,4 +6,3 @@ export * from "./explore";
 export * from "./chat";
 export * from "./map";
 export * from "./profile";
-export * from "./conference";

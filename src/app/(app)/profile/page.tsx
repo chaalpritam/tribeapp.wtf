@@ -20,7 +20,7 @@ import { Progress } from "@/components/ui/progress";
 import { useShare } from "@/hooks/use-share";
 import { AppHeader } from "@/components/layout/app-header";
 
-const tabs = ["Posts", "Media", "Badges", "Stats"];
+const tabs = ["Posts", "Media", "Stats"];
 
 import type { Tweet } from "@/types";
 import { Loader2 } from "lucide-react";
@@ -447,19 +447,6 @@ export default function ProfilePage() {
             tweets={allPosts}
             isLoading={hubOwnLoading && allPosts.length === 0}
           />
-        )}
-
-        {activeTab === "Badges" && (
-          <div className="grid grid-cols-2 gap-3 sm:gap-4 px-3 sm:px-6 pb-24">
-            {["Leader", "Organizer", "Contributor", "Adventurer"].map((badge) => (
-              <div key={badge} className="flex flex-col items-center justify-center gap-4 rounded-[32px] bg-white border border-[#f0f0f0] px-6 py-10 shadow-sm transition-all hover:shadow-xl hover:shadow-black/[0.03]">
-                <div className="h-20 w-20 rounded-[28px] bg-amber-50 text-amber-500 flex items-center justify-center">
-                  <Award className="h-10 w-10" />
-                </div>
-                <span className="text-[15px] font-black tracking-tight">{badge}</span>
-              </div>
-            ))}
-          </div>
         )}
 
         {activeTab === "Stats" && (
