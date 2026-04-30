@@ -46,7 +46,7 @@ const iconMap: Record<string, string> = {
   "map-pin": "📍",
 };
 
-type FeedTab = "all" | "city" | "following";
+type FeedTab = "all" | "city" | "mine";
 
 export function HomeFeed() {
   const { tweets, polls, events, tasks, crowdfunds, currentCity, tribes } =
@@ -56,11 +56,13 @@ export function HomeFeed() {
 
   // The home feed pulls live tweets from the hub on every tab. The
   // shape of the request is what changes:
-  //   all       → /v1/feed (global)
-  //   city      → /v1/feed/channel/<cityChannelId>
-  //   following → /v1/feed/<myTid> (personalized — tweets from
-  //               people I follow, materialized server-side)
-  // The personalized feed only enables when the caller has signed in.
+  //   all  → /v1/feed                            (global)
+  //   city → /v1/feed/channel/<cityChannelId>    (city channel)
+  //   mine → /v1/feed/<myTid>                    (own posts)
+  // The hub does not (yet) expose a true personalized
+  // "tweets-from-people-I-follow" route, so the third tab surfaces
+  // the user's own activity. Only enables once the caller has signed
+  // in and a TID is available.
   const cityChannel = currentCity ? cityChannelId(currentCity.id) : undefined;
   const { tweets: hubTweets, loading: hubLoading } = useTribeFeed(
     activeTab === "all"
@@ -179,14 +181,14 @@ export function HomeFeed() {
           </button>
           {isAuthenticated && (
             <button
-              onClick={() => setActiveTab("following")}
+              onClick={() => setActiveTab("mine")}
               className={`px-5 py-2 rounded-full text-[13px] font-bold transition-all active:scale-95 whitespace-nowrap ${
-                activeTab === "following"
+                activeTab === "mine"
                   ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
                   : "bg-white border border-[#f0f0f0] text-muted-foreground hover:bg-muted/30"
               }`}
             >
-              Following
+              Mine
             </button>
           )}
         </div>

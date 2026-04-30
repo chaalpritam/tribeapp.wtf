@@ -11,7 +11,9 @@ import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { useTribeUser } from "@/hooks/use-tribe-user";
 import { useTribeKarma } from "@/hooks/use-tribe-karma";
 import { useTribeOnchainKarma } from "@/hooks/use-tribe-onchain-karma";
+import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useTribeFollowList, type FollowListKind } from "@/hooks/use-tribe-follow-list";
+import { tribeTweetToTweet } from "@/lib/tribe";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
@@ -101,12 +103,19 @@ function PostsFeed({ tweets, isLoading }: { tweets: Tweet[]; isLoading?: boolean
 }
 
 export default function ProfilePage() {
-  const { currentUser, updateCurrentUser, tweets } = useTribeStore();
+  const { currentUser, updateCurrentUser, currentCity, tweets } = useTribeStore();
   const { isAuthenticated, profile, tid } = useAuth();
   const { setFields: publishUserData, error: publishError } = useTribeUserData();
   const { user: hubUser } = useTribeUser(tid ?? null);
   const { karma: hubKarma } = useTribeKarma(tid ?? null);
   const { karma: onchainKarma } = useTribeOnchainKarma(tid ?? null);
+  // The user's own tweets, served by /v1/feed/<tid> on the hub.
+  // Despite the route name, this returns posts authored by `tid`,
+  // not a personalized following feed.
+  const { tweets: hubOwnTweets, loading: hubOwnLoading } = useTribeFeed({
+    tid: tid != null ? String(tid) : undefined,
+    enabled: tid != null,
+  });
   const [followListKind, setFollowListKind] = useState<FollowListKind | null>(null);
   const { users: followListUsers, loading: followListLoading } =
     useTribeFollowList(tid ?? null, followListKind ?? "followers", followListKind !== null);
@@ -207,9 +216,22 @@ export default function ProfilePage() {
     posts: 0,
   };
 
-  const allPosts = currentUser
+  // Merge hub posts (live, identified by hash) with seed posts that
+  // the local store still keeps around for the demo experience.
+  // Dedupe on id — a hub-fetched tweet that's also in seed (e.g.
+  // re-imported during demo seeding) shouldn't render twice.
+  const adaptedHubOwn = hubOwnTweets.map((t) =>
+    tribeTweetToTweet(t, { cityId: currentCity?.id ?? "" })
+  );
+  const seedOwn = currentUser
     ? tweets.filter((c) => c.user.id === currentUser.id)
     : [];
+  const seenIds = new Set<string>();
+  const allPosts = [...adaptedHubOwn, ...seedOwn].filter((p) => {
+    if (seenIds.has(p.id)) return false;
+    seenIds.add(p.id);
+    return true;
+  });
 
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
@@ -414,10 +436,18 @@ export default function ProfilePage() {
         {/* Content Area */}
         {activeTab === "Posts" && (
           <div className="flex flex-col gap-4 px-3 sm:px-6 pb-24">
-            <PostsFeed tweets={allPosts} />
+            <PostsFeed
+              tweets={allPosts}
+              isLoading={hubOwnLoading && allPosts.length === 0}
+            />
           </div>
         )}
-        {activeTab === "Media" && <ActivityGrid tweets={allPosts} />}
+        {activeTab === "Media" && (
+          <ActivityGrid
+            tweets={allPosts}
+            isLoading={hubOwnLoading && allPosts.length === 0}
+          />
+        )}
 
         {activeTab === "Badges" && (
           <div className="grid grid-cols-2 gap-3 sm:gap-4 px-3 sm:px-6 pb-24">
