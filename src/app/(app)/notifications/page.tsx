@@ -150,7 +150,7 @@ export default function NotificationsPage() {
           })}
         </div>
 
-        {notifications.length === 0 && (
+        {notifications.length === 0 && hubNotifications.length === 0 && (
           <div className="flex h-[50vh] flex-col items-center justify-center space-y-4 text-center">
             <div className="rounded-[40px] bg-muted/30 p-10">
               <Bell className="h-10 w-10 text-muted-foreground/30" />
