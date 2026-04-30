@@ -6,110 +6,59 @@ import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { fetchUser, tribeIdentityToUser } from "@/lib/tribe";
 import type { User } from "@/types";
 
-// tribeapp.wtf defaults to seed/dummy data so the demo runs without
-// any backend or API keys. Opt out by setting NEXT_PUBLIC_SEED_DATA=false.
-const SEED_ENABLED =
-  typeof process === "undefined" ||
-  process.env.NEXT_PUBLIC_SEED_DATA !== "false";
-
 const GUEST_AVATAR =
   "https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100&h=100&fit=crop";
 
+/**
+ * Bootstraps the in-memory store on first paint:
+ *
+ *   1. Loads the city catalog (a curated list of supported cities;
+ *      not user data, just app config) and seats the active city.
+ *   2. Seats a placeholder guest user so views that depend on
+ *      `currentUser` render before the identity store rehydrates.
+ *   3. Promotes the placeholder to the signed-in TribeIdentity once
+ *      one is available, hydrating displayName / bio / avatar from
+ *      the user's hub profile. Re-runs whenever the identity changes
+ *      (sign-in, sign-out, fresh tab rehydrating from localStorage).
+ *
+ * All content (tweets, polls, events, tasks, crowdfunds, tribes,
+ * notifications, DMs) flows from the protocol via per-feature hooks
+ * — the store no longer ships demo data.
+ */
 export function StoreInitializer() {
   const { currentCity, setInitialData, updateCurrentUser } = useTribeStore();
   const identity = useTribeIdentityStore((s) => s.identity);
 
-  // Initial bootstrap. Runs once on mount: pick a city, optionally
-  // load seed content, and seat a placeholder user. The follow-up
-  // effect below promotes that placeholder to the real signed-in
-  // user once the identity store rehydrates from localStorage.
   useEffect(() => {
     if (currentCity) return;
+    import("@/seed/cities").then(({ cities }) => {
+      const savedCityId = localStorage.getItem("tribe-selected-city");
+      const city =
+        cities.find((c) => c.id === savedCityId) || cities[0];
 
-    if (SEED_ENABLED) {
-      Promise.all([
-        import("@/seed/cities"),
-        import("@/seed/users"),
-        import("@/seed/tweets"),
-        import("@/seed/explore"),
-        import("@/seed/polls"),
-        import("@/seed/tasks"),
-        import("@/seed/crowdfunds"),
-        import("@/seed/tribes"),
-      ]).then(
-        ([
-          { cities },
-          { currentUser },
-          { tweets },
-          { exploreItems },
-          { polls },
-          { tasks },
-          { crowdfunds },
-          { tribes },
-        ]) => {
-          const savedCityId = localStorage.getItem("tribe-selected-city");
-          const city =
-            cities.find((c) => c.id === savedCityId) || cities[0];
+      const guestUser: User = {
+        id: "guest",
+        username: "guest",
+        displayName: "Guest",
+        avatarUrl: GUEST_AVATAR,
+        cityId: city.id,
+        isVerified: false,
+      };
 
-          setInitialData({
-            city,
-            user: currentUser,
-            tweets: tweets.filter(
-              (c: { cityId?: string }) => c.cityId === city.id
-            ),
-            events: exploreItems.filter(
-              (e: { cityId?: string }) => e.cityId === city.id
-            ),
-            polls: polls.filter((p: { id: string }) =>
-              p.id.includes(city.id.slice(0, 3))
-            ),
-            tasks: tasks[city.id] || [],
-            crowdfunds: crowdfunds[city.id] || [],
-            tribes: tribes.filter(
-              (t: { cityId?: string }) => t.cityId === city.id
-            ),
-          });
-        }
-      ).catch(() => {});
-    } else {
-      // Production: empty data, real user will land via the
-      // identity-promotion effect below.
-      import("@/seed/cities").then(({ cities }) => {
-        const savedCityId = localStorage.getItem("tribe-selected-city");
-        const city =
-          cities.find((c) => c.id === savedCityId) || cities[0];
-
-        const guestUser: User = {
-          id: "guest",
-          username: "guest",
-          displayName: "Guest",
-          avatarUrl: GUEST_AVATAR,
-          cityId: city.id,
-          isVerified: false,
-        };
-
-        setInitialData({
-          city,
-          user: guestUser,
-          tweets: [],
-          events: [],
-          polls: [],
-          tasks: [],
-          crowdfunds: [],
-          tribes: [],
-        });
-      }).catch(() => {});
-    }
+      setInitialData({
+        city,
+        user: guestUser,
+        tweets: [],
+        events: [],
+        polls: [],
+        tasks: [],
+        crowdfunds: [],
+        tribes: [],
+      });
+    }).catch(() => {});
   }, [currentCity, setInitialData]);
 
-  // Promote the placeholder user to the signed-in identity. Only
-  // active in production mode — in seed mode we deliberately keep
-  // the seed `currentUser` so the demo experience stays demo even
-  // when a wallet is connected. Best-effort hub fetch fills in
-  // displayName / bio / avatar; silent fall-through keeps the
-  // user usable while offline.
   useEffect(() => {
-    if (SEED_ENABLED) return;
     if (!currentCity) return;
     if (!identity) return;
 
