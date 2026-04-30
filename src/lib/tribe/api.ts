@@ -19,6 +19,14 @@ export interface TribeTweet {
   channel_id?: string | null;
   embeds?: string[];
   reactions?: { likes: number; recasts: number };
+  /** The hub returns these inline on each row (flat, not nested). The
+   *  display_name / pfp_url fields come from a JOIN against user_data
+   *  with the latest USER_DATA_ADD value per field. */
+  username?: string | null;
+  display_name?: string | null;
+  pfp_url?: string | null;
+  /** Legacy nested shape, kept for clients that build their own
+   *  TribeTweet payloads. The hub itself never sets this. */
   user?: TribeUserSummary;
 }
 

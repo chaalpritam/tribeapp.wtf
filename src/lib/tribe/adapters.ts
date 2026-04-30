@@ -92,17 +92,27 @@ function pickImageEmbed(embeds?: string[]): string | undefined {
 
 /**
  * Convert a hub-shape TribeTweet into the local Tweet shape that
- * TweetCard expects. Missing fields (city, comments, like/save state)
- * are zero-defaulted because the hub doesn't track them yet.
+ * TweetCard expects. The hub returns username / display_name / pfp_url
+ * flat on each row (joined in by feed.ts); we also accept the legacy
+ * nested `user` shape for forward-compat with clients that build their
+ * own payloads. Missing fields (comments, like/save state) are
+ * zero-defaulted because the hub doesn't track them yet.
  */
 export function tribeTweetToTweet(
   hubTweet: TribeTweet,
   defaults: { cityId: string }
 ): Tweet {
-  const username =
-    hubTweet.user?.username ?? `tid:${hubTweet.tid}`;
+  const rawUsername =
+    hubTweet.user?.username ?? hubTweet.username ?? null;
+  const rawDisplayName =
+    hubTweet.user?.displayName ?? hubTweet.display_name ?? null;
+  const rawPfp =
+    hubTweet.user?.pfpUrl ?? hubTweet.pfp_url ?? null;
+
+  const username = rawUsername ?? `tid:${hubTweet.tid}`;
   const displayName =
-    hubTweet.user?.displayName ?? username;
+    rawDisplayName?.trim() ||
+    (rawUsername ? `${rawUsername}.tribe` : `TID #${hubTweet.tid}`);
 
   return {
     id: hubTweet.hash,
@@ -110,7 +120,7 @@ export function tribeTweetToTweet(
       id: `tid-${hubTweet.tid}`,
       username,
       displayName,
-      avatarUrl: hubTweet.user?.pfpUrl ?? FALLBACK_AVATAR,
+      avatarUrl: rawPfp ?? FALLBACK_AVATAR,
       cityId: defaults.cityId,
       isVerified: false,
     },
