@@ -10,7 +10,7 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: "tribeapp.wtf — Hyperlocal Social Network",
-  description: "tribeapp.wtf is a demo of the Tribe web client running on bundled seed data — explore the hyperlocal social experience without any backend.",
+  description: "tribeapp.wtf is the consumer-facing Tribe web client — a hyperlocal social network on Solana. Identity on chain, content in a hub mesh, end-to-end encrypted DMs.",
 };
 
 export default function RootLayout({
