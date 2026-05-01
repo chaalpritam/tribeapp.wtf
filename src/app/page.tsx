@@ -32,6 +32,9 @@ import {
   Radio,
   Code2,
   ExternalLink,
+  Store,
+  Newspaper,
+  Terminal,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 
@@ -145,6 +148,39 @@ const repos = [
   },
 ];
 
+const buildExamples = [
+  {
+    icon: Store,
+    title: "Hyperlocal Marketplaces",
+    description: "Build peer-to-peer commerce, local service directories, or neighborhood rental networks using the protocol's tasks and payments primitives.",
+  },
+  {
+    icon: Newspaper,
+    title: "Community Media",
+    description: "Create specialized news feeds, local journalism platforms, or interest-based forums with built-in tipping and karma.",
+  },
+  {
+    icon: Users,
+    title: "Niche Social Networks",
+    description: "Launch dedicated platforms for gamers, hobbyists, or professionals utilizing verifiable identity and the open social graph.",
+  },
+  {
+    icon: Shield,
+    title: "Governance & DAOs",
+    description: "Develop neighborhood treasuries, local governance interfaces, or community voting systems using signed polls and Solana.",
+  },
+  {
+    icon: Banknote,
+    title: "Crowdfunding Portals",
+    description: "Build mutual aid networks, local project funding, or transparent charity platforms leveraging the native value transfer.",
+  },
+  {
+    icon: Terminal,
+    title: "Developer Tools",
+    description: "Create analytics dashboards, alternative clients, indexers, or automation bots that plug directly into the open protocol.",
+  },
+];
+
 const steps = [
   {
     step: "01",
@@ -243,7 +279,7 @@ export default function LandingPage() {
       <nav className="fixed right-8 top-8 z-50 flex items-center">
         <div className="flex items-center gap-1 rounded-full bg-[#f5f5f5]/60 p-1.5 backdrop-blur-md nav-pill-shadow transition-all hover:bg-[#f5f5f5]/80">
           <Link
-            href="#what"
+            href="/"
             className="px-6 py-2.5 text-[15px] font-medium text-black transition-colors hover:text-black/60"
           >
             What
@@ -259,6 +295,12 @@ export default function LandingPage() {
             className="px-6 py-2.5 text-[15px] font-medium text-black transition-colors hover:text-black/60"
           >
             Protocol
+          </Link>
+          <Link
+            href="#build"
+            className="px-6 py-2.5 text-[15px] font-medium text-black transition-colors hover:text-black/60"
+          >
+            Build
           </Link>
           <Link
             href={destination}
@@ -596,6 +638,39 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <ArrowRight className="hidden sm:block h-5 w-5 text-[#ccc]" />
+              </motion.div>
+            ))}
+          </div>
+        </section>
+
+        {/* What to build */}
+        <section id="build" className="mb-48">
+          <div className="mb-16 grid grid-cols-1 gap-8 lg:grid-cols-2 lg:items-end">
+            <h2 className="text-[36px] font-bold tracking-[-1.5px] text-black sm:text-[48px]">
+              What can you build?
+            </h2>
+            <p className="text-xl font-medium text-[#666]">
+              Tribe provides the primitives for identity, social, and value. You provide the experience. Here are a few things you could build right now.
+            </p>
+          </div>
+
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {buildExamples.map((example, idx) => (
+              <motion.div
+                key={example.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.05 }}
+                className="rounded-[32px] border border-[#f0f0f0] bg-white p-8 transition-all hover:border-black/5 hover:shadow-2xl hover:shadow-black/[0.02]"
+              >
+                <div className="mb-6 flex h-12 w-12 items-center justify-center rounded-xl bg-black text-white">
+                  <example.icon className="h-6 w-6" />
+                </div>
+                <h3 className="mb-3 text-xl font-bold tracking-tight">{example.title}</h3>
+                <p className="text-[16px] font-medium leading-[1.5] text-[#666]">
+                  {example.description}
+                </p>
               </motion.div>
             ))}
           </div>
