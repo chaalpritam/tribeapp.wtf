@@ -193,7 +193,7 @@ export function TweetCard({ tweet }: TweetCardProps) {
     addComment,
     deleteComment,
     addReply,
-  } = useComments(null);
+  } = useComments(tweet.id);
   const [showInput, setShowInput] = useState(false);
   const [commentText, setCommentText] = useState("");
   const [replyTexts, setReplyTexts] = useState<Record<string, string>>({});
