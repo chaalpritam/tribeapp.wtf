@@ -79,7 +79,12 @@ export async function fetchChannelFeed(
   return res.json();
 }
 
-export async function fetchReplies(hash: string): Promise<TribeFeedResponse> {
+export interface TribeRepliesResponse {
+  replies: TribeTweet[];
+  count: number;
+}
+
+export async function fetchReplies(hash: string): Promise<TribeRepliesResponse> {
   const res = await hubFetch(`/v1/replies?hash=${encodeURIComponent(hash)}`);
   if (!res.ok) throw new Error(`Failed to fetch replies: ${res.statusText}`);
   return res.json();
