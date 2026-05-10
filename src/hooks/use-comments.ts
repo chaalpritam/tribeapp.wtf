@@ -2,6 +2,8 @@
 
 import { useState, useCallback } from "react";
 import { useAuth } from "./use-auth";
+import { useTribePublish } from "./use-tribe-publish";
+import { fetchReplies, resolveMediaUrl, type TribeTweet } from "@/lib/tribe/api";
 
 export interface CommentData {
   id: string;
@@ -34,8 +36,29 @@ interface UseCommentsReturn {
   setReplyingTo: (commentId: string | null) => void;
 }
 
+function tweetToComment(t: TribeTweet, parentHash: string): CommentData {
+  const tidStr = String(t.tid);
+  const username =
+    t.user?.username ?? t.username ?? `tid:${tidStr}`;
+  const image =
+    resolveMediaUrl(t.user?.pfpUrl ?? t.pfp_url ?? null) ?? undefined;
+  return {
+    id: t.hash,
+    profileId: `tid-${tidStr}`,
+    contentId: parentHash,
+    text: t.text,
+    created_at: String(t.timestamp * 1000),
+    profile: {
+      id: `tid-${tidStr}`,
+      username,
+      image,
+    },
+  };
+}
+
 export function useComments(contentId: string | null): UseCommentsReturn {
   const { profile, isAuthenticated } = useAuth();
+  const { publish } = useTribePublish();
   const [comments, setComments] = useState<CommentData[]>([]);
   const [total, setTotal] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
@@ -50,9 +73,12 @@ export function useComments(contentId: string | null): UseCommentsReturn {
     setIsLoading(true);
     setError(null);
     try {
-      // TODO: implement comment fetching
-      setComments([]);
-      setTotal(0);
+      const res = await fetchReplies(contentId);
+      const list = (res.replies ?? []).map((t) =>
+        tweetToComment(t, contentId)
+      );
+      setComments(list);
+      setTotal(res.count ?? list.length);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to load comments"
@@ -67,11 +93,14 @@ export function useComments(contentId: string | null): UseCommentsReturn {
       if (!contentId || !isAuthenticated || !profile?.id || !text.trim())
         return;
 
+      const trimmed = text.trim();
+      const { hash } = await publish(trimmed, { parentHash: contentId });
+
       const newComment: CommentData = {
-        id: `comment-${Date.now()}`,
+        id: hash,
         profileId: profile.id,
         contentId,
-        text: text.trim(),
+        text: trimmed,
         created_at: String(Date.now()),
         profile: {
           id: profile.id,
@@ -82,7 +111,7 @@ export function useComments(contentId: string | null): UseCommentsReturn {
       setComments((prev) => [...prev, newComment]);
       setTotal((t) => t + 1);
     },
-    [contentId, isAuthenticated, profile]
+    [contentId, isAuthenticated, profile, publish]
   );
 
   const removeComment = useCallback(
@@ -93,9 +122,27 @@ export function useComments(contentId: string | null): UseCommentsReturn {
     []
   );
 
-  const fetchReplies = useCallback(
-    async (_commentId: string) => {
-      // TODO: implement reply fetching
+  const fetchRepliesFor = useCallback(
+    async (commentId: string) => {
+      try {
+        const res = await fetchReplies(commentId);
+        const list = (res.replies ?? []).map((t) =>
+          tweetToComment(t, commentId)
+        );
+        setComments((prev) =>
+          prev.map((c) =>
+            c.id === commentId
+              ? {
+                  ...c,
+                  replies: list,
+                  replyCount: res.count ?? list.length,
+                }
+              : c
+          )
+        );
+      } catch {
+        // keep prior replies on transient failure
+      }
     },
     []
   );
@@ -108,23 +155,27 @@ export function useComments(contentId: string | null): UseCommentsReturn {
           next.delete(commentId);
         } else {
           next.add(commentId);
-          fetchReplies(commentId);
+          fetchRepliesFor(commentId);
         }
         return next;
       });
     },
-    [fetchReplies]
+    [fetchRepliesFor]
   );
 
   const addReply = useCallback(
     async (commentId: string, text: string) => {
-      if (!contentId || !isAuthenticated || !profile?.id || !text.trim()) return;
+      if (!contentId || !isAuthenticated || !profile?.id || !text.trim())
+        return;
+
+      const trimmed = text.trim();
+      const { hash } = await publish(trimmed, { parentHash: commentId });
 
       const newReply: CommentData = {
-        id: `reply-${Date.now()}`,
+        id: hash,
         profileId: profile.id,
         contentId,
-        text: text.trim(),
+        text: trimmed,
         created_at: String(Date.now()),
         profile: {
           id: profile.id,
@@ -151,7 +202,7 @@ export function useComments(contentId: string | null): UseCommentsReturn {
       });
       setReplyingTo(null);
     },
-    [contentId, isAuthenticated, profile]
+    [contentId, isAuthenticated, profile, publish]
   );
 
   return {
@@ -164,7 +215,7 @@ export function useComments(contentId: string | null): UseCommentsReturn {
     deleteComment: removeComment,
     expandedReplies,
     toggleReplies,
-    fetchReplies,
+    fetchReplies: fetchRepliesFor,
     addReply,
     replyingTo,
     setReplyingTo,
