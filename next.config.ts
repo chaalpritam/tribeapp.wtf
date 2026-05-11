@@ -3,10 +3,9 @@ import type { NextConfig } from "next";
 const nextConfig: NextConfig = {
   images: {
     remotePatterns: [
-      {
-        protocol: "https",
-        hostname: "*",
-      }
+      { protocol: "https", hostname: "**" },
+      // Allow HTTP for local hub media (192.168.x.x, localhost, etc.)
+      { protocol: "http", hostname: "**" },
     ],
   },
 

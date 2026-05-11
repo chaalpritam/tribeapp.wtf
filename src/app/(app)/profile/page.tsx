@@ -151,12 +151,13 @@ export default function ProfilePage() {
     );
   }
 
-  // Map the hub's numeric level (1-5) onto the seed's named scale.
+  // Map the hub's numeric level (1-based) onto the named scale.
+  // Hub level 1 = newcomer (index 0), level 2 = neighbor (index 1), etc.
   const KARMA_LEVELS: Array<
     "newcomer" | "neighbor" | "local" | "trusted" | "pillar" | "legend"
   > = ["newcomer", "neighbor", "local", "trusted", "pillar", "legend"];
   const hubLevelName = hubKarma
-    ? KARMA_LEVELS[Math.min(hubKarma.level, KARMA_LEVELS.length - 1)]
+    ? KARMA_LEVELS[Math.min(Math.max(hubKarma.level - 1, 0), KARMA_LEVELS.length - 1)]
     : null;
 
   // Hub karma wins when available; falls back to seed user karma.
@@ -212,9 +213,9 @@ export default function ProfilePage() {
           : "";
 
   const socialCounts = {
-    followers: hubUser?.followers_count ?? 0,
-    following: hubUser?.following_count ?? 0,
-    posts: 0,
+    followers: Number(hubUser?.followers_count ?? 0),
+    following: Number(hubUser?.following_count ?? 0),
+    posts: 0, // filled in after allPosts is built below
   };
 
   // Merge hub posts (live, identified by hash) with seed posts that
@@ -233,6 +234,7 @@ export default function ProfilePage() {
     seenIds.add(p.id);
     return true;
   });
+  socialCounts.posts = allPosts.length;
 
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
@@ -287,6 +289,10 @@ export default function ProfilePage() {
                     <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Following</p>
                   </button>
                   <div className="text-center sm:text-left">
+                    <p className="text-[17px] sm:text-[20px] font-black leading-none">{formatNumber(socialCounts.posts)}</p>
+                    <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Posts</p>
+                  </div>
+                  <div className="text-center sm:text-left">
                     <p className="text-[17px] sm:text-[20px] font-black leading-none">{karma?.totalKarma || 0}</p>
                     <p className="text-[10px] sm:text-[11px] font-bold text-muted-foreground uppercase tracking-wider mt-1">Karma</p>
                   </div>
@@ -303,7 +309,9 @@ export default function ProfilePage() {
             <div className="flex flex-wrap gap-4 mt-8">
               <div className="flex items-center gap-2 px-5 py-3 rounded-[20px] bg-[#f9f9f9] border border-[#f0f0f0]">
                 <MapPin className="h-4 w-4 text-primary" />
-                <span className="text-[13px] font-bold">{currentUser?.location || "Earth"}</span>
+                <span className="text-[13px] font-bold">
+                  {hubProfile.location || currentUser?.location || currentCity?.name || "Earth"}
+                </span>
               </div>
               {tid !== null && (
                 <div className="flex items-center gap-2 px-5 py-3 rounded-[20px] bg-indigo-50 border border-indigo-100">
@@ -317,7 +325,7 @@ export default function ProfilePage() {
                 onClick={() => {
                   setEditName(displayName || "");
                   setEditBio(displayBio || "");
-                  setEditLocation(currentUser?.location || "");
+                  setEditLocation(hubProfile.location || currentUser?.location || "");
                   setIsEditing(true);
                 }}
                 className="flex-1 flex items-center justify-center gap-2 h-12 sm:h-14 rounded-2xl bg-black text-white text-[13px] sm:text-[14px] font-bold transition-all hover:scale-[1.02] active:scale-95 shadow-xl shadow-black/10"

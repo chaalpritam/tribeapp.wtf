@@ -14,7 +14,8 @@ export interface TribeTweet {
   hash: string;
   tid: string;
   text: string;
-  timestamp: number;
+  /** Hub returns an ISO-8601 string; older payloads may be Unix seconds. */
+  timestamp: number | string;
   parent_hash?: string | null;
   channel_id?: string | null;
   embeds?: string[];

@@ -72,8 +72,13 @@ export function channelInfoToTribe(
   };
 }
 
-function relativeTimestamp(unixSeconds: number): string {
-  const ms = unixSeconds * 1000;
+function relativeTimestamp(timestamp: number | string): string {
+  // Hub returns ISO-8601 strings; older payloads use Unix seconds numbers.
+  const ms =
+    typeof timestamp === "string"
+      ? new Date(timestamp).getTime()
+      : timestamp * 1000;
+  if (isNaN(ms)) return "";
   const diff = Date.now() - ms;
   if (diff < 60_000) return "just now";
   if (diff < 3_600_000) return `${Math.floor(diff / 60_000)}m`;
