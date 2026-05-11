@@ -20,6 +20,7 @@ import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
 import { formatNumber } from "@/lib/utils";
 import { tribeTweetToTweet } from "@/lib/tribe";
 import { cities as curatedCities } from "@/lib/cities";
+import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds } from "@/lib/dummy-data";
 import type { Poll, Task, Crowdfund, ExploreItem } from "@/types";
 
 const CHANNEL_KIND_CITY     = 2;
@@ -53,10 +54,16 @@ export default function ExplorePage() {
     [globalTweets, currentCity?.id]
   );
 
-  const { events,     loading: eventsLoading }  = useOnchainEvents({ cityId: "" });
-  const { polls,      loading: pollsLoading }    = useOnchainPolls({ cityId: "" });
-  const { tasks,      loading: tasksLoading }    = useOnchainTasks({ cityId: "" });
-  const { crowdfunds, loading: fundsLoading }    = useOnchainCrowdfunds({ cityId: "" });
+  const { events: onchainEvents, loading: eventsLoading }    = useOnchainEvents({ cityId: "" });
+  const { polls: onchainPolls,   loading: pollsLoading }      = useOnchainPolls({ cityId: "" });
+  const { tasks: onchainTasks,   loading: tasksLoading }      = useOnchainTasks({ cityId: "" });
+  const { crowdfunds: onchainFunds, loading: fundsLoading }   = useOnchainCrowdfunds({ cityId: "" });
+
+  // Fall back to dummy data when the hub has returned nothing yet
+  const events     = !eventsLoading && onchainEvents.length === 0 ? dummyEvents     : onchainEvents;
+  const polls      = !pollsLoading  && onchainPolls.length  === 0 ? dummyPolls      : onchainPolls;
+  const tasks      = !tasksLoading  && onchainTasks.length  === 0 ? dummyTasks      : onchainTasks;
+  const crowdfunds = !fundsLoading  && onchainFunds.length  === 0 ? dummyCrowdfunds : onchainFunds;
 
   // Filtered lists
   const visibleCities   = !search ? cityChannels     : cityChannels.filter((c)   => (c.name ?? c.id).toLowerCase().includes(q));

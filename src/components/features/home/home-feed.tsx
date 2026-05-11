@@ -9,6 +9,7 @@ import { useOnchainPolls } from "@/hooks/use-onchain-polls";
 import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
 import { tribeTweetToTweet } from "@/lib/tribe";
+import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds } from "@/lib/dummy-data";
 import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
 import { EventCard } from "./event-card";
@@ -38,7 +39,7 @@ function dedup<T extends { id: string }>(a: T[], b: T[]): T[] {
 }
 
 export function HomeFeed() {
-  const { tweets, polls, events, tasks, crowdfunds, currentCity } = useTribeStore();
+  const { tweets, currentCity } = useTribeStore();
   const [contentTab, setContentTab] = useState<ContentTab>("feed");
 
   const { tweets: hubTweets, loading: hubLoading } = useTribeFeed({
@@ -47,10 +48,16 @@ export function HomeFeed() {
   });
 
   const cityId = currentCity?.id ?? "";
-  const { events: onchainEvents }         = useOnchainEvents({ cityId });
-  const { polls: onchainPolls }           = useOnchainPolls({ cityId });
-  const { tasks: onchainTasks }           = useOnchainTasks({ cityId });
-  const { crowdfunds: onchainCrowdfunds } = useOnchainCrowdfunds({ cityId });
+  const { events: onchainEvents,     loading: eventsLoading }    = useOnchainEvents({ cityId });
+  const { polls: onchainPolls,       loading: pollsLoading }      = useOnchainPolls({ cityId });
+  const { tasks: onchainTasks,       loading: tasksLoading }      = useOnchainTasks({ cityId });
+  const { crowdfunds: onchainFunds,  loading: fundsLoading }      = useOnchainCrowdfunds({ cityId });
+
+  // Fall back to dummy data when hub has returned nothing yet
+  const mergedEvents     = useMemo(() => dedup(!eventsLoading && onchainEvents.length === 0 ? dummyEvents     : onchainEvents,     []), [onchainEvents, eventsLoading]);
+  const mergedPolls      = useMemo(() => dedup(!pollsLoading  && onchainPolls.length  === 0 ? dummyPolls      : onchainPolls,      []), [onchainPolls,  pollsLoading]);
+  const mergedTasks      = useMemo(() => dedup(!tasksLoading  && onchainTasks.length  === 0 ? dummyTasks      : onchainTasks,      []), [onchainTasks,  tasksLoading]);
+  const mergedCrowdfunds = useMemo(() => dedup(!fundsLoading  && onchainFunds.length  === 0 ? dummyCrowdfunds : onchainFunds,      []), [onchainFunds,  fundsLoading]);
 
   const adaptedHubTweets = useMemo(
     () => hubTweets.map((t) => tribeTweetToTweet(t, { cityId: currentCity?.id ?? "" })),
@@ -62,10 +69,6 @@ export function HomeFeed() {
     return [...adaptedHubTweets, ...tweets.filter((t) => !hubIds.has(t.id))];
   }, [adaptedHubTweets, tweets]);
 
-  const mergedEvents     = useMemo(() => dedup(onchainEvents, events),         [onchainEvents, events]);
-  const mergedPolls      = useMemo(() => dedup(onchainPolls, polls),           [onchainPolls, polls]);
-  const mergedTasks      = useMemo(() => dedup(onchainTasks, tasks),           [onchainTasks, tasks]);
-  const mergedCrowdfunds = useMemo(() => dedup(onchainCrowdfunds, crowdfunds), [onchainCrowdfunds, crowdfunds]);
 
   if (!currentCity) {
     return (

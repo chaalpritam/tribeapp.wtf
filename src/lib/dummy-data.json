@@ -1,0 +1,268 @@
+{
+  "_note": "Dummy content for all cities. Delete this file (and remove the import in src/lib/dummy-data.ts) to go fully live.",
+
+  "events": [
+    {
+      "id": "dummy-event-1",
+      "type": "event",
+      "title": "Sunday Farmers Market",
+      "description": "Weekly fresh produce, local artisans, live music and street food. Bring your own bag!",
+      "icon": "calendar",
+      "color": "#14B8A6",
+      "participants": 142,
+      "location": "Mumbai — Bandra Bandstand",
+      "timeAgo": "2h",
+      "isTrending": true,
+      "cityId": "mumbai"
+    },
+    {
+      "id": "dummy-event-2",
+      "type": "event",
+      "title": "Neighbourhood Clean-Up Drive",
+      "description": "Join us for a 3-hour clean-up of the park and surrounding streets. Gloves and bags provided.",
+      "icon": "calendar",
+      "color": "#10B981",
+      "participants": 38,
+      "location": "Bangalore — Cubbon Park",
+      "timeAgo": "5h",
+      "isTrending": false,
+      "cityId": "bangalore"
+    },
+    {
+      "id": "dummy-event-3",
+      "type": "event",
+      "title": "Tech Founders Meetup",
+      "description": "Open-mic demo night for early-stage founders. 5 min pitches, networking, and free coffee.",
+      "icon": "calendar",
+      "color": "#6366F1",
+      "participants": 89,
+      "location": "Bangalore — Koramangala Social",
+      "timeAgo": "1d",
+      "isTrending": true,
+      "cityId": "bangalore"
+    },
+    {
+      "id": "dummy-event-4",
+      "type": "event",
+      "title": "Rooftop Yoga Session",
+      "description": "Sunrise yoga with a certified instructor. All levels welcome. Bring your mat.",
+      "icon": "calendar",
+      "color": "#FB923C",
+      "participants": 24,
+      "location": "Delhi — Hauz Khas",
+      "timeAgo": "3h",
+      "isTrending": false,
+      "cityId": "delhi"
+    },
+    {
+      "id": "dummy-event-5",
+      "type": "event",
+      "title": "Community Book Swap",
+      "description": "Bring up to 5 books, take up to 5 home. Fiction, non-fiction, children's — everything welcome.",
+      "icon": "calendar",
+      "color": "#8B5CF6",
+      "participants": 61,
+      "location": "London — Shoreditch Library",
+      "timeAgo": "6h",
+      "isTrending": false,
+      "cityId": "london"
+    },
+    {
+      "id": "dummy-event-6",
+      "type": "event",
+      "title": "Street Photography Walk",
+      "description": "A guided 2-hour walk through the old quarter. All camera types welcome. Print showcase next week.",
+      "icon": "calendar",
+      "color": "#F43F5E",
+      "participants": 19,
+      "location": "New York — Lower East Side",
+      "timeAgo": "8h",
+      "isTrending": false,
+      "cityId": "new-york"
+    }
+  ],
+
+  "polls": [
+    {
+      "id": "dummy-poll-1",
+      "question": "Should our neighbourhood get a dedicated cycling lane on the main road?",
+      "options": [
+        { "id": "a", "text": "Yes, absolutely" },
+        { "id": "b", "text": "Only if parking isn't affected" },
+        { "id": "c", "text": "No, roads are fine" },
+        { "id": "d", "text": "Need more info first" }
+      ],
+      "votes": { "a": 312, "b": 87, "c": 44, "d": 29 },
+      "duration": 604800,
+      "timestamp": "3h",
+      "cityId": "mumbai"
+    },
+    {
+      "id": "dummy-poll-2",
+      "question": "What should be the new park's central feature?",
+      "options": [
+        { "id": "a", "text": "Amphitheatre" },
+        { "id": "b", "text": "Skate park" },
+        { "id": "c", "text": "Community garden" },
+        { "id": "d", "text": "Dog run" }
+      ],
+      "votes": { "a": 156, "b": 98, "c": 204, "d": 73 },
+      "duration": 604800,
+      "timestamp": "1d",
+      "cityId": "bangalore"
+    },
+    {
+      "id": "dummy-poll-3",
+      "question": "How often do you use public transport in your city?",
+      "options": [
+        { "id": "a", "text": "Every day" },
+        { "id": "b", "text": "A few times a week" },
+        { "id": "c", "text": "Rarely" },
+        { "id": "d", "text": "Never" }
+      ],
+      "votes": { "a": 521, "b": 287, "c": 144, "d": 38 },
+      "duration": 604800,
+      "timestamp": "12h",
+      "cityId": "delhi"
+    },
+    {
+      "id": "dummy-poll-4",
+      "question": "Best time for the monthly street market?",
+      "options": [
+        { "id": "a", "text": "Saturday morning" },
+        { "id": "b", "text": "Sunday afternoon" },
+        { "id": "c", "text": "Friday evening" }
+      ],
+      "votes": { "a": 189, "b": 143, "c": 77 },
+      "duration": 604800,
+      "timestamp": "2d",
+      "cityId": "london"
+    }
+  ],
+
+  "tasks": [
+    {
+      "id": "dummy-task-1",
+      "title": "Help move furniture — 2nd floor, no lift",
+      "description": "Moving a sofa and bookshelf from a 2nd floor flat. Takes about 45 mins with two helpers. I'll cover chai and snacks!",
+      "icon": "alert",
+      "location": "Mumbai — Andheri West",
+      "helpers": 1,
+      "timeAgo": "1h",
+      "reward": "₹500 + snacks",
+      "isUrgent": true,
+      "cityId": "mumbai"
+    },
+    {
+      "id": "dummy-task-2",
+      "title": "Looking for a Kannada-English translator",
+      "description": "Need someone to translate a short legal document (~800 words) from Kannada to English. Can be done remotely.",
+      "icon": "task",
+      "location": "Bangalore — Remote OK",
+      "helpers": 0,
+      "timeAgo": "4h",
+      "reward": "₹1,000",
+      "isUrgent": false,
+      "cityId": "bangalore"
+    },
+    {
+      "id": "dummy-task-3",
+      "title": "Dog sitter needed this weekend",
+      "description": "Two golden retrievers, super friendly. Need someone to stay over Friday to Sunday. Food and accommodation provided.",
+      "icon": "task",
+      "location": "Delhi — Vasant Kunj",
+      "helpers": 0,
+      "timeAgo": "2h",
+      "reward": "₹2,000",
+      "isUrgent": false,
+      "cityId": "delhi"
+    },
+    {
+      "id": "dummy-task-4",
+      "title": "Urgent: burst pipe, need a plumber ASAP",
+      "description": "Water leaking from under the kitchen sink. Turned off the mains. Need someone within the next hour.",
+      "icon": "alert",
+      "location": "London — Hackney",
+      "helpers": 2,
+      "timeAgo": "20m",
+      "reward": "£60 cash",
+      "isUrgent": true,
+      "cityId": "london"
+    },
+    {
+      "id": "dummy-task-5",
+      "title": "Ride share to the airport at 4 AM?",
+      "description": "Flying out early morning, no Uber/Lyft at that hour in my area. Happy to split the cab fare.",
+      "icon": "task",
+      "location": "New York — Brooklyn",
+      "helpers": 0,
+      "timeAgo": "6h",
+      "reward": "Split fare",
+      "isUrgent": false,
+      "cityId": "new-york"
+    }
+  ],
+
+  "crowdfunds": [
+    {
+      "id": "dummy-fund-1",
+      "title": "Repair the neighbourhood basketball court",
+      "description": "The court has been broken for 8 months. We've got municipal approval — just need the funds for new hoops, net repair and resurfacing.",
+      "icon": "heart",
+      "location": "Mumbai — Dharavi",
+      "goal": 50,
+      "raised": 31.5,
+      "contributors": 48,
+      "timeAgo": "2d",
+      "cityId": "mumbai"
+    },
+    {
+      "id": "dummy-fund-2",
+      "title": "Community library for underprivileged kids",
+      "description": "Setting up a free library with 500+ books, reading sessions every weekend, and a small computer lab.",
+      "icon": "heart",
+      "location": "Bangalore — Whitefield",
+      "goal": 120,
+      "raised": 87.2,
+      "contributors": 134,
+      "timeAgo": "5d",
+      "cityId": "bangalore"
+    },
+    {
+      "id": "dummy-fund-3",
+      "title": "Solar panels for the community centre",
+      "description": "Cut electricity bills by 70% and reduce our carbon footprint. Payback period is under 3 years.",
+      "icon": "heart",
+      "location": "Delhi — Lajpat Nagar",
+      "goal": 200,
+      "raised": 44.0,
+      "contributors": 62,
+      "timeAgo": "1d",
+      "cityId": "delhi"
+    },
+    {
+      "id": "dummy-fund-4",
+      "title": "Pop-up urban garden — season 2",
+      "description": "Last year's garden was a hit. This year we're doubling the plot and adding a composting station open to the whole block.",
+      "icon": "heart",
+      "location": "London — Peckham",
+      "goal": 30,
+      "raised": 22.8,
+      "contributors": 39,
+      "timeAgo": "3d",
+      "cityId": "london"
+    },
+    {
+      "id": "dummy-fund-5",
+      "title": "Emergency flood relief — local families",
+      "description": "Heavy rains have displaced 12 families in our area. Funds go directly to temporary housing and food kits.",
+      "icon": "heart",
+      "location": "New York — Queens",
+      "goal": 80,
+      "raised": 80.0,
+      "contributors": 211,
+      "timeAgo": "1d",
+      "cityId": "new-york"
+    }
+  ]
+}
