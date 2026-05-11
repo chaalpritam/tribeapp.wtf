@@ -19,9 +19,9 @@ export function tribeIdentityToUser(args: {
 }): User {
   const { identity, city, profile } = args;
   const username =
-    profile?.username ?? identity.username ?? `tid${identity.tid}`;
+    profile?.username ?? identity.username ?? `#${identity.tid}`;
   const displayName =
-    profile?.displayName ?? identity.username ?? `TID ${identity.tid}`;
+    profile?.displayName?.trim() || username;
 
   return {
     id: `tid-${identity.tid}`,
@@ -116,11 +116,8 @@ export function tribeTweetToTweet(
   const rawPfp =
     hubTweet.user?.pfpUrl ?? hubTweet.pfp_url ?? null;
 
-  const username = rawUsername ?? `user-${hubTweet.tid}`;
-  const displayName =
-    rawDisplayName?.trim() ||
-    rawUsername ||
-    `User #${hubTweet.tid}`;
+  const username = rawUsername ?? `#${hubTweet.tid}`;
+  const displayName = rawDisplayName?.trim() || username;
 
   return {
     id: hubTweet.hash,

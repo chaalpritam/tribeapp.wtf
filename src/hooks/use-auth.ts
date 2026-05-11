@@ -25,7 +25,7 @@ export function useAuth() {
     ? {
         id: `tid-${identity.tid}`,
         tid: identity.tid,
-        username: identity.username ?? `user-${identity.tid}`,
+        username: identity.username ?? `#${identity.tid}`,
         displayName: identity.username ?? undefined,
       }
     : null;

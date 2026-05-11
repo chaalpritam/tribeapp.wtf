@@ -192,7 +192,8 @@ export default function ProfilePage() {
     profile?.displayName ||
     profile?.username ||
     currentUser?.displayName ||
-    `User #${tid ?? "?"}`;
+    currentUser?.username ||
+    `#${tid ?? "?"}`;
 
   const displayBio = hubProfile.bio || currentUser?.bio || "";
 
