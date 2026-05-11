@@ -32,13 +32,22 @@ const CHANNEL_KIND_CITY = 2;
 const DEFAULT_CITY_IMAGE =
   "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&h=800&fit=crop";
 
-/** Match by ID or by normalised name so "Chennai" works even if the
- *  protocol channel was registered with a numeric/different slug. */
+/** Match by ID or by normalised name so "Bengaluru", "Chennai" etc.
+ *  work even if the protocol channel slug differs from the curated id. */
 function findCurated(channel: ChannelInfo) {
   const byId = curatedCities.find((c) => c.id === channel.id);
   if (byId) return byId;
   const nameLower = (channel.name ?? "").toLowerCase().trim();
-  return curatedCities.find((c) => c.name.toLowerCase() === nameLower);
+  // Exact name match
+  const byName = curatedCities.find((c) => c.name.toLowerCase() === nameLower);
+  if (byName) return byName;
+  // Partial / slug match (e.g. "Bengaluru" includes "bengal")
+  return curatedCities.find(
+    (c) =>
+      nameLower.includes(c.name.toLowerCase()) ||
+      c.name.toLowerCase().includes(nameLower) ||
+      c.id.replace(/-/g, "") === nameLower.replace(/\s+/g, "")
+  );
 }
 
 function channelToCity(channel: ChannelInfo): City {

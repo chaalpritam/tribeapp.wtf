@@ -12,7 +12,20 @@ export const cities: City[] = [
     name: "Bangalore",
     country: "India",
     countryCode: "IN",
+    // Vidhana Soudha / Cubbon Park skyline
     imageUrl: "https://images.unsplash.com/photo-1596176530529-78163a4f7af2?w=800&h=800&fit=crop",
+    coordinates: { latitude: 12.9716, longitude: 77.5946 },
+    accentColor: "#6366F1",
+    emoji: "🇮🇳",
+  },
+  {
+    // Protocol channels may register as "Bengaluru" (official Kannada name)
+    id: "bengaluru",
+    name: "Bengaluru",
+    country: "India",
+    countryCode: "IN",
+    // Lalbagh Glass House
+    imageUrl: "https://images.unsplash.com/photo-1543906965-f9520aa2ed8a?w=800&h=800&fit=crop",
     coordinates: { latitude: 12.9716, longitude: 77.5946 },
     accentColor: "#6366F1",
     emoji: "🇮🇳",
@@ -22,6 +35,7 @@ export const cities: City[] = [
     name: "Mumbai",
     country: "India",
     countryCode: "IN",
+    // Marine Drive / Gateway of India
     imageUrl: "https://images.unsplash.com/photo-1570168007204-dfb528c6958f?w=800&h=800&fit=crop",
     coordinates: { latitude: 19.076, longitude: 72.8777 },
     accentColor: "#FB7185",
@@ -32,6 +46,7 @@ export const cities: City[] = [
     name: "Delhi",
     country: "India",
     countryCode: "IN",
+    // India Gate at dawn
     imageUrl: "https://images.unsplash.com/photo-1587474260584-136574528ed5?w=800&h=800&fit=crop",
     coordinates: { latitude: 28.7041, longitude: 77.1025 },
     accentColor: "#FB923C",
@@ -42,6 +57,7 @@ export const cities: City[] = [
     name: "Chennai",
     country: "India",
     countryCode: "IN",
+    // Marina Beach promenade
     imageUrl: "https://images.unsplash.com/photo-1582510003544-4d00b7f74220?w=800&h=800&fit=crop",
     coordinates: { latitude: 13.0827, longitude: 80.2707 },
     accentColor: "#F59E0B",
@@ -52,9 +68,65 @@ export const cities: City[] = [
     name: "Hyderabad",
     country: "India",
     countryCode: "IN",
-    imageUrl: "https://images.unsplash.com/photo-1558431382-bb72183506f4?w=800&h=800&fit=crop",
+    // Charminar at dusk
+    imageUrl: "https://images.unsplash.com/photo-1568495248636-6432b97bd949?w=800&h=800&fit=crop",
     coordinates: { latitude: 17.385, longitude: 78.4867 },
     accentColor: "#EC4899",
+    emoji: "🇮🇳",
+  },
+  {
+    id: "kolkata",
+    name: "Kolkata",
+    country: "India",
+    countryCode: "IN",
+    // Victoria Memorial lit up
+    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop",
+    coordinates: { latitude: 22.5726, longitude: 88.3639 },
+    accentColor: "#F43F5E",
+    emoji: "🇮🇳",
+  },
+  {
+    id: "jaipur",
+    name: "Jaipur",
+    country: "India",
+    countryCode: "IN",
+    // Hawa Mahal — the Pink City's iconic facade
+    imageUrl: "https://images.unsplash.com/photo-1477587458883-47145ed6979e?w=800&h=800&fit=crop",
+    coordinates: { latitude: 26.9124, longitude: 75.7873 },
+    accentColor: "#F97316",
+    emoji: "🇮🇳",
+  },
+  {
+    id: "kochi",
+    name: "Kochi",
+    country: "India",
+    countryCode: "IN",
+    // Fort Kochi Chinese fishing nets at sunset
+    imageUrl: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&h=800&fit=crop",
+    coordinates: { latitude: 9.9312, longitude: 76.2673 },
+    accentColor: "#14B8A6",
+    emoji: "🇮🇳",
+  },
+  {
+    id: "ahmedabad",
+    name: "Ahmedabad",
+    country: "India",
+    countryCode: "IN",
+    // Adalaj Stepwell (Vav) — UNESCO heritage site
+    imageUrl: "https://images.unsplash.com/photo-1599030052890-d7e4a2c1c8e2?w=800&h=800&fit=crop",
+    coordinates: { latitude: 23.0225, longitude: 72.5714 },
+    accentColor: "#D97706",
+    emoji: "🇮🇳",
+  },
+  {
+    id: "puducherry",
+    name: "Puducherry",
+    country: "India",
+    countryCode: "IN",
+    // French Quarter coloured colonial buildings
+    imageUrl: "https://images.unsplash.com/photo-1621501123347-f0e7ec909bfe?w=800&h=800&fit=crop",
+    coordinates: { latitude: 11.9416, longitude: 79.8083 },
+    accentColor: "#8B5CF6",
     emoji: "🇮🇳",
   },
   {
@@ -62,6 +134,7 @@ export const cities: City[] = [
     name: "Pune",
     country: "India",
     countryCode: "IN",
+    // Aga Khan Palace / Pune skyline
     imageUrl: "https://images.unsplash.com/photo-1562979314-bee7453e911c?w=800&h=800&fit=crop",
     coordinates: { latitude: 18.5204, longitude: 73.8567 },
     accentColor: "#8B5CF6",
