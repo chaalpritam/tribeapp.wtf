@@ -9,7 +9,7 @@ import {
   AlertTriangle,
   ShieldCheck,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+import { cn, formatHandle } from "@/lib/utils";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useTribeDmKey } from "@/hooks/use-tribe-dm-key";
 import { useTribeDmMessages } from "@/hooks/use-tribe-dm-messages";
@@ -50,7 +50,7 @@ export default function ConversationPage({
   const { user: peerUser } = useTribeUser(peerTid);
   const peerLabel =
     peerUser?.profile?.displayName?.trim() ||
-    (peerUser?.username ? `@${peerUser.username}` : null) ||
+    (peerUser?.username ? formatHandle(peerUser.username) : null) ||
     (peerTid != null ? `#${peerTid}` : "Chat");
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);

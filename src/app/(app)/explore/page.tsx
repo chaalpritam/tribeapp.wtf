@@ -17,7 +17,7 @@ import { useOnchainEvents } from "@/hooks/use-onchain-events";
 import { useOnchainPolls } from "@/hooks/use-onchain-polls";
 import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
-import { formatNumber } from "@/lib/utils";
+import { formatNumber, formatHandle } from "@/lib/utils";
 import { tribeTweetToTweet } from "@/lib/tribe";
 import { cities as curatedCities } from "@/lib/cities";
 import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds } from "@/lib/dummy-data";
@@ -113,7 +113,7 @@ export default function ExplorePage() {
                     <Avatar src={null} name={label} size={44} />
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-bold truncate">{label}</p>
-                      <p className="text-[11px] font-bold text-muted-foreground">@{u.username || `#${u.tid}`}</p>
+                      <p className="text-[11px] font-bold text-muted-foreground">{formatHandle(u.username || `#${u.tid}`)}</p>
                     </div>
                     <ArrowRight className="h-4 w-4 text-[#ccc] shrink-0" />
                   </Link>
@@ -224,7 +224,7 @@ export default function ExplorePage() {
                         <p className="text-[13px] font-bold leading-none truncate">
                           {tweet.user.displayName !== tweet.user.username
                             ? tweet.user.displayName
-                            : `@${tweet.user.username}`}
+                            : formatHandle(tweet.user.username)}
                         </p>
                         <p className="text-[11px] text-muted-foreground mt-0.5">{tweet.timestamp}</p>
                       </div>

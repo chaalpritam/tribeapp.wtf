@@ -8,13 +8,14 @@ import { AppHeader } from "@/components/layout/app-header";
 import { useTribeNotifications } from "@/hooks/use-tribe-notifications";
 import { useTribeUser } from "@/hooks/use-tribe-user";
 import { formatDistanceToNow } from "date-fns";
+import { formatHandle } from "@/lib/utils";
 
 function ActorLabel({ actorTid }: { actorTid: string }) {
   const tid = parseInt(actorTid, 10);
   const { user } = useTribeUser(isNaN(tid) ? null : tid);
   const label =
     user?.profile?.displayName?.trim() ||
-    (user?.username ? `@${user.username}` : null) ||
+    (user?.username ? formatHandle(user.username) : null) ||
     `#${actorTid}`;
   return <span className="font-bold">{label}</span>;
 }
@@ -148,7 +149,7 @@ export default function NotificationsPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-[15px] leading-tight">
-                    <span className="font-bold">@{notif.user}</span>{" "}
+                    <span className="font-bold">{formatHandle(notif.user)}</span>{" "}
                     <span className="text-[#666] font-medium">{notif.message}</span>
                   </p>
                   <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1.5">{notif.time}</p>

@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { LAMPORTS_PER_SOL, PublicKey } from "@solana/web3.js";
 import type { Task } from "@/types";
+import { formatHandle } from "@/lib/utils";
 import { useTribeTask } from "@/hooks/use-tribe-task";
 
 interface TaskCardProps {
@@ -111,7 +112,7 @@ export function TaskCard({ task }: TaskCardProps) {
           <div className="h-8 w-8 rounded-full bg-muted overflow-hidden relative border border-[#f0f0f0]">
             <Image src={task.user.avatarUrl} alt="" fill unoptimized className="object-cover" />
           </div>
-          <span className="text-[13px] font-bold tracking-tight">@{task.user.username}</span>
+          <span className="text-[13px] font-bold tracking-tight">{formatHandle(task.user.username)}</span>
         </div>
         <button
           onClick={handleClaim}

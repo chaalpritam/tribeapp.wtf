@@ -16,13 +16,14 @@ import { useTribeDmKey } from "@/hooks/use-tribe-dm-key";
 import { useTribeConversations } from "@/hooks/use-tribe-conversations";
 import { useTribeUser } from "@/hooks/use-tribe-user";
 import { formatDistanceToNow } from "date-fns";
+import { formatHandle } from "@/lib/utils";
 
 function PeerLabel({ peerTid }: { peerTid: string | number }) {
   const tid = typeof peerTid === "string" ? parseInt(peerTid, 10) : peerTid;
   const { user } = useTribeUser(isNaN(tid) ? null : tid);
   const label =
     user?.profile?.displayName?.trim() ||
-    (user?.username ? `@${user.username}` : null) ||
+    (user?.username ? formatHandle(user.username) : null) ||
     `#${peerTid}`;
   return <span className="text-[16px] font-black tracking-tight text-black truncate">{label}</span>;
 }

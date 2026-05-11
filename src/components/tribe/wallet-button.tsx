@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
-import { cn } from "@/lib/utils";
+import { cn, formatHandle } from "@/lib/utils";
 
 interface WalletButtonProps {
   className?: string;
@@ -20,9 +20,9 @@ export function WalletButton({ className, compact }: WalletButtonProps) {
 
   if (signedIn) {
     const label = profile?.username
-      ? `@${profile.username}`
+      ? formatHandle(profile.username)
       : tribeIdentity
-        ? (tribeIdentity.username ?? `#${tribeIdentity.tid}`)
+        ? formatHandle(tribeIdentity.username ?? `#${tribeIdentity.tid}`)
         : "signed in";
 
     return (

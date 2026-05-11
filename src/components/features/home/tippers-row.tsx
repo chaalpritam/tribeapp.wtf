@@ -2,11 +2,12 @@
 
 import { Zap } from "lucide-react";
 import type { Tipper } from "@/hooks/use-onchain-tips";
+import { formatHandle } from "@/lib/utils";
 
 const MAX_VISIBLE_TIPPERS = 2;
 
 function tipperLabel(t: Tipper): string {
-  return t.username ? `@${t.username}` : `@tid${t.senderTid}`;
+  return t.username ? formatHandle(t.username) : `#${t.senderTid}`;
 }
 
 function formatSol(sol: number): string {

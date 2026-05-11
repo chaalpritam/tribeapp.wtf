@@ -16,7 +16,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import type { Tweet } from "@/types";
 import type { CommentData } from "@/hooks/use-comments";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn, formatNumber, formatHandle } from "@/lib/utils";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useLike } from "@/hooks/use-like";
 import { useShare } from "@/hooks/use-share";
@@ -350,11 +350,11 @@ export function TweetCard({ tweet }: TweetCardProps) {
                 <p className="text-[14px] font-bold tracking-tight leading-none">
                   {tweet.user.displayName !== tweet.user.username
                     ? tweet.user.displayName
-                    : `@${tweet.user.username}`}
+                    : formatHandle(tweet.user.username)}
                 </p>
                 {tweet.user.displayName !== tweet.user.username && (
                   <p className="text-[11px] font-semibold text-muted-foreground leading-none">
-                    @{tweet.user.username}
+                    {formatHandle(tweet.user.username)}
                   </p>
                 )}
                 {authorTid != null && (

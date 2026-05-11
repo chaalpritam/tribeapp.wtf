@@ -15,6 +15,16 @@ export function formatNumber(num: number): string {
   return num.toString();
 }
 
+/**
+ * Format a username for display as a handle.
+ * If the username is already a TID fallback (starts with "#"), return it as-is.
+ * Otherwise prefix with "@".
+ */
+export function formatHandle(username: string | null | undefined): string {
+  if (!username) return "";
+  return username.startsWith("#") ? username : `@${username}`;
+}
+
 export function formatRelativeDate(date: string | Date): string {
   const now = new Date();
   const d = typeof date === "string" ? new Date(date) : date;

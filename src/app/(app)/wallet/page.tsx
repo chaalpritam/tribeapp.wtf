@@ -12,6 +12,7 @@ import { useConnection, useWallet } from "@solana/wallet-adapter-react";
 import { LAMPORTS_PER_SOL } from "@solana/web3.js";
 import { formatDistanceToNow } from "date-fns";
 import { AppHeader } from "@/components/layout/app-header";
+import { formatHandle } from "@/lib/utils";
 import { useAuth } from "@/hooks/use-auth";
 import { useWalletHistory } from "@/hooks/use-wallet-history";
 import { useTribeOnchainKarma } from "@/hooks/use-tribe-onchain-karma";
@@ -125,9 +126,7 @@ export default function WalletPage() {
           </div>
           {profile && (
             <p className="mt-6 text-[11px] font-bold uppercase tracking-widest text-white/70">
-              {profile.username
-                ? `@${profile.username}`
-                : `tid #${profile.tid}`}
+              {formatHandle(profile.username ?? `#${profile.tid}`)}
             </p>
           )}
         </div>

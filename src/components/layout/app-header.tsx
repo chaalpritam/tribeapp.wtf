@@ -9,6 +9,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useNotificationStore } from "@/store/use-notification-store";
 import { CitySwitcher } from "./city-switcher";
+import { formatHandle } from "@/lib/utils";
 
 interface AppHeaderProps {
     title?: string;
@@ -71,7 +72,7 @@ export function AppHeader({ title, showBackButton }: AppHeaderProps) {
                     <WalletButton className="h-9 sm:h-10 rounded-xl px-3 sm:px-4 text-[10px] sm:text-xs font-bold" />
                     {profile && (
                         <span className="hidden sm:block text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-                            @{profile.username}
+                            {formatHandle(profile.username)}
                         </span>
                     )}
                 </div>

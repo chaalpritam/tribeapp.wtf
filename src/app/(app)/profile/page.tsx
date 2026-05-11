@@ -15,7 +15,7 @@ import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useTribeFollowList, type FollowListKind } from "@/hooks/use-tribe-follow-list";
 import { resolveMediaUrl, tribeTweetToTweet } from "@/lib/tribe";
 import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
-import { cn, formatNumber } from "@/lib/utils";
+import { cn, formatNumber, formatHandle } from "@/lib/utils";
 import { Progress } from "@/components/ui/progress";
 import { useShare } from "@/hooks/use-share";
 import { AppHeader } from "@/components/layout/app-header";
@@ -203,15 +203,8 @@ export default function ProfilePage() {
     currentUser?.avatarUrl ||
     "/default-avatar.png";
 
-  const displayHandle = hubUsername
-    ? `@${hubUsername}`
-    : profile?.username
-      ? `@${profile.username}`
-      : currentUser?.username
-        ? `@${currentUser.username}`
-        : tid
-          ? `#${tid}`
-          : "";
+  const displayHandle =
+    formatHandle(hubUsername ?? profile?.username ?? currentUser?.username ?? (tid ? `#${tid}` : ""));
 
   const socialCounts = {
     followers: Number(hubUser?.followers_count ?? 0),
@@ -573,7 +566,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-bold tracking-tight">
-                        {u.username ? `@${u.username}` : `#${u.tid}`}
+                        {formatHandle(u.username || `#${u.tid}`)}
                       </p>
                       <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
                         tid {u.tid}
