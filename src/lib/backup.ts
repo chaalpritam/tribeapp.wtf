@@ -1,5 +1,6 @@
 import nacl from "tweetnacl";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
+import { WALLET_STORAGE_KEY } from "@/lib/browser-wallet/keypair-store";
 
 /**
  * `.tribe` / `.tribe.enc` account backup. Wire format is identical to
@@ -70,6 +71,12 @@ export function createBackupPayload(): BackupData {
     typeof window !== "undefined"
       ? localStorage.getItem(DM_KEYPAIR_STORAGE)
       : null;
+  // Include the browser-wallet JSON blob so a backup file restored into
+  // tribe-app or another tribeapp.wtf device reconnects without re-setup.
+  const browserWallet =
+    typeof window !== "undefined"
+      ? localStorage.getItem(WALLET_STORAGE_KEY)
+      : null;
   return {
     version: 1,
     timestamp: Date.now(),
@@ -78,6 +85,7 @@ export function createBackupPayload(): BackupData {
       tidWallet: identity?.custodyWallet ?? null,
       appKeySecret: identity?.appKeySecret ?? null,
       dmKeypair,
+      browserWallet,
     },
   };
 }
@@ -268,6 +276,14 @@ export function applyBackup(backup: BackupData): void {
   if (typeof window !== "undefined") {
     if (data.dmKeypair) {
       localStorage.setItem(DM_KEYPAIR_STORAGE, data.dmKeypair);
+    }
+    // Restore the browser-wallet keypair so BrowserWalletAdapter can
+    // auto-connect on reload without showing the wallet-setup dialog.
+    // tribe-app stores the JSON as {mnemonic, secretKeyB58, accountIndex}.
+    if (data.browserWallet) {
+      localStorage.setItem(WALLET_STORAGE_KEY, data.browserWallet);
+      // Tell wallet-adapter-react to auto-select "Browser Wallet" on reload.
+      localStorage.setItem("walletName", '"Browser Wallet"');
     }
   }
   useTribeIdentityStore.getState().setIdentity({
