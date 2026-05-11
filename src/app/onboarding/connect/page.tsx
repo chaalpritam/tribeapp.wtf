@@ -6,7 +6,6 @@ import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { ImportBackup } from "@/components/auth/import-backup";
-import { SignInFromMobilePanel } from "@/components/auth/sign-in-from-mobile-panel";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useMounted } from "@/hooks/use-mounted";
 
@@ -54,7 +53,7 @@ export default function ConnectPage() {
         <p className="mb-10 text-[15px] font-medium text-muted-foreground leading-relaxed">
           {signedIn
             ? "You're already authenticated. Continue to explore your neighborhood and connect with your tribes."
-            : "Restore your Tribe identity from backup or sign in from mobile. Your identity travels with you across the decentralized social web."}
+            : "Restore your Tribe identity from backup. Your identity travels with you across the decentralized social web."}
         </p>
 
         {signedIn ? (
@@ -68,17 +67,12 @@ export default function ConnectPage() {
             Continue with Tribe
           </motion.button>
         ) : (
-          <>
-            <div className="mt-4 text-center">
-              <ImportBackup
-                triggerVariant="button"
-                onSuccess={handleSignInSuccess}
-              />
-            </div>
-            <div className="mt-5 text-left">
-              <SignInFromMobilePanel />
-            </div>
-          </>
+          <div className="mt-4 text-center">
+            <ImportBackup
+              triggerVariant="button"
+              onSuccess={handleSignInSuccess}
+            />
+          </div>
         )}
 
         <div className="mt-8 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#999]">
