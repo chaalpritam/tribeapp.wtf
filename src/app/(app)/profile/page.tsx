@@ -2,9 +2,10 @@
 
 import { useState, useEffect } from "react";
 import Image from "next/image";
-import { Settings, MapPin, BadgeCheck, Star, Award, PlusCircle, Heart, MessageCircle, Share2, ShieldCheck, Zap } from "lucide-react";
+import { Settings, MapPin, BadgeCheck, Star, Award, PlusCircle, Heart, MessageCircle, Share2, ShieldCheck, Zap, Globe, Wallet, Copy, Check } from "lucide-react";
 import Link from "next/link";
 import { useTribeStore } from "@/store/use-tribe-store";
+import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { TweetCard } from "@/components/features/home/tweet-card";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeUserData } from "@/hooks/use-tribe-user-data";
@@ -106,6 +107,7 @@ function PostsFeed({ tweets, isLoading }: { tweets: Tweet[]; isLoading?: boolean
 export default function ProfilePage() {
   const { currentUser, updateCurrentUser, currentCity, tweets } = useTribeStore();
   const { isAuthenticated, profile, tid } = useAuth();
+  const identity = useTribeIdentityStore((s) => s.identity);
   const { setFields: publishUserData, error: publishError } = useTribeUserData();
   const { user: hubUser } = useTribeUser(tid ?? null);
   const { karma: hubKarma } = useTribeKarma(tid ?? null);
@@ -127,6 +129,7 @@ export default function ProfilePage() {
   const [editBio, setEditBio] = useState("");
   const [editLocation, setEditLocation] = useState("");
   const [isSaving, setIsSaving] = useState(false);
+  const [copiedWallet, setCopiedWallet] = useState(false);
 
   if (!isAuthenticated) {
     return (
@@ -300,15 +303,56 @@ export default function ProfilePage() {
               </p>
             )}
 
-            <div className="flex flex-wrap gap-4 mt-8">
-              <div className="flex items-center gap-2 px-5 py-3 rounded-[20px] bg-[#f9f9f9] border border-[#f0f0f0]">
-                <MapPin className="h-4 w-4 text-primary" />
+            <div className="flex flex-wrap gap-3 mt-8">
+              {/* Location */}
+              <div className="flex items-center gap-2 px-4 py-2.5 rounded-[18px] bg-[#f9f9f9] border border-[#f0f0f0]">
+                <MapPin className="h-3.5 w-3.5 text-primary shrink-0" />
                 <span className="text-[13px] font-bold">
                   {hubProfile.location || currentUser?.location || currentCity?.name || "Earth"}
                 </span>
               </div>
+
+              {/* Website */}
+              {hubProfile.url && (
+                <a
+                  href={hubProfile.url.startsWith("http") ? hubProfile.url : `https://${hubProfile.url}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 px-4 py-2.5 rounded-[18px] bg-sky-50 border border-sky-100 hover:bg-sky-100 transition-colors"
+                >
+                  <Globe className="h-3.5 w-3.5 text-sky-500 shrink-0" />
+                  <span className="text-[13px] font-bold text-sky-600 max-w-[140px] truncate">
+                    {hubProfile.url.replace(/^https?:\/\//, "").replace(/\/$/, "")}
+                  </span>
+                </a>
+              )}
+
+              {/* Wallet address */}
+              {(hubUser?.custody_address || identity?.custodyWallet) && (() => {
+                const addr = hubUser?.custody_address || identity?.custodyWallet || "";
+                const short = addr ? `${addr.slice(0, 4)}…${addr.slice(-4)}` : "";
+                return (
+                  <button
+                    onClick={() => {
+                      navigator.clipboard.writeText(addr).catch(() => {});
+                      setCopiedWallet(true);
+                      setTimeout(() => setCopiedWallet(false), 2000);
+                    }}
+                    className="flex items-center gap-2 px-4 py-2.5 rounded-[18px] bg-amber-50 border border-amber-100 hover:bg-amber-100 transition-colors"
+                  >
+                    <Wallet className="h-3.5 w-3.5 text-amber-500 shrink-0" />
+                    <span className="text-[13px] font-bold text-amber-700 font-mono">{short}</span>
+                    {copiedWallet
+                      ? <Check className="h-3 w-3 text-emerald-500" />
+                      : <Copy className="h-3 w-3 text-amber-400" />
+                    }
+                  </button>
+                );
+              })()}
+
+              {/* TID badge */}
               {tid !== null && (
-                <div className="flex items-center gap-2 px-5 py-3 rounded-[20px] bg-indigo-50 border border-indigo-100">
+                <div className="flex items-center gap-2 px-4 py-2.5 rounded-[18px] bg-indigo-50 border border-indigo-100">
                   <span className="text-[13px] font-bold text-indigo-600">TID #{tid}</span>
                 </div>
               )}
