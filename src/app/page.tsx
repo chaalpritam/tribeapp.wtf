@@ -47,6 +47,7 @@ import {
   Activity,
 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { cities as allCities } from "@/lib/cities";
 
 // ─── Data ──────────────────────────────────────────────────────────────────
 
@@ -358,14 +359,6 @@ const features = [
   },
 ];
 
-const cities = [
-  { name: "Bangalore", emoji: "\u{1F1EE}\u{1F1F3}", members: "15K+", tribes: "42 tribes" },
-  { name: "Mumbai", emoji: "\u{1F1EE}\u{1F1F3}", members: "23K+", tribes: "58 tribes" },
-  { name: "Delhi", emoji: "\u{1F1EE}\u{1F1F3}", members: "19K+", tribes: "35 tribes" },
-  { name: "San Francisco", emoji: "\u{1F1FA}\u{1F1F8}", members: "12K+", tribes: "31 tribes" },
-  { name: "London", emoji: "\u{1F1EC}\u{1F1E7}", members: "22K+", tribes: "47 tribes" },
-  { name: "New York", emoji: "\u{1F1FA}\u{1F1F8}", members: "29K+", tribes: "63 tribes" },
-];
 
 // ─── Component ─────────────────────────────────────────────────────────────
 
@@ -481,7 +474,7 @@ export default function LandingPage() {
             {[
               { value: "12", label: "Solana programs" },
               { value: "100%", label: "Open source" },
-              { value: "6+", label: "Cities active" },
+              { value: `${allCities.length}`, label: "Cities" },
               { value: "MIT", label: "License" },
             ].map((s) => (
               <div key={s.label} className="rounded-[20px] bg-[#f5f5f5] px-5 py-4 text-center">
@@ -878,28 +871,70 @@ export default function LandingPage() {
           <div className="flex flex-col items-center gap-12 rounded-[48px] bg-black p-12 text-white sm:p-20">
             <div className="text-center">
               <h2 className="mb-6 text-[40px] font-bold tracking-[-1.5px] sm:text-[56px]">
-                Active in {cities.length} cities.
+                {allCities.length} cities on the network.
               </h2>
-              <p className="mx-auto max-w-[500px] text-lg font-medium opacity-60">
-                Join thousands of neighbors building stronger communities.
+              <p className="mx-auto max-w-[560px] text-lg font-medium opacity-60">
+                Each city has its own channel on the protocol — scoped by latitude and longitude,
+                owned on-chain via the channel registry.
               </p>
             </div>
 
-            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {cities.map((city) => (
-                <div
-                  key={city.name}
-                  className="flex items-center gap-6 rounded-[24px] bg-white/5 p-6 backdrop-blur-sm transition-colors hover:bg-white/10"
-                >
-                  <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-white/10 text-2xl">
-                    {city.emoji}
-                  </div>
-                  <div>
-                    <div className="text-lg font-bold">{city.name}</div>
-                    <div className="text-sm font-medium opacity-50">{city.members} members</div>
-                  </div>
-                </div>
-              ))}
+            {/* India */}
+            <div className="w-full">
+              <p className="mb-4 text-[11px] font-bold uppercase tracking-widest opacity-40">India</p>
+              <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {allCities
+                  .filter((c) => c.countryCode === "IN")
+                  .map((city) => (
+                    <motion.div
+                      key={city.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      className="flex items-center gap-4 rounded-[20px] bg-white/5 p-5 transition-colors hover:bg-white/10"
+                    >
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+                        style={{ background: city.accentColor + "22" }}
+                      >
+                        {city.emoji}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-[15px] font-bold">{city.name}</div>
+                        <code className="text-[11px] font-mono opacity-40">{city.id}</code>
+                      </div>
+                    </motion.div>
+                  ))}
+              </div>
+            </div>
+
+            {/* International */}
+            <div className="w-full">
+              <p className="mb-4 text-[11px] font-bold uppercase tracking-widest opacity-40">International</p>
+              <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                {allCities
+                  .filter((c) => c.countryCode !== "IN")
+                  .map((city) => (
+                    <motion.div
+                      key={city.id}
+                      initial={{ opacity: 0, y: 10 }}
+                      whileInView={{ opacity: 1, y: 0 }}
+                      viewport={{ once: true }}
+                      className="flex items-center gap-4 rounded-[20px] bg-white/5 p-5 transition-colors hover:bg-white/10"
+                    >
+                      <div
+                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+                        style={{ background: city.accentColor + "22" }}
+                      >
+                        {city.emoji}
+                      </div>
+                      <div className="min-w-0">
+                        <div className="truncate text-[15px] font-bold">{city.name}</div>
+                        <div className="text-[11px] font-medium opacity-40">{city.country}</div>
+                      </div>
+                    </motion.div>
+                  ))}
+              </div>
             </div>
           </div>
         </section>
