@@ -79,6 +79,32 @@
       "timeAgo": "8h",
       "isTrending": false,
       "cityId": "new-york"
+    },
+    {
+      "id": "dummy-event-7",
+      "type": "event",
+      "title": "Marina Beach Sunrise Walk",
+      "description": "Start your Sunday right — a gentle 5 km walk along the world's second-longest urban beach. Free chai at the end!",
+      "icon": "calendar",
+      "color": "#0EA5E9",
+      "participants": 74,
+      "location": "Chennai — Marina Beach",
+      "timeAgo": "3h",
+      "isTrending": true,
+      "cityId": "chennai"
+    },
+    {
+      "id": "dummy-event-8",
+      "type": "event",
+      "title": "Carnatic Music Open Mic",
+      "description": "Amateur and seasoned musicians welcome. Bring your instrument or just your ears. Refreshments provided.",
+      "icon": "calendar",
+      "color": "#D97706",
+      "participants": 43,
+      "location": "Chennai — Mylapore Sabha",
+      "timeAgo": "1d",
+      "isTrending": false,
+      "cityId": "chennai"
     }
   ],
 
@@ -137,6 +163,33 @@
       "duration": 604800,
       "timestamp": "2d",
       "cityId": "london"
+    },
+    {
+      "id": "dummy-poll-5",
+      "question": "Which area needs a new community centre most?",
+      "options": [
+        { "id": "a", "text": "Velachery" },
+        { "id": "b", "text": "Anna Nagar" },
+        { "id": "c", "text": "Perambur" },
+        { "id": "d", "text": "Sholinganallur" }
+      ],
+      "votes": { "a": 231, "b": 178, "c": 95, "d": 142 },
+      "duration": 604800,
+      "timestamp": "6h",
+      "cityId": "chennai"
+    },
+    {
+      "id": "dummy-poll-6",
+      "question": "Should auto-rickshaws use meter fares on all routes?",
+      "options": [
+        { "id": "a", "text": "Yes, always" },
+        { "id": "b", "text": "Only on major routes" },
+        { "id": "c", "text": "Keep it as-is" }
+      ],
+      "votes": { "a": 418, "b": 112, "c": 67 },
+      "duration": 604800,
+      "timestamp": "1d",
+      "cityId": "chennai"
     }
   ],
 
@@ -200,6 +253,30 @@
       "reward": "Split fare",
       "isUrgent": false,
       "cityId": "new-york"
+    },
+    {
+      "id": "dummy-task-6",
+      "title": "Need Tamil–English interpreter for tomorrow",
+      "description": "Meeting with a government office. Need someone who can translate formal Tamil fluently. 2–3 hours.",
+      "icon": "task",
+      "location": "Chennai — Egmore",
+      "helpers": 1,
+      "timeAgo": "30m",
+      "reward": "₹800",
+      "isUrgent": true,
+      "cityId": "chennai"
+    },
+    {
+      "id": "dummy-task-7",
+      "title": "Help hang paintings for a home exhibition",
+      "description": "First solo art show at home this weekend! Need 2 people to help hang ~20 paintings and arrange lighting. 3 hours.",
+      "icon": "task",
+      "location": "Chennai — Nungambakkam",
+      "helpers": 0,
+      "timeAgo": "2h",
+      "reward": "₹600 + food",
+      "isUrgent": false,
+      "cityId": "chennai"
     }
   ],
 
@@ -263,6 +340,30 @@
       "contributors": 211,
       "timeAgo": "1d",
       "cityId": "new-york"
+    },
+    {
+      "id": "dummy-fund-6",
+      "title": "Restore the 100-year-old temple tank",
+      "description": "The historic Kapaleeshwarar tank has silted up. We have a restoration plan approved — just need community funding.",
+      "icon": "heart",
+      "location": "Chennai — Mylapore",
+      "goal": 150,
+      "raised": 62.5,
+      "contributors": 89,
+      "timeAgo": "3d",
+      "cityId": "chennai"
+    },
+    {
+      "id": "dummy-fund-7",
+      "title": "Free coding bootcamp for government school students",
+      "description": "8-week programme, 30 students, experienced volunteer instructors. Funds cover laptops and internet access.",
+      "icon": "heart",
+      "location": "Chennai — Perambur",
+      "goal": 90,
+      "raised": 47.0,
+      "contributors": 73,
+      "timeAgo": "2d",
+      "cityId": "chennai"
     }
   ],
 
@@ -364,6 +465,62 @@
       "lat": 40.7151,
       "lng": -73.9640,
       "tags": ["food", "weekends", "outdoor"]
+    },
+    {
+      "id": "place-8",
+      "name": "Ratna Café",
+      "category": "Restaurant",
+      "emoji": "🍛",
+      "address": "Triplicane, Chennai",
+      "rating": 4.8,
+      "reviewCount": 2140,
+      "openNow": true,
+      "cityId": "chennai",
+      "lat": 13.0604,
+      "lng": 80.2724,
+      "tags": ["idli", "south-indian", "heritage", "breakfast"]
+    },
+    {
+      "id": "place-9",
+      "name": "Higginbothams Bookstore",
+      "category": "Bookstore",
+      "emoji": "📚",
+      "address": "Anna Salai, Chennai",
+      "rating": 4.6,
+      "reviewCount": 876,
+      "openNow": true,
+      "cityId": "chennai",
+      "lat": 13.0678,
+      "lng": 80.2558,
+      "tags": ["books", "heritage", "stationery"]
+    },
+    {
+      "id": "place-10",
+      "name": "Marina Beach",
+      "category": "Beach",
+      "emoji": "🏖️",
+      "address": "Marina, Chennai",
+      "rating": 4.5,
+      "reviewCount": 8920,
+      "openNow": true,
+      "cityId": "chennai",
+      "lat": 13.0500,
+      "lng": 80.2824,
+      "tags": ["beach", "sunrise", "family", "free"]
+    },
+    {
+      "id": "place-11",
+      "name": "Brew Room",
+      "category": "Café",
+      "emoji": "☕",
+      "address": "Nungambakkam, Chennai",
+      "rating": 4.4,
+      "reviewCount": 534,
+      "openNow": true,
+      "cityId": "chennai",
+      "lat": 13.0604,
+      "lng": 80.2470,
+      "tags": ["coffee", "wifi", "co-working", "quiet"]
     }
   ],
 
@@ -437,6 +594,36 @@
       "cityId": "new-york",
       "karma": 530,
       "mutual": 0
+    },
+    {
+      "id": "person-8",
+      "displayName": "Kavitha Rajan",
+      "username": "kavithar",
+      "bio": "Carnatic vocalist & Sanskrit scholar 🎵",
+      "avatarColor": "#F59E0B",
+      "cityId": "chennai",
+      "karma": 1340,
+      "mutual": 2
+    },
+    {
+      "id": "person-9",
+      "displayName": "Surya Prakash",
+      "username": "suryap",
+      "bio": "Cyclist, open-street mapper, filter coffee addict ☕",
+      "avatarColor": "#0EA5E9",
+      "cityId": "chennai",
+      "karma": 870,
+      "mutual": 1
+    },
+    {
+      "id": "person-10",
+      "displayName": "Meena Krishnan",
+      "username": "meenak",
+      "bio": "Neighbourhood watch · Parent · Teacher 📖",
+      "avatarColor": "#10B981",
+      "cityId": "chennai",
+      "karma": 960,
+      "mutual": 4
     }
   ],
 
@@ -506,6 +693,39 @@
       "text": "Only open weekends but the variety is insane. The ramen burger stall returns every spring. Go hungry.",
       "timeAgo": "1w",
       "cityId": "new-york"
+    },
+    {
+      "id": "review-7",
+      "placeId": "place-8",
+      "placeName": "Ratna Café",
+      "author": "Kavitha Rajan",
+      "authorColor": "#F59E0B",
+      "rating": 5,
+      "text": "The idli here is legendary — soft as clouds with the most flavourful sambar in Chennai. Been coming since childhood. Never changes. Perfect.",
+      "timeAgo": "3d",
+      "cityId": "chennai"
+    },
+    {
+      "id": "review-8",
+      "placeId": "place-10",
+      "placeName": "Marina Beach",
+      "author": "Surya Prakash",
+      "authorColor": "#0EA5E9",
+      "rating": 5,
+      "text": "6 AM sunrise run along the full stretch — 5 km each way. The beach is clean early morning and the Bay of Bengal at dawn is just spectacular.",
+      "timeAgo": "1d",
+      "cityId": "chennai"
+    },
+    {
+      "id": "review-9",
+      "placeId": "place-11",
+      "placeName": "Brew Room",
+      "author": "Meena Krishnan",
+      "authorColor": "#10B981",
+      "rating": 4,
+      "text": "Great corner table for working. Power sockets at every seat, solid wifi, and the cold brew is excellent. Gets noisy after 5pm though.",
+      "timeAgo": "2d",
+      "cityId": "chennai"
     }
   ]
 }
