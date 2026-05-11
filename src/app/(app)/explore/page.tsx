@@ -103,9 +103,7 @@ export default function ExplorePage() {
                   <Link key={u.tid} href={`/profile?tid=${u.tid}`}
                     className="flex items-center gap-3 p-4 rounded-2xl bg-white border border-[#f0f0f0] hover:shadow-md transition-all active:scale-[0.98]"
                   >
-                    <div className="h-11 w-11 rounded-full bg-violet-100 text-violet-600 flex items-center justify-center shrink-0 text-base font-black">
-                      {label.charAt(0).toUpperCase()}
-                    </div>
+                    <Avatar src={null} name={label} size={44} />
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-bold truncate">{label}</p>
                       <p className="text-[11px] font-bold text-muted-foreground">@{u.username || `#${u.tid}`}</p>
@@ -135,7 +133,7 @@ export default function ExplorePage() {
                     <Link key={c.id} href={`/tribes/${c.id}`}
                       className="relative w-40 h-52 rounded-[28px] overflow-hidden shrink-0 group shadow-sm hover:shadow-xl transition-all active:scale-95"
                     >
-                      <Image src={img} alt={c.name || c.id} fill className="object-cover group-hover:scale-105 transition-transform duration-500" />
+                      <Image src={img} alt={c.name || c.id} fill sizes="160px" className="object-cover group-hover:scale-105 transition-transform duration-500" />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
                       <div className="absolute bottom-0 left-0 right-0 p-4">
                         <p className="text-white text-[14px] font-black leading-tight">{c.name?.trim() || c.id}</p>
@@ -214,15 +212,7 @@ export default function ExplorePage() {
                     )}
                     {/* Author */}
                     <div className="flex items-center gap-2.5 mb-2.5">
-                      {tweet.user.avatarUrl ? (
-                        <div className="relative h-8 w-8 rounded-full overflow-hidden shrink-0">
-                          <Image src={tweet.user.avatarUrl} alt={tweet.user.displayName} fill className="object-cover" />
-                        </div>
-                      ) : (
-                        <div className="h-8 w-8 rounded-full bg-[#f5f5f5] flex items-center justify-center shrink-0">
-                          <User className="h-4 w-4 text-[#999]" />
-                        </div>
-                      )}
+                      <Avatar src={tweet.user.avatarUrl} name={tweet.user.displayName} size={32} />
                       <div className="min-w-0">
                         <p className="text-[13px] font-bold leading-none truncate">
                           {tweet.user.displayName !== tweet.user.username
@@ -239,7 +229,13 @@ export default function ExplorePage() {
                     {/* Image embed */}
                     {tweet.imageUrl && (
                       <div className="relative mt-3 rounded-2xl overflow-hidden aspect-video">
-                        <Image src={tweet.imageUrl} alt="embed" fill className="object-cover" />
+                        <Image
+                          src={tweet.imageUrl}
+                          alt="embed"
+                          fill
+                          sizes="(max-width: 640px) calc(100vw - 48px), 592px"
+                          className="object-cover"
+                        />
                       </div>
                     )}
                     {/* Actions */}
@@ -502,5 +498,35 @@ function SkeletonList() {
     <div className="flex flex-col gap-3">
       {[1, 2].map((i) => <div key={i} className="h-24 rounded-[24px] bg-[#ececec] animate-pulse" />)}
     </div>
+  );
+}
+
+/** Plain <img> avatar — avoids next/image optimisation overhead for small
+ *  thumbnails and handles broken URLs gracefully with an initials fallback. */
+function Avatar({ src, name, size = 32 }: { src?: string | null; name?: string; size?: number }) {
+  const initial = (name ?? "?").charAt(0).toUpperCase();
+  if (!src) {
+    return (
+      <div
+        style={{ width: size, height: size }}
+        className="rounded-full bg-[#f0f0f0] flex items-center justify-center shrink-0 text-[#999] font-black text-xs"
+      >
+        {initial}
+      </div>
+    );
+  }
+  return (
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src={src}
+      alt={name ?? "avatar"}
+      width={size}
+      height={size}
+      className="rounded-full object-cover shrink-0"
+      style={{ width: size, height: size }}
+      onError={(e) => {
+        (e.target as HTMLImageElement).style.display = "none";
+      }}
+    />
   );
 }
