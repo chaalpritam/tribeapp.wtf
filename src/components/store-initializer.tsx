@@ -4,6 +4,7 @@ import { useEffect } from "react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { fetchUser, tribeIdentityToUser } from "@/lib/tribe";
+import { listProtocolCities } from "@/lib/tribe/city-channels";
 
 /**
  * Bootstraps the in-memory store on first paint:
@@ -26,10 +27,12 @@ export function StoreInitializer() {
   useEffect(() => {
     if (currentCity) return;
     if (!identity) return;
-    import("@/lib/cities").then(({ cities }) => {
-      const savedCityId = localStorage.getItem("tribe-selected-city");
-      const city =
-        cities.find((c) => c.id === savedCityId) || cities[0];
+    listProtocolCities()
+      .then((cities) => {
+        const savedCityId = localStorage.getItem("tribe-selected-city");
+        const city =
+          cities.find((c) => c.id === savedCityId) || cities[0];
+        if (!city) return;
       const initialUser = tribeIdentityToUser({
         identity,
         city,
@@ -46,7 +49,8 @@ export function StoreInitializer() {
         crowdfunds: [],
         tribes: [],
       });
-    }).catch(() => {});
+      })
+      .catch(() => {});
   }, [currentCity, identity, setInitialData]);
 
   useEffect(() => {

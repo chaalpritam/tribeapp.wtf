@@ -8,7 +8,8 @@ import { MapPin, Search, Globe } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useMounted } from "@/hooks/use-mounted";
-import { cities } from "@/lib/cities";
+import type { City } from "@/types";
+import { listProtocolCities } from "@/lib/tribe/city-channels";
 import { cn } from "@/lib/utils";
 
 export default function CitySelectionPage() {
@@ -18,6 +19,8 @@ export default function CitySelectionPage() {
   const mounted = useMounted();
   const signedIn = isAuthenticated || tribeIdentity !== null;
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
+  const [availableCities, setAvailableCities] = useState<City[]>([]);
+  const [loadingCities, setLoadingCities] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -27,14 +30,37 @@ export default function CitySelectionPage() {
   }, [mounted, signedIn, router]);
 
   useEffect(() => {
-    if (!mounted) return;
-    const saved = localStorage.getItem("tribe-selected-city");
-    if (saved) setSelectedCityId(saved);
-  }, [mounted]);
+    if (!mounted || !signedIn) return;
+    let cancelled = false;
+    setLoadingCities(true);
+    listProtocolCities()
+      .then((cities) => {
+        if (cancelled) return;
+        setAvailableCities(cities);
+        const saved = localStorage.getItem("tribe-selected-city");
+        if (saved && cities.some((city) => city.id === saved)) {
+          setSelectedCityId(saved);
+          return;
+        }
+        setSelectedCityId(cities[0]?.id ?? null);
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setAvailableCities([]);
+          setSelectedCityId(null);
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setLoadingCities(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [mounted, signedIn]);
 
   if (!mounted || !signedIn) return null;
 
-  const filteredCities = cities.filter(
+  const filteredCities = availableCities.filter(
     (c) =>
       c.name.toLowerCase().includes(search.toLowerCase()) ||
       c.country.toLowerCase().includes(search.toLowerCase())
@@ -78,7 +104,16 @@ export default function CitySelectionPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-2 max-h-[45vh] overflow-y-auto no-scrollbar pr-1 mb-8">
-          {filteredCities.map((city) => {
+          {loadingCities && (
+            <div className="py-10 text-center">
+              <p className="text-sm font-medium text-muted-foreground">
+                Loading available city channels...
+              </p>
+            </div>
+          )}
+
+          {!loadingCities &&
+            filteredCities.map((city) => {
             const isSelected = selectedCityId === city.id;
             return (
               <button
@@ -124,16 +159,16 @@ export default function CitySelectionPage() {
             );
           })}
 
-          {filteredCities.length === 0 && (
+          {!loadingCities && filteredCities.length === 0 && (
             <div className="py-20 text-center space-y-4">
               <div className="h-20 w-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
                 <MapPin className="h-10 w-10 text-muted-foreground/30" />
               </div>
               <p className="text-xl font-bold tracking-tight">
-                City not found
+                No city channels available
               </p>
               <p className="text-sm font-medium text-muted-foreground">
-                We&apos;re expanding to new tribes soon!
+                Ask your hub to create city channels first.
               </p>
             </div>
           )}
@@ -143,7 +178,7 @@ export default function CitySelectionPage() {
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}
           whileTap={{ scale: 0.98 }}
-          disabled={!selectedCityId}
+          disabled={!selectedCityId || loadingCities}
           onClick={handleContinue}
           className={cn(
             "w-full rounded-[32px] py-5 text-lg font-black text-white transition-all shadow-2xl",

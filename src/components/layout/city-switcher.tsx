@@ -1,12 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Image from "next/image";
 import { Check, MapPin, Search, Globe } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { loadCityData } from "@/lib/city-data";
-import { cities } from "@/lib/cities";
+import type { City } from "@/types";
+import { listProtocolCities } from "@/lib/tribe/city-channels";
 import {
     Dialog,
     DialogContent,
@@ -24,13 +25,28 @@ export function CitySwitcher({ isOpen, onOpenChange }: CitySwitcherProps) {
     const { currentCity, switchCity } = useTribeStore();
     const { setField: publishUserData, ready: userDataReady } = useTribeUserData();
     const [search, setSearch] = useState("");
+    const [availableCities, setAvailableCities] = useState<City[]>([]);
 
-    const filteredCities = cities.filter((c) =>
+    useEffect(() => {
+        let cancelled = false;
+        listProtocolCities()
+            .then((cities) => {
+                if (!cancelled) setAvailableCities(cities);
+            })
+            .catch(() => {
+                if (!cancelled) setAvailableCities([]);
+            });
+        return () => {
+            cancelled = true;
+        };
+    }, []);
+
+    const filteredCities = availableCities.filter((c) =>
         c.name.toLowerCase().includes(search.toLowerCase()) ||
         c.country.toLowerCase().includes(search.toLowerCase())
     );
 
-    const handleCitySelect = async (city: typeof cities[0]) => {
+    const handleCitySelect = async (city: City) => {
         if (city.id === currentCity?.id) {
             onOpenChange(false);
             return;
