@@ -65,6 +65,29 @@ async function buildSignedMessage({
   };
 }
 
+export async function signAndRemoveTweet(
+  tid: number,
+  targetHash: string,
+  signingKeySecret: Uint8Array
+): Promise<{ hash: string }> {
+  const message = await buildSignedMessage({
+    type: 2, // TWEET_REMOVE
+    tid,
+    body: { target_hash: targetHash },
+    signingKeySecret,
+  });
+  const res = await hubFetch("/v1/submit", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(message),
+  });
+  if (!res.ok) {
+    const errBody = await res.text();
+    throw new Error(`Delete failed: ${res.status} ${errBody}`);
+  }
+  return res.json();
+}
+
 export async function signAndPublishTweet(
   tid: number,
   text: string,

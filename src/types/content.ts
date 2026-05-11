@@ -11,10 +11,14 @@ export interface Tweet {
   user: User;
   imageUrl?: string;
   likes: number;
+  /** Recast (retweet) count from hub reactions. */
+  recasts?: number;
   caption: string;
   comments: Comment[];
   timestamp: string;
   isLiked: boolean;
+  /** Whether the current viewer has retweeted this post. */
+  isRetweeted?: boolean;
   isSaved: boolean;
   tipCount: number;
   totalTips: number;
@@ -28,6 +32,10 @@ export interface Tweet {
     name: string;
     imageUrl?: string;
   };
+  replyCount?: number;
+  /** Set when this post appears in the feed as a retweeted copy. */
+  retweetedByTid?: number;
+  retweetedByUsername?: string;
 }
 
 export interface PollOption {

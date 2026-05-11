@@ -133,9 +133,11 @@ export function tribeTweetToTweet(
     },
     caption: hubTweet.text,
     likes: hubTweet.reactions?.likes ?? 0,
+    recasts: hubTweet.reactions?.recasts ?? 0,
     comments: [],
     timestamp: relativeTimestamp(hubTweet.timestamp),
     isLiked: false,
+    isRetweeted: false,
     isSaved: false,
     tipCount: 0,
     totalTips: 0,
@@ -147,5 +149,10 @@ export function tribeTweetToTweet(
     channel: hubTweet.channel_id
       ? { id: hubTweet.channel_id, name: hubTweet.channel_id }
       : undefined,
+    replyCount: hubTweet.reply_count,
+    retweetedByTid: hubTweet.retweeted_by_tid != null
+      ? Number(hubTweet.retweeted_by_tid)
+      : undefined,
+    retweetedByUsername: hubTweet.retweeted_by_username ?? undefined,
   };
 }

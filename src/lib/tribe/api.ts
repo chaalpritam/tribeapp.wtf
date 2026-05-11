@@ -13,6 +13,8 @@ export interface TribeUserSummary {
 export interface TribeTweet {
   hash: string;
   tid: string;
+  /** Message type id (1 = TWEET_ADD, 2 = TWEET_REMOVE, …). */
+  type?: number;
   text: string;
   /** Hub returns an ISO-8601 string; older payloads may be Unix seconds. */
   timestamp: number | string;
@@ -20,15 +22,18 @@ export interface TribeTweet {
   channel_id?: string | null;
   embeds?: string[];
   reactions?: { likes: number; recasts: number };
-  /** The hub returns these inline on each row (flat, not nested). The
-   *  display_name / pfp_url fields come from a JOIN against user_data
-   *  with the latest USER_DATA_ADD value per field. */
+  /** Hub-joined author fields (flat on each row). */
   username?: string | null;
   display_name?: string | null;
   pfp_url?: string | null;
-  /** Legacy nested shape, kept for clients that build their own
-   *  TribeTweet payloads. The hub itself never sets this. */
+  /** Legacy nested shape from older clients. */
   user?: TribeUserSummary;
+  /** Set when a retweeted copy appears in a feed. */
+  retweeted_by_tid?: string | null;
+  retweeted_by_username?: string | null;
+  retweeted_at?: string | null;
+  mentions?: string[];
+  reply_count?: number;
 }
 
 export interface TribeFeedResponse {
