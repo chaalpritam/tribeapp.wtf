@@ -1,5 +1,4 @@
 import nacl from "tweetnacl";
-import { WALLET_STORAGE_KEY } from "./browser-wallet/keypair-store";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 
 /**
@@ -19,7 +18,6 @@ import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 const SUPPORTED_BACKUP_VERSION = 1;
 export const BACKUP_TIMESTAMP_KEY = "tribeapp_wtf_last_backup_at";
 const DM_KEYPAIR_STORAGE = "tribeapp_wtf_dm_keypair";
-const WALLET_NAME_KEY = "walletName";
 
 export interface BackupData {
   version: 1;
@@ -58,19 +56,19 @@ export function getLastBackupAt(): number | null {
 }
 
 /**
- * Snapshot the current identity + browser-wallet + DM key into the
- * standardized envelope. Reads the Zustand store directly so callers
- * don't have to thread the identity through.
+ * Snapshot the current identity + DM key into the standardized
+ * envelope. Reads the Zustand store directly so callers don't have
+ * to thread the identity through.
+ *
+ * `browserWallet` is always emitted as null on this client — only
+ * tribe-app supports an in-page Solana wallet. The field is retained
+ * in the wire format for compatibility with files produced there.
  */
 export function createBackupPayload(): BackupData {
   const identity = useTribeIdentityStore.getState().identity;
   const dmKeypair =
     typeof window !== "undefined"
       ? localStorage.getItem(DM_KEYPAIR_STORAGE)
-      : null;
-  const browserWallet =
-    typeof window !== "undefined"
-      ? localStorage.getItem(WALLET_STORAGE_KEY)
       : null;
   return {
     version: 1,
@@ -79,7 +77,7 @@ export function createBackupPayload(): BackupData {
       tid: identity?.tid != null ? String(identity.tid) : null,
       tidWallet: identity?.custodyWallet ?? null,
       appKeySecret: identity?.appKeySecret ?? null,
-      browserWallet,
+      browserWallet: null,
       dmKeypair,
     },
   };
