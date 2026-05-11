@@ -11,6 +11,21 @@
 import raw from "./dummy-data.json";
 import type { ExploreItem, Poll, Task, Crowdfund } from "@/types";
 
+export interface MapPlace {
+  id: string; name: string; category: string; emoji: string;
+  address: string; rating: number; reviewCount: number; openNow: boolean;
+  cityId: string; lat: number; lng: number; tags: string[];
+}
+export interface MapPerson {
+  id: string; displayName: string; username: string; bio: string;
+  avatarColor: string; cityId: string; karma: number; mutual: number;
+}
+export interface MapReview {
+  id: string; placeId: string; placeName: string;
+  author: string; authorColor: string; rating: number;
+  text: string; timeAgo: string; cityId: string;
+}
+
 const DUMMY_USER = {
   id: "dummy-user",
   username: "tribe",
@@ -42,3 +57,7 @@ export const dummyCrowdfunds: Crowdfund[] = raw.crowdfunds.map((f) => ({
   ...f,
   user: DUMMY_USER,
 }));
+
+export const dummyPlaces:  MapPlace[]  = raw.places  as MapPlace[];
+export const dummyPeople:  MapPerson[] = raw.people  as MapPerson[];
+export const dummyReviews: MapReview[] = raw.reviews as MapReview[];

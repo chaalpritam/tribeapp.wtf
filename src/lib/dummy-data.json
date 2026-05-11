@@ -264,5 +264,248 @@
       "timeAgo": "1d",
       "cityId": "new-york"
     }
+  ],
+
+  "places": [
+    {
+      "id": "place-1",
+      "name": "Blue Tokai Coffee",
+      "category": "Café",
+      "emoji": "☕",
+      "address": "Bandra West, Mumbai",
+      "rating": 4.7,
+      "reviewCount": 312,
+      "openNow": true,
+      "cityId": "mumbai",
+      "lat": 19.0596,
+      "lng": 72.8295,
+      "tags": ["coffee", "wifi", "quiet"]
+    },
+    {
+      "id": "place-2",
+      "name": "Kitab Khana",
+      "category": "Bookstore",
+      "emoji": "📚",
+      "address": "Fort, Mumbai",
+      "rating": 4.8,
+      "reviewCount": 184,
+      "openNow": true,
+      "cityId": "mumbai",
+      "lat": 18.9307,
+      "lng": 72.8344,
+      "tags": ["books", "events", "café"]
+    },
+    {
+      "id": "place-3",
+      "name": "Cubbon Park Lawn",
+      "category": "Park",
+      "emoji": "🌳",
+      "address": "Cubbon Park, Bangalore",
+      "rating": 4.6,
+      "reviewCount": 891,
+      "openNow": true,
+      "cityId": "bangalore",
+      "lat": 12.9763,
+      "lng": 77.5929,
+      "tags": ["outdoors", "running", "picnic"]
+    },
+    {
+      "id": "place-4",
+      "name": "Third Wave Coffee",
+      "category": "Café",
+      "emoji": "☕",
+      "address": "Koramangala, Bangalore",
+      "rating": 4.5,
+      "reviewCount": 427,
+      "openNow": false,
+      "cityId": "bangalore",
+      "lat": 12.9352,
+      "lng": 77.6245,
+      "tags": ["coffee", "laptop-friendly", "brunch"]
+    },
+    {
+      "id": "place-5",
+      "name": "Lodi Garden",
+      "category": "Park",
+      "emoji": "🌳",
+      "address": "Lodi Colony, Delhi",
+      "rating": 4.7,
+      "reviewCount": 1204,
+      "openNow": true,
+      "cityId": "delhi",
+      "lat": 28.5930,
+      "lng": 77.2197,
+      "tags": ["heritage", "morning walk", "photography"]
+    },
+    {
+      "id": "place-6",
+      "name": "Borough Market",
+      "category": "Market",
+      "emoji": "🥕",
+      "address": "Southwark, London",
+      "rating": 4.8,
+      "reviewCount": 3240,
+      "openNow": true,
+      "cityId": "london",
+      "lat": 51.5055,
+      "lng": -0.0910,
+      "tags": ["food", "farmers market", "street food"]
+    },
+    {
+      "id": "place-7",
+      "name": "Smorgasburg",
+      "category": "Market",
+      "emoji": "🍜",
+      "address": "Williamsburg, New York",
+      "rating": 4.6,
+      "reviewCount": 2180,
+      "openNow": false,
+      "cityId": "new-york",
+      "lat": 40.7151,
+      "lng": -73.9640,
+      "tags": ["food", "weekends", "outdoor"]
+    }
+  ],
+
+  "people": [
+    {
+      "id": "person-1",
+      "displayName": "Arjun Mehta",
+      "username": "arjunm",
+      "bio": "Urban farmer & community builder 🌱",
+      "avatarColor": "#14B8A6",
+      "cityId": "mumbai",
+      "karma": 840,
+      "mutual": 3
+    },
+    {
+      "id": "person-2",
+      "displayName": "Priya Nair",
+      "username": "priyan",
+      "bio": "Photographer · Storyteller · Mumbai 📷",
+      "avatarColor": "#8B5CF6",
+      "cityId": "mumbai",
+      "karma": 1220,
+      "mutual": 5
+    },
+    {
+      "id": "person-3",
+      "displayName": "Ravi Kumar",
+      "username": "ravikr",
+      "bio": "Cyclist & open-source dev 🚴",
+      "avatarColor": "#F59E0B",
+      "cityId": "bangalore",
+      "karma": 675,
+      "mutual": 2
+    },
+    {
+      "id": "person-4",
+      "displayName": "Sneha Iyer",
+      "username": "snehai",
+      "bio": "Neighbourhood watch · Cook · Dog mom 🐶",
+      "avatarColor": "#EC4899",
+      "cityId": "bangalore",
+      "karma": 940,
+      "mutual": 4
+    },
+    {
+      "id": "person-5",
+      "displayName": "Kabir Siddiqui",
+      "username": "kabirs",
+      "bio": "Architect · Restoring old Delhi havelis",
+      "avatarColor": "#6366F1",
+      "cityId": "delhi",
+      "karma": 1050,
+      "mutual": 1
+    },
+    {
+      "id": "person-6",
+      "displayName": "Amara Osei",
+      "username": "amarao",
+      "bio": "Community legal aid · Peckham 🏛️",
+      "avatarColor": "#10B981",
+      "cityId": "london",
+      "karma": 780,
+      "mutual": 2
+    },
+    {
+      "id": "person-7",
+      "displayName": "Sofia Rivera",
+      "username": "sofiar",
+      "bio": "Urban gardener · Brooklyn rooftops 🌿",
+      "avatarColor": "#F43F5E",
+      "cityId": "new-york",
+      "karma": 530,
+      "mutual": 0
+    }
+  ],
+
+  "reviews": [
+    {
+      "id": "review-1",
+      "placeId": "place-1",
+      "placeName": "Blue Tokai Coffee",
+      "author": "Arjun Mehta",
+      "authorColor": "#14B8A6",
+      "rating": 5,
+      "text": "Best single-origin cold brew in the city. Staff knows their beans. Perfect for a 3-hour work session.",
+      "timeAgo": "2d",
+      "cityId": "mumbai"
+    },
+    {
+      "id": "review-2",
+      "placeId": "place-2",
+      "placeName": "Kitab Khana",
+      "author": "Priya Nair",
+      "authorColor": "#8B5CF6",
+      "rating": 5,
+      "text": "Found three rare photography books I'd been hunting for months. The café section is cozy and the staff genuinely love books.",
+      "timeAgo": "5d",
+      "cityId": "mumbai"
+    },
+    {
+      "id": "review-3",
+      "placeId": "place-3",
+      "placeName": "Cubbon Park Lawn",
+      "author": "Ravi Kumar",
+      "authorColor": "#F59E0B",
+      "rating": 4,
+      "text": "Great cycling loop early mornings. Gets crowded by 8am on weekends but the greenery is unbeatable.",
+      "timeAgo": "1d",
+      "cityId": "bangalore"
+    },
+    {
+      "id": "review-4",
+      "placeId": "place-5",
+      "placeName": "Lodi Garden",
+      "author": "Kabir Siddiqui",
+      "authorColor": "#6366F1",
+      "rating": 5,
+      "text": "The Mughal architecture here is stunning at golden hour. Bring a book, sit by the tombs, ignore your phone.",
+      "timeAgo": "3d",
+      "cityId": "delhi"
+    },
+    {
+      "id": "review-5",
+      "placeId": "place-6",
+      "placeName": "Borough Market",
+      "author": "Amara Osei",
+      "authorColor": "#10B981",
+      "rating": 5,
+      "text": "The Monmouth Coffee queue is worth it every single time. Get there before 10am or prepare to wait. The raclette stall is a must.",
+      "timeAgo": "4d",
+      "cityId": "london"
+    },
+    {
+      "id": "review-6",
+      "placeId": "place-7",
+      "placeName": "Smorgasburg",
+      "author": "Sofia Rivera",
+      "authorColor": "#F43F5E",
+      "rating": 4,
+      "text": "Only open weekends but the variety is insane. The ramen burger stall returns every spring. Go hungry.",
+      "timeAgo": "1w",
+      "cityId": "new-york"
+    }
   ]
 }
