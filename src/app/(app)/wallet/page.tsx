@@ -241,7 +241,7 @@ export default function WalletPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[14px] font-bold tracking-tight truncate">
-                      {incoming ? "From" : "To"} tid:{counterpartyTid}
+                      {incoming ? "From" : "To"} #{counterpartyTid}
                     </p>
                     <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-0.5">
                       {formatDistanceToNow(new Date(tip.createdAt), {

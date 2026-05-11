@@ -6,7 +6,18 @@ import { Heart, MessageCircle, UserPlus, Calendar, Hash, Coins, Users, CheckCirc
 import { useNotificationStore } from "@/store/use-notification-store";
 import { AppHeader } from "@/components/layout/app-header";
 import { useTribeNotifications } from "@/hooks/use-tribe-notifications";
+import { useTribeUser } from "@/hooks/use-tribe-user";
 import { formatDistanceToNow } from "date-fns";
+
+function ActorLabel({ actorTid }: { actorTid: string }) {
+  const tid = parseInt(actorTid, 10);
+  const { user } = useTribeUser(isNaN(tid) ? null : tid);
+  const label =
+    user?.profile?.displayName?.trim() ||
+    (user?.username ? `@${user.username}` : null) ||
+    `#${actorTid}`;
+  return <span className="font-bold">{label}</span>;
+}
 
 const iconMap: Record<string, React.ElementType> = {
   like: Heart,
@@ -97,7 +108,7 @@ export default function NotificationsPage() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[15px] leading-tight">
-                      <span className="font-bold">tid:{notif.actor_tid}</span>{" "}
+                      <ActorLabel actorTid={notif.actor_tid} />{" "}
                       <span className="text-[#666] font-medium">
                         {verbForType[notif.type] ?? notif.type}
                         {notif.preview ? ` — "${notif.preview.slice(0, 60)}"` : ""}

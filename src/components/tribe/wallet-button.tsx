@@ -22,7 +22,7 @@ export function WalletButton({ className, compact }: WalletButtonProps) {
     const label = profile?.username
       ? `@${profile.username}`
       : tribeIdentity
-        ? `tid:${tribeIdentity.tid}`
+        ? (tribeIdentity.username ?? `#${tribeIdentity.tid}`)
         : "signed in";
 
     return (

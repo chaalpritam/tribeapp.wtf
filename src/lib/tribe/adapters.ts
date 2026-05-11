@@ -116,10 +116,11 @@ export function tribeTweetToTweet(
   const rawPfp =
     hubTweet.user?.pfpUrl ?? hubTweet.pfp_url ?? null;
 
-  const username = rawUsername ?? `tid:${hubTweet.tid}`;
+  const username = rawUsername ?? `user-${hubTweet.tid}`;
   const displayName =
     rawDisplayName?.trim() ||
-    (rawUsername ? `${rawUsername}.tribe` : `TID #${hubTweet.tid}`);
+    rawUsername ||
+    `User #${hubTweet.tid}`;
 
   return {
     id: hubTweet.hash,

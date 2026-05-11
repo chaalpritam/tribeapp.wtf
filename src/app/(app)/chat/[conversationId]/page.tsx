@@ -13,6 +13,7 @@ import { cn } from "@/lib/utils";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useTribeDmKey } from "@/hooks/use-tribe-dm-key";
 import { useTribeDmMessages } from "@/hooks/use-tribe-dm-messages";
+import { useTribeUser } from "@/hooks/use-tribe-user";
 
 function peerTidFromConversationId(
   conversationId: string,
@@ -46,6 +47,11 @@ export default function ConversationPage({
     conversationId,
     recipientTid: peerTid,
   });
+  const { user: peerUser } = useTribeUser(peerTid);
+  const peerLabel =
+    peerUser?.profile?.displayName?.trim() ||
+    (peerUser?.username ? `@${peerUser.username}` : null) ||
+    (peerTid != null ? `#${peerTid}` : "Chat");
   const [input, setInput] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -114,7 +120,7 @@ export default function ConversationPage({
           <ArrowLeft className="h-5 w-5" />
         </button>
         <div className="flex-1">
-          <h1 className="text-base font-bold">tid:{peerTid}</h1>
+          <h1 className="text-base font-bold">{peerLabel}</h1>
           <p className="flex items-center gap-1 text-[11px] uppercase tracking-widest text-muted-foreground">
             <ShieldCheck className="h-3 w-3" /> end-to-end encrypted
           </p>

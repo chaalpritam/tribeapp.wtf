@@ -69,7 +69,7 @@ function adaptOnchainEvent(
   const goingCount = row.yes_count ?? 0;
   const creatorLabel = row.creator_username
     ? `@${row.creator_username}`
-    : `tid:${row.creator_tid}`;
+    : `#${row.creator_tid}`;
   const fallbackDescription = `Anchored on Solana by ${creatorLabel}. ${
     goingCount > 0 ? `${goingCount} going so far.` : "Be the first to RSVP."
   }`;

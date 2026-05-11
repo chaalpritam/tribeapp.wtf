@@ -117,10 +117,10 @@ export default function ExplorePage() {
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-bold tracking-tight">
                         {u.display_name?.trim() ||
-                          (u.username ? `@${u.username}` : `tid:${u.tid}`)}
+                          (u.username ? `@${u.username}` : `#${u.tid}`)}
                       </p>
                       <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
-                        tid {u.tid}
+                        #{u.tid}
                       </p>
                     </div>
                   </Link>

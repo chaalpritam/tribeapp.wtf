@@ -14,7 +14,18 @@ import { AppHeader } from "@/components/layout/app-header";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useTribeDmKey } from "@/hooks/use-tribe-dm-key";
 import { useTribeConversations } from "@/hooks/use-tribe-conversations";
+import { useTribeUser } from "@/hooks/use-tribe-user";
 import { formatDistanceToNow } from "date-fns";
+
+function PeerLabel({ peerTid }: { peerTid: string | number }) {
+  const tid = typeof peerTid === "string" ? parseInt(peerTid, 10) : peerTid;
+  const { user } = useTribeUser(isNaN(tid) ? null : tid);
+  const label =
+    user?.profile?.displayName?.trim() ||
+    (user?.username ? `@${user.username}` : null) ||
+    `#${peerTid}`;
+  return <span className="text-[16px] font-black tracking-tight text-black truncate">{label}</span>;
+}
 
 export default function ChatPage() {
   const identity = useTribeIdentityStore((s) => s.identity);
@@ -128,9 +139,7 @@ export default function ChatPage() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center justify-between mb-0.5">
-                    <span className="text-[16px] font-black tracking-tight text-black truncate">
-                      tid:{convo.peer_tid}
-                    </span>
+                    <PeerLabel peerTid={convo.peer_tid} />
                     <span className="text-[10px] font-black text-muted-foreground uppercase tracking-widest bg-[#f9f9f9] px-2 py-1 rounded-lg">
                       {formatDistanceToNow(lastSeen, { addSuffix: true })}
                     </span>

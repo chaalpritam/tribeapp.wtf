@@ -39,7 +39,7 @@ interface UseCommentsReturn {
 function tweetToComment(t: TribeTweet, parentHash: string): CommentData {
   const tidStr = String(t.tid);
   const username =
-    t.user?.username ?? t.username ?? `tid:${tidStr}`;
+    t.user?.username ?? t.username ?? `#${tidStr}`;
   const image =
     resolveMediaUrl(t.user?.pfpUrl ?? t.pfp_url ?? null) ?? undefined;
   return {

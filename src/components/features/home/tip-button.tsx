@@ -64,7 +64,7 @@ export function TipButton({
       <DropdownMenuTrigger asChild>
         <button
           disabled={tipPending || tipped || !tipReady}
-          title={`Tip SOL to tid:${recipientTid}`}
+          title={`Tip SOL to #${recipientTid}`}
           className={cn(
             "flex items-center gap-1.5 rounded-full transition-all active:scale-90",
             tipCount > 0 ? "px-3 py-2" : "p-2",

@@ -192,7 +192,7 @@ export default function ProfilePage() {
     profile?.displayName ||
     profile?.username ||
     currentUser?.displayName ||
-    `tid:${tid ?? "?"}`;
+    `User #${tid ?? "?"}`;
 
   const displayBio = hubProfile.bio || currentUser?.bio || "";
 
@@ -209,7 +209,7 @@ export default function ProfilePage() {
       : currentUser?.username
         ? `@${currentUser.username}`
         : tid
-          ? `tid:${tid}`
+          ? `#${tid}`
           : "";
 
   const socialCounts = {
@@ -572,7 +572,7 @@ export default function ProfilePage() {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-[14px] font-bold tracking-tight">
-                        {u.username ? `@${u.username}` : `tid:${u.tid}`}
+                        {u.username ? `@${u.username}` : `#${u.tid}`}
                       </p>
                       <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest">
                         tid {u.tid}
