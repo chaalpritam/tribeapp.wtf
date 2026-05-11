@@ -9,8 +9,8 @@ const FALLBACK_AVATAR =
  * Build the local `User` shape used by the UI from a signed-in
  * TribeIdentity, the active city, and (optionally) the hub-resolved
  * profile metadata. Bio / display name / avatar fall back to identity
- * fields and finally to the shared fallback avatar so a guest who
- * just registered still gets a renderable card.
+ * fields and finally to the shared fallback avatar so a newly
+ * registered account still gets a renderable card.
  */
 export function tribeIdentityToUser(args: {
   identity: { tid: number; username?: string | null; custodyWallet: string };

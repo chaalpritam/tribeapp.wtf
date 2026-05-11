@@ -2,11 +2,9 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
-import { TribeSignIn } from "@/components/auth/tribe-sign-in";
 import { ImportBackup } from "@/components/auth/import-backup";
 import { SignInFromMobilePanel } from "@/components/auth/sign-in-from-mobile-panel";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
@@ -56,7 +54,7 @@ export default function ConnectPage() {
         <p className="mb-10 text-[15px] font-medium text-muted-foreground leading-relaxed">
           {signedIn
             ? "You're already authenticated. Continue to explore your neighborhood and connect with your tribes."
-            : "Connect your Solana wallet to claim a Tribe ID. Your identity travels with you across the decentralized social web."}
+            : "Restore your Tribe identity from backup or sign in from mobile. Your identity travels with you across the decentralized social web."}
         </p>
 
         {signedIn ? (
@@ -71,10 +69,9 @@ export default function ConnectPage() {
           </motion.button>
         ) : (
           <>
-            <TribeSignIn onSuccess={handleSignInSuccess} />
             <div className="mt-4 text-center">
               <ImportBackup
-                triggerVariant="link"
+                triggerVariant="button"
                 onSuccess={handleSignInSuccess}
               />
             </div>
@@ -89,12 +86,6 @@ export default function ConnectPage() {
           <span>Tribe protocol on Solana</span>
         </div>
 
-        <Link
-          href="/home"
-          className="mt-4 inline-block py-2 text-sm text-muted-foreground hover:text-foreground"
-        >
-          Browse as guest
-        </Link>
       </motion.div>
     </div>
   );
