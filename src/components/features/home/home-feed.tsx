@@ -42,7 +42,7 @@ export function HomeFeed() {
   const [contentTab, setContentTab] = useState<ContentTab>("feed");
 
   const { tweets: hubTweets, loading: hubLoading } = useTribeFeed({
-    channelId: "general",
+    channelId: currentCity?.id ?? "general",
     enabled: true,
   });
 
