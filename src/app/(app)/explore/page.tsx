@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Hash, Loader2, Search, User,
+  Hash, Loader2, Search, User, MapPin,
   Calendar, BarChart3, CheckCircle, Banknote, Users,
   MessageSquare, Heart, Repeat2, ArrowRight,
 } from "lucide-react";

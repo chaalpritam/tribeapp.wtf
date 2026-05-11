@@ -47,7 +47,7 @@ function tweetToComment(t: TribeTweet, parentHash: string): CommentData {
     profileId: `tid-${tidStr}`,
     contentId: parentHash,
     text: t.text,
-    created_at: String(t.timestamp * 1000),
+    created_at: String(Number(t.timestamp) * 1000),
     profile: {
       id: `tid-${tidStr}`,
       username,
