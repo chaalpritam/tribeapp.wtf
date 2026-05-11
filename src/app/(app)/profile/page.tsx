@@ -182,8 +182,6 @@ export default function ProfilePage() {
         },
       }
     : currentUser?.karma;
-  const levelConfig = karma ? karmaLevelConfig[karma.level] : null;
-  const progress = karma ? getKarmaProgress(karma.totalKarma, karma.level) : 0;
 
   const hubUsername = hubUser?.username ?? null;
   const hubProfile = hubUser?.profile ?? {};
