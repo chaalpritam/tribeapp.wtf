@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Hash, Loader2, Search, User, MapPin,
-  Calendar, BarChart3, CheckCircle, Banknote, Users,
+  Users,
   ArrowRight,
 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
@@ -131,60 +131,44 @@ export default function ExplorePage() {
           </Section>
         )}
 
-        {/* ── Events ── */}
-        {(visibleEvents.length > 0 || eventsLoading) && (
-          <Section title="Events" icon={Calendar} accent="bg-teal-500">
-            {eventsLoading && events.length === 0 ? <SkeletonList /> : (
-              <div className="flex flex-col gap-3">
-                {visibleEvents.map((e) => (
-                  <EventExploreCard key={e.id} event={e} />
-                ))}
-              </div>
-            )}
-          </Section>
-        )}
+        {/* ── Interleaved content feed ── */}
+        {(() => {
+          type ExploreCard =
+            | { kind: "event";  id: string; data: ExploreItem }
+            | { kind: "poll";   id: string; data: Poll }
+            | { kind: "task";   id: string; data: Task }
+            | { kind: "fund";   id: string; data: Crowdfund };
 
-        {/* ── Polls ── */}
-        {(visiblePolls.length > 0 || pollsLoading) && (
-          <Section title="Polls" icon={BarChart3} accent="bg-rose-500">
-            {pollsLoading && polls.length === 0 ? <SkeletonList /> : (
-              <div className="flex flex-col gap-3">
-                {visiblePolls.map((p) => (
-                  <PollExploreCard key={p.id} poll={p as Poll} />
-                ))}
-              </div>
-            )}
-          </Section>
-        )}
+          const maxLen = Math.max(
+            visibleEvents.length, visiblePolls.length,
+            visibleTasks.length, visibleFunds.length,
+          );
+          const interleaved: ExploreCard[] = [];
+          for (let i = 0; i < maxLen; i++) {
+            if (i < visibleEvents.length) interleaved.push({ kind: "event", id: visibleEvents[i].id, data: visibleEvents[i] });
+            if (i < visiblePolls.length)  interleaved.push({ kind: "poll",  id: visiblePolls[i].id,  data: visiblePolls[i] as Poll });
+            if (i < visibleTasks.length)  interleaved.push({ kind: "task",  id: visibleTasks[i].id,  data: visibleTasks[i] as Task });
+            if (i < visibleFunds.length)  interleaved.push({ kind: "fund",  id: visibleFunds[i].id,  data: visibleFunds[i] as Crowdfund });
+          }
 
-        {/* ── Tasks ── */}
-        {(visibleTasks.length > 0 || tasksLoading) && (
-          <Section title="Tasks" icon={CheckCircle} accent="bg-amber-500">
-            {tasksLoading && tasks.length === 0 ? <SkeletonList /> : (
-              <div className="flex flex-col gap-3">
-                {visibleTasks.map((t) => (
-                  <TaskExploreCard key={t.id} task={t as Task} />
-                ))}
-              </div>
-            )}
-          </Section>
-        )}
+          if (eventsLoading || pollsLoading || tasksLoading || fundsLoading) {
+            return <SkeletonList />;
+          }
 
-        {/* ── Funds ── */}
-        {(visibleFunds.length > 0 || fundsLoading) && (
-          <Section title="Funds" icon={Banknote} accent="bg-purple-500">
-            {fundsLoading && crowdfunds.length === 0 ? <SkeletonList /> : (
-              <div className="flex flex-col gap-3">
-                {visibleFunds.map((f) => (
-                  <FundExploreCard key={f.id} fund={f as Crowdfund} />
-                ))}
-              </div>
-            )}
-          </Section>
-        )}
+          return interleaved.length > 0 ? (
+            <div className="flex flex-col gap-3">
+              {interleaved.map((item) => {
+                if (item.kind === "event") return <EventExploreCard key={item.id} event={item.data} />;
+                if (item.kind === "poll")  return <PollExploreCard  key={item.id} poll={item.data} />;
+                if (item.kind === "task")  return <TaskExploreCard  key={item.id} task={item.data} />;
+                if (item.kind === "fund")  return <FundExploreCard  key={item.id} fund={item.data} />;
+              })}
+            </div>
+          ) : null;
+        })()}
 
         {/* Empty */}
-        {!anythingLoading && !eventsLoading &&
+        {!anythingLoading && !eventsLoading && !pollsLoading && !tasksLoading && !fundsLoading &&
           visibleChannels.length === 0 &&
           visibleEvents.length === 0 &&
           visiblePolls.length === 0 && visibleTasks.length === 0 &&
