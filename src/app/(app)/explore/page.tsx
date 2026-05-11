@@ -2,23 +2,20 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import {
   Hash, Loader2, Search, User, MapPin,
   Calendar, BarChart3, CheckCircle, Banknote, Users,
-  MessageSquare, Heart, Repeat2, ArrowRight,
+  ArrowRight,
 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { AppHeader } from "@/components/layout/app-header";
 import { useTribeSearch } from "@/hooks/use-tribe-search";
-import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useHubChannels } from "@/hooks/use-hub-channels";
 import { useOnchainEvents } from "@/hooks/use-onchain-events";
 import { useOnchainPolls } from "@/hooks/use-onchain-polls";
 import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
 import { formatNumber, formatHandle } from "@/lib/utils";
-import { tribeTweetToTweet } from "@/lib/tribe";
 import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds } from "@/lib/dummy-data";
 import type { Poll, Task, Crowdfund, ExploreItem } from "@/types";
 
@@ -33,16 +30,9 @@ export default function ExplorePage() {
   const isSearching = search.trim().length >= 2;
 
   const { channels: allHubChannels, loading: channelsLoading } = useHubChannels({});
-  const { tweets: globalTweets, loading: tweetsLoading } = useTribeFeed({ enabled: true });
-
   const interestChannels = useMemo(
     () => allHubChannels.filter((c) => Number(c.kind) === CHANNEL_KIND_INTEREST),
     [allHubChannels]
-  );
-
-  const adaptedTweets = useMemo(
-    () => globalTweets.map((t) => tribeTweetToTweet(t, { cityId: currentCity?.id ?? "" })),
-    [globalTweets, currentCity?.id]
   );
 
   const { events: onchainEvents, loading: eventsLoading }    = useOnchainEvents({ cityId: "" });
@@ -58,14 +48,13 @@ export default function ExplorePage() {
 
   // Filtered lists
   const visibleChannels = !search ? interestChannels : interestChannels.filter((c) => (c.name ?? c.id).toLowerCase().includes(q));
-  const visibleTweets   = !search ? adaptedTweets    : adaptedTweets.filter((t)  => t.caption.toLowerCase().includes(q) || (t.user.username + t.user.displayName).toLowerCase().includes(q));
   const visibleEvents   = !search ? (events as ExploreItem[])   : (events as ExploreItem[]).filter((e) => e.title.toLowerCase().includes(q));
   const visiblePolls    = !search ? (polls as Poll[])            : (polls as Poll[]).filter((p) => p.question.toLowerCase().includes(q));
   const visibleTasks    = !search ? (tasks as Task[])            : (tasks as Task[]).filter((t) => t.title.toLowerCase().includes(q));
   const visibleFunds    = !search ? (crowdfunds as Crowdfund[])  : (crowdfunds as Crowdfund[]).filter((f) => f.title.toLowerCase().includes(q));
   const visiblePeople   = isSearching ? hubUsers : [];
 
-  const anythingLoading = channelsLoading || tweetsLoading;
+  const anythingLoading = channelsLoading;
 
   return (
     <div className="bg-[#f8f8f8] min-h-screen">
@@ -142,77 +131,6 @@ export default function ExplorePage() {
           </Section>
         )}
 
-        {/* ── Tweets ── */}
-        {(visibleTweets.length > 0 || tweetsLoading) && (
-          <Section title="Latest Posts" icon={MessageSquare} accent="bg-sky-500">
-            {tweetsLoading && adaptedTweets.length === 0 ? (
-              <div className="flex flex-col gap-3">
-                {[1,2,3].map((i) => <div key={i} className="h-28 rounded-[24px] bg-[#ececec] animate-pulse" />)}
-              </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {visibleTweets.map((tweet) => (
-                  <div key={tweet.id} className="bg-white border border-[#f0f0f0] rounded-[24px] p-4 hover:shadow-md transition-all">
-                    {/* Channel badge */}
-                    {tweet.channel?.id && tweet.channel.id !== "general" && (
-                      <div className="flex items-center gap-1.5 mb-3">
-                        <div className="h-5 w-5 rounded-md bg-indigo-50 text-indigo-500 flex items-center justify-center">
-                          <Hash className="h-3 w-3" />
-                        </div>
-                        <span className="text-[11px] font-bold text-indigo-500 uppercase tracking-widest">
-                          {tweet.channel.name || tweet.channel.id}
-                        </span>
-                      </div>
-                    )}
-                    {/* Author */}
-                    <div className="flex items-center gap-2.5 mb-2.5">
-                      <Avatar src={tweet.user.avatarUrl} name={tweet.user.displayName} size={32} />
-                      <div className="min-w-0">
-                        <p className="text-[13px] font-bold leading-none truncate">
-                          {tweet.user.displayName !== tweet.user.username
-                            ? tweet.user.displayName
-                            : formatHandle(tweet.user.username)}
-                        </p>
-                        <p className="text-[11px] text-muted-foreground mt-0.5">{tweet.timestamp}</p>
-                      </div>
-                    </div>
-                    {/* Content */}
-                    <p className="text-[14px] font-medium text-[#222] leading-relaxed line-clamp-3">
-                      {tweet.caption}
-                    </p>
-                    {/* Image embed */}
-                    {tweet.imageUrl && (
-                      <div className="relative mt-3 rounded-2xl overflow-hidden aspect-video">
-                        <Image
-                          src={tweet.imageUrl}
-                          alt="embed"
-                          fill
-                          sizes="(max-width: 640px) calc(100vw - 48px), 592px"
-                          className="object-cover"
-                        />
-                      </div>
-                    )}
-                    {/* Actions */}
-                    <div className="flex items-center gap-4 mt-3 pt-3 border-t border-[#f5f5f5]">
-                      <span className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground">
-                        <Heart className="h-3.5 w-3.5" /> {formatNumber(tweet.likes)}
-                      </span>
-                      <span className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground">
-                        <MessageSquare className="h-3.5 w-3.5" /> {formatNumber((tweet.replyCount ?? 0) + tweet.comments.length)}
-                      </span>
-                      {(tweet.recasts ?? 0) > 0 && (
-                        <span className="flex items-center gap-1 text-[12px] font-bold text-muted-foreground">
-                          <Repeat2 className="h-3.5 w-3.5" /> {formatNumber(tweet.recasts ?? 0)}
-                        </span>
-                      )}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
-          </Section>
-        )}
-
         {/* ── Events ── */}
         {(visibleEvents.length > 0 || eventsLoading) && (
           <Section title="Events" icon={Calendar} accent="bg-teal-500">
@@ -268,7 +186,7 @@ export default function ExplorePage() {
         {/* Empty */}
         {!anythingLoading && !eventsLoading &&
           visibleChannels.length === 0 &&
-          visibleTweets.length === 0 && visibleEvents.length === 0 &&
+          visibleEvents.length === 0 &&
           visiblePolls.length === 0 && visibleTasks.length === 0 &&
           visibleFunds.length === 0 && visiblePeople.length === 0 && (
           <div className="flex flex-col items-center justify-center gap-4 py-20 text-center">
