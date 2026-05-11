@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { TribeSignIn } from "@/components/auth/tribe-sign-in";
 import { ImportBackup } from "@/components/auth/import-backup";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useMounted } from "@/hooks/use-mounted";
@@ -53,7 +54,7 @@ export default function ConnectPage() {
         <p className="mb-10 text-[15px] font-medium text-muted-foreground leading-relaxed">
           {signedIn
             ? "You're already authenticated. Continue to explore your neighborhood and connect with your tribes."
-            : "Restore your Tribe identity from backup. Your identity travels with you across the decentralized social web."}
+            : "Create an account with Browser Wallet, import from seed phrase, or restore from backup."}
         </p>
 
         {signedIn ? (
@@ -67,9 +68,10 @@ export default function ConnectPage() {
             Continue with Tribe
           </motion.button>
         ) : (
-          <div className="mt-4 text-center">
+          <div className="mt-4 space-y-4 text-center">
+            <TribeSignIn onSuccess={handleSignInSuccess} />
             <ImportBackup
-              triggerVariant="button"
+              triggerVariant="link"
               onSuccess={handleSignInSuccess}
             />
           </div>
