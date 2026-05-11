@@ -26,6 +26,7 @@ import { useTribeCrowdfund } from "@/hooks/use-tribe-crowdfund";
 import { useTribeChannels } from "@/hooks/use-tribe-channels";
 import {
   uploadMedia,
+  mediaRef,
   listChannels,
   type ChannelInfo,
   CHANNEL_KIND_CITY,
@@ -113,15 +114,24 @@ const FormLayout = ({ title, children, onSubmit, canSubmit, isSubmitting, curren
         </button>
         <div className="flex flex-col">
           <h1 className="text-xl font-bold tracking-tight leading-none">{title}</h1>
-          <div className="flex items-center gap-2 mt-1.5">
-            <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{currentCity?.name}</span>
-            <button
-              onClick={() => {/* Trigger city switcher */ }}
-              className="text-[11px] font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
+          {currentCity ? (
+            <div className="flex items-center gap-2 mt-1.5">
+              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">{currentCity.name}</span>
+              <a
+                href="/onboarding/city"
+                className="text-[11px] font-bold uppercase tracking-widest text-primary hover:opacity-70 transition-opacity"
+              >
+                (Change City)
+              </a>
+            </div>
+          ) : (
+            <a
+              href="/onboarding/city"
+              className="text-[11px] font-bold uppercase tracking-widest text-amber-600 mt-1.5 hover:opacity-70 transition-opacity"
             >
-              (Change City)
-            </button>
-          </div>
+              Select a city first →
+            </a>
+          )}
         </div>
       </div>
       <button
@@ -253,6 +263,7 @@ export default function CreatePage() {
 
   // Channel state
   const [channelComposerId, setChannelComposerId] = useState("");
+  const [channelComposerIdTouched, setChannelComposerIdTouched] = useState(false);
   const [channelComposerName, setChannelComposerName] = useState("");
   const [channelComposerDescription, setChannelComposerDescription] = useState("");
   const [channelComposerKind, setChannelComposerKind] = useState<
@@ -269,8 +280,8 @@ export default function CreatePage() {
         const sorted = [...channels].sort((a, b) => {
           if (a.id === GENERAL_CHANNEL_ID) return -1;
           if (b.id === GENERAL_CHANNEL_ID) return 1;
-          const ak = a.kind ?? 3;
-          const bk = b.kind ?? 3;
+          const ak = Number(a.kind ?? 3);
+          const bk = Number(b.kind ?? 3);
           if (ak !== bk) return ak - bk;
           return (a.name ?? a.id).localeCompare(b.name ?? b.id);
         });
@@ -324,7 +335,7 @@ export default function CreatePage() {
         const embeds: string[] = [];
         if (selectedFile && isAuthenticated) {
           const upload = await uploadMedia(selectedFile);
-          embeds.push(upload.absoluteUrl);
+          embeds.push(mediaRef(upload.hash));
         }
         if (isAuthenticated) {
           await publish(caption.trim(), {
@@ -346,7 +357,7 @@ export default function CreatePage() {
       <FormLayout
         title="Broadcast"
         onSubmit={handleTweetSubmit}
-        canSubmit={!!caption.trim()}
+        canSubmit={!!caption.trim() && isAuthenticated}
         isSubmitting={isSubmitting || publishing}
         currentCity={currentCity}
         setMode={setMode}
@@ -376,10 +387,11 @@ export default function CreatePage() {
                 className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-6 text-[14px] font-bold outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5"
               >
                 {channelOptions.map((ch) => {
+                  const kindNum = Number(ch.kind);
                   const prefix =
-                    ch.kind === CHANNEL_KIND_GENERAL
+                    kindNum === CHANNEL_KIND_GENERAL
                       ? ""
-                      : ch.kind === CHANNEL_KIND_CITY
+                      : kindNum === CHANNEL_KIND_CITY
                       ? "📍 "
                       : "#";
                   return (
@@ -495,7 +507,7 @@ export default function CreatePage() {
       <FormLayout
         title="Create Event"
         onSubmit={handleEventSubmit}
-        canSubmit={!!eventTitle.trim() && !!eventStartsAt}
+        canSubmit={!!eventTitle.trim() && !!eventStartsAt && !!currentCity}
         isSubmitting={isSubmitting || eventPending}
         currentCity={currentCity}
         setMode={setMode}
@@ -663,7 +675,7 @@ export default function CreatePage() {
       <FormLayout
         title="Create Poll"
         onSubmit={handlePollSubmit}
-        canSubmit={canSubmitPoll}
+        canSubmit={canSubmitPoll && !!currentCity}
         isSubmitting={isSubmitting || pollPending}
         currentCity={currentCity}
         setMode={setMode}
@@ -820,7 +832,7 @@ export default function CreatePage() {
       <FormLayout
         title="Create Task"
         onSubmit={handleTaskSubmit}
-        canSubmit={canSubmitTask}
+        canSubmit={canSubmitTask && !!currentCity}
         isSubmitting={isSubmitting || taskPending}
         currentCity={currentCity}
         setMode={setMode}
@@ -993,7 +1005,7 @@ export default function CreatePage() {
       <FormLayout
         title="Create Crowdfund"
         onSubmit={handleCrowdfundSubmit}
-        canSubmit={canSubmitCrowdfund}
+        canSubmit={canSubmitCrowdfund && !!currentCity}
         isSubmitting={isSubmitting || crowdfundPending}
         currentCity={currentCity}
         setMode={setMode}
@@ -1127,7 +1139,7 @@ export default function CreatePage() {
       <FormLayout
         title="Create Tribe"
         onSubmit={handleChannelSubmit}
-        canSubmit={canSubmitChannel}
+        canSubmit={canSubmitChannel && !!currentCity}
         isSubmitting={isSubmitting || channelPending}
         currentCity={currentCity}
         setMode={setMode}
@@ -1137,7 +1149,18 @@ export default function CreatePage() {
             type="text"
             placeholder="Display name (e.g. Mission Bay Runners)"
             value={channelComposerName}
-            onChange={(e) => setChannelComposerName(e.target.value)}
+            onChange={(e) => {
+              const name = e.target.value;
+              setChannelComposerName(name);
+              if (!channelComposerIdTouched) {
+                const slug = name
+                  .toLowerCase()
+                  .replace(/[^a-z0-9]+/g, "-")
+                  .replace(/^-+|-+$/g, "")
+                  .slice(0, 32);
+                setChannelComposerId(slug);
+              }
+            }}
             autoFocus
             className="w-full bg-transparent text-2xl font-black tracking-tight outline-none placeholder:text-[#ccc] border-none p-0"
           />
@@ -1154,9 +1177,10 @@ export default function CreatePage() {
               type="text"
               placeholder="mission-bay-runners"
               value={channelComposerId}
-              onChange={(e) =>
-                setChannelComposerId(e.target.value.toLowerCase())
-              }
+              onChange={(e) => {
+                setChannelComposerIdTouched(true);
+                setChannelComposerId(e.target.value.toLowerCase());
+              }}
               maxLength={32}
               className="w-full h-12 rounded-2xl border border-[#f0f0f0] bg-[#fcfcfc] px-4 text-[14px] font-mono outline-none transition-all focus:bg-white focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
             />
