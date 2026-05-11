@@ -4,11 +4,12 @@ import { useMemo, useState } from "react";
 import { Plus, Loader2 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeFeed } from "@/hooks/use-tribe-feed";
+import { useHubChannels } from "@/hooks/use-hub-channels";
 import { useOnchainEvents } from "@/hooks/use-onchain-events";
 import { useOnchainPolls } from "@/hooks/use-onchain-polls";
 import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
-import { tribeTweetToTweet, cityChannelId } from "@/lib/tribe";
+import { tribeTweetToTweet } from "@/lib/tribe";
 import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
 import { EventCard } from "./event-card";
@@ -19,58 +20,55 @@ import { AppHeader } from "@/components/layout/app-header";
 import type { Tweet, Poll, Task, Crowdfund, ExploreItem } from "@/types";
 
 type FeedItemData = Tweet | Poll | Task | Crowdfund | ExploreItem;
-
-const iconMap: Record<string, string> = {
-  bike: "🚲",
-  cycling: "🚲",
-  utensils: "🍴",
-  food: "🍜",
-  tech: "💻",
-  fitness: "💪",
-  music: "🎸",
-  camera: "📸",
-  mountain: "🏔️",
-  landmark: "🏛️",
-  palette: "🎨",
-  leaf: "🌿",
-  rocket: "🚀",
-  wine: "🍷",
-  pizza: "🍕",
-  code: "👨‍💻",
-  drama: "🎭",
-  users: "👥",
-  sun: "☀️",
-  dumbbell: "🏋️",
-  heart: "❤️",
-  star: "⭐",
-  "map-pin": "📍",
-};
+const GENERAL_CHANNEL_ID = "general";
 
 type FeedTab = "all" | "city" | "mine";
 
 export function HomeFeed() {
-  const { tweets, polls, events, tasks, crowdfunds, currentCity, tribes } =
-    useTribeStore();
+  const { tweets, polls, events, tasks, crowdfunds, currentCity } = useTribeStore();
   const { isAuthenticated, tid: myTid } = useAuth();
-  const [activeTab, setActiveTab] = useState<FeedTab>("city");
+  const [activeTab, setActiveTab] = useState<FeedTab>("all");
+  const [selectedChannelId, setSelectedChannelId] =
+    useState<string>(GENERAL_CHANNEL_ID);
+  const { channels: hubChannels } = useHubChannels();
 
   // The home feed pulls live tweets from the hub on every tab. The
   // shape of the request is what changes:
-  //   all  → /v1/feed                            (global)
-  //   city → /v1/feed/channel/<cityChannelId>    (city channel)
+  //   all  → /v1/feed/channel/<selectedChannelId> (defaults to general)
+  //   city → /v1/feed/channel/<selectedChannelId> (selected channel)
   //   mine → /v1/feed/<myTid>                    (own posts)
   // The hub does not (yet) expose a true personalized
   // "tweets-from-people-I-follow" route, so the third tab surfaces
   // the user's own activity. Only enables once the caller has signed
   // in and a TID is available.
-  const cityChannel = currentCity ? cityChannelId(currentCity.id) : undefined;
   const { tweets: hubTweets, loading: hubLoading } = useTribeFeed(
-    activeTab === "all"
-      ? {}
-      : activeTab === "city"
-        ? { channelId: cityChannel, enabled: !!cityChannel }
-        : { tid: myTid != null ? String(myTid) : undefined, enabled: myTid != null }
+    activeTab === "mine"
+      ? { tid: myTid != null ? String(myTid) : undefined, enabled: myTid != null }
+      : {
+          channelId: selectedChannelId || GENERAL_CHANNEL_ID,
+          enabled: true,
+        }
   );
+  const availableChannels = useMemo(() => {
+    const next = [...hubChannels];
+    const hasGeneral = next.some((channel) => channel.id === GENERAL_CHANNEL_ID);
+    if (!hasGeneral) {
+      next.unshift({
+        id: GENERAL_CHANNEL_ID,
+        name: "General",
+        description: null,
+        kind: 1,
+        latitude: null,
+        longitude: null,
+        created_by: null,
+        created_at: null,
+        member_count: 0,
+        tweet_count: 0,
+        last_tweet_at: null,
+      });
+    }
+    return next;
+  }, [hubChannels]);
   // On-chain content from the hub mirrors — surfaced on every tab.
   // Each adapted row carries the on-chain PDA so the card components
   // automatically route their primary action (RSVP / vote / claim /
@@ -158,7 +156,10 @@ export function HomeFeed() {
       <div className="px-3 sm:px-6 py-4 sm:py-6 overflow-hidden">
         <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
           <button
-            onClick={() => setActiveTab("all")}
+            onClick={() => {
+              setSelectedChannelId(GENERAL_CHANNEL_ID);
+              setActiveTab("all");
+            }}
             className={`px-5 py-2 rounded-full text-[13px] font-bold transition-all active:scale-95 whitespace-nowrap ${
               activeTab === "all"
                 ? "bg-black text-white shadow-lg shadow-black/10"
@@ -175,7 +176,7 @@ export function HomeFeed() {
                 : "bg-white border border-[#f0f0f0] text-muted-foreground hover:bg-muted/30"
             }`}
           >
-            {currentCity.name}
+            Channels
           </button>
           {isAuthenticated && (
             <button
@@ -191,21 +192,36 @@ export function HomeFeed() {
           )}
         </div>
 
-        {activeTab === "all" && (
+        {(activeTab === "all" || activeTab === "city") && (
           <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar pb-2">
-            {tribes.map((tribe) => (
+            {availableChannels.map((channel) => (
               <button
-                key={tribe.id}
-                className="flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-2 pr-4 sm:pr-6 py-1.5 sm:py-2 rounded-full bg-white border border-[#f0f0f0] shadow-sm hover:shadow-xl hover:shadow-black/[0.05] transition-all active:scale-95 group shrink-0"
+                key={channel.id}
+                onClick={() => {
+                  setSelectedChannelId(channel.id);
+                  setActiveTab("city");
+                }}
+                className={`flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-2 pr-4 sm:pr-6 py-1.5 sm:py-2 rounded-full border shadow-sm transition-all active:scale-95 group shrink-0 ${
+                  selectedChannelId === channel.id
+                    ? "bg-black text-white border-black shadow-black/10"
+                    : "bg-white border-[#f0f0f0] hover:shadow-xl hover:shadow-black/[0.05]"
+                }`}
               >
                 <div
                   className="h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center rounded-full text-lg sm:text-xl shadow-inner group-hover:rotate-12 transition-transform"
-                  style={{ backgroundColor: `${tribe.color}15` }}
+                  style={{
+                    backgroundColor:
+                      selectedChannelId === channel.id ? "rgba(255,255,255,0.2)" : "#f5f5f5",
+                  }}
                 >
-                  {iconMap[tribe.icon] || tribe.icon}
+                  {channel.id === GENERAL_CHANNEL_ID ? "🌐" : "#"}
                 </div>
-                <span className="text-[12px] sm:text-[14px] font-black tracking-tight text-black">
-                  {tribe.name}
+                <span
+                  className={`text-[12px] sm:text-[14px] font-black tracking-tight ${
+                    selectedChannelId === channel.id ? "text-white" : "text-black"
+                  }`}
+                >
+                  {channel.name?.trim() || channel.id}
                 </span>
               </button>
             ))}
