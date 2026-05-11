@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Plus, Loader2 } from "lucide-react";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { ChevronDown, Loader2 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useHubChannels } from "@/hooks/use-hub-channels";
@@ -30,6 +30,22 @@ export function HomeFeed() {
   const [activeTab, setActiveTab] = useState<FeedTab>("all");
   const [selectedChannelId, setSelectedChannelId] =
     useState<string>(GENERAL_CHANNEL_ID);
+  const [channelDropdownOpen, setChannelDropdownOpen] = useState(false);
+  const channelDropdownRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!channelDropdownOpen) return;
+    function handleClickOutside(e: MouseEvent) {
+      if (
+        channelDropdownRef.current &&
+        !channelDropdownRef.current.contains(e.target as Node)
+      ) {
+        setChannelDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [channelDropdownOpen]);
   const { channels: hubChannels } = useHubChannels();
 
   // The home feed pulls live tweets from the hub on every tab. The
@@ -153,8 +169,9 @@ export function HomeFeed() {
     <div className="pb-24 bg-[#fcfcfc] min-h-screen">
       <AppHeader />
 
-      <div className="px-3 sm:px-6 py-4 sm:py-6 overflow-hidden">
-        <div className="flex gap-2 mb-4 overflow-x-auto no-scrollbar">
+      <div className="px-3 sm:px-6 py-4 sm:py-5">
+        <div className="flex gap-2 items-center">
+          {/* All tab */}
           <button
             onClick={() => {
               setSelectedChannelId(GENERAL_CHANNEL_ID);
@@ -168,19 +185,61 @@ export function HomeFeed() {
           >
             All
           </button>
-          <button
-            onClick={() => setActiveTab("city")}
-            className={`px-5 py-2 rounded-full text-[13px] font-bold transition-all active:scale-95 whitespace-nowrap ${
-              activeTab === "city"
-                ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
-                : "bg-white border border-[#f0f0f0] text-muted-foreground hover:bg-muted/30"
-            }`}
-          >
-            Channels
-          </button>
+
+          {/* Channel picker — replaces the horizontal scroll */}
+          <div className="relative" ref={channelDropdownRef}>
+            <button
+              onClick={() => setChannelDropdownOpen((v) => !v)}
+              className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-[13px] font-bold transition-all active:scale-95 whitespace-nowrap ${
+                activeTab === "city"
+                  ? "bg-purple-600 text-white shadow-lg shadow-purple-600/20"
+                  : "bg-white border border-[#f0f0f0] text-muted-foreground hover:bg-muted/30"
+              }`}
+            >
+              <span>
+                {activeTab === "city"
+                  ? (availableChannels.find((c) => c.id === selectedChannelId)?.name?.trim() ||
+                     selectedChannelId)
+                  : "Channel"}
+              </span>
+              <ChevronDown className="h-3.5 w-3.5 opacity-70" />
+            </button>
+
+            {channelDropdownOpen && (
+              <div className="absolute top-full left-0 mt-2 z-50 w-56 bg-white border border-[#f0f0f0] rounded-[20px] shadow-2xl shadow-black/10 overflow-hidden">
+                <div className="p-2 max-h-72 overflow-y-auto">
+                  {availableChannels.map((channel) => (
+                    <button
+                      key={channel.id}
+                      onClick={() => {
+                        setSelectedChannelId(channel.id);
+                        setActiveTab("city");
+                        setChannelDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left text-[13px] font-bold transition-all hover:bg-[#f9f9f9] active:scale-95 ${
+                        selectedChannelId === channel.id && activeTab === "city"
+                          ? "text-purple-600 bg-purple-50"
+                          : "text-black"
+                      }`}
+                    >
+                      <span className="text-base">
+                        {channel.id === GENERAL_CHANNEL_ID ? "🌐" : "#"}
+                      </span>
+                      <span className="truncate">{channel.name?.trim() || channel.id}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+
+          {/* Mine tab */}
           {isAuthenticated && (
             <button
-              onClick={() => setActiveTab("mine")}
+              onClick={() => {
+                setActiveTab("mine");
+                setChannelDropdownOpen(false);
+              }}
               className={`px-5 py-2 rounded-full text-[13px] font-bold transition-all active:scale-95 whitespace-nowrap ${
                 activeTab === "mine"
                   ? "bg-indigo-600 text-white shadow-lg shadow-indigo-600/20"
@@ -191,48 +250,6 @@ export function HomeFeed() {
             </button>
           )}
         </div>
-
-        {(activeTab === "all" || activeTab === "city") && (
-          <div className="flex gap-2 sm:gap-3 overflow-x-auto no-scrollbar pb-2">
-            {availableChannels.map((channel) => (
-              <button
-                key={channel.id}
-                onClick={() => {
-                  setSelectedChannelId(channel.id);
-                  setActiveTab("city");
-                }}
-                className={`flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-2 pr-4 sm:pr-6 py-1.5 sm:py-2 rounded-full border shadow-sm transition-all active:scale-95 group shrink-0 ${
-                  selectedChannelId === channel.id
-                    ? "bg-black text-white border-black shadow-black/10"
-                    : "bg-white border-[#f0f0f0] hover:shadow-xl hover:shadow-black/[0.05]"
-                }`}
-              >
-                <div
-                  className="h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center rounded-full text-lg sm:text-xl shadow-inner group-hover:rotate-12 transition-transform"
-                  style={{
-                    backgroundColor:
-                      selectedChannelId === channel.id ? "rgba(255,255,255,0.2)" : "#f5f5f5",
-                  }}
-                >
-                  {channel.id === GENERAL_CHANNEL_ID ? "🌐" : "#"}
-                </div>
-                <span
-                  className={`text-[12px] sm:text-[14px] font-black tracking-tight ${
-                    selectedChannelId === channel.id ? "text-white" : "text-black"
-                  }`}
-                >
-                  {channel.name?.trim() || channel.id}
-                </span>
-              </button>
-            ))}
-            <button className="flex items-center gap-2 sm:gap-3 pl-1.5 sm:pl-2 pr-4 sm:pr-6 py-1.5 sm:py-2 rounded-full bg-primary/5 text-primary border border-primary/10 shadow-sm shrink-0 font-black text-[12px] sm:text-[14px] hover:bg-primary/10 transition-colors">
-              <div className="h-9 w-9 sm:h-11 sm:w-11 flex items-center justify-center rounded-full bg-white shadow-sm ring-4 ring-primary/5">
-                <Plus className="h-5 w-5 stroke-[3px]" />
-              </div>
-              Discover
-            </button>
-          </div>
-        )}
       </div>
 
       <div className="px-3 sm:px-6 max-w-2xl mx-auto">
