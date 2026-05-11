@@ -3,59 +3,107 @@
 import { useMemo, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { Search, Users, Lock, ArrowRight, MapPin, Globe } from "lucide-react";
+import {
+  Search,
+  Users,
+  Lock,
+  ArrowRight,
+  MapPin,
+  Globe,
+  Loader2,
+} from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeChannels } from "@/hooks/use-tribe-channels";
 import { useHubChannels } from "@/hooks/use-hub-channels";
 import { useAuth } from "@/hooks/use-auth";
 import { formatNumber } from "@/lib/utils";
-import type { Tribe, City } from "@/types";
+import type { Tribe } from "@/types";
+import type { City } from "@/types";
+import type { ChannelInfo } from "@/lib/tribe";
 import { AppHeader } from "@/components/layout/app-header";
-import { cities } from "@/lib/cities";
+import { cities as curatedCities } from "@/lib/cities";
 import { loadCityData } from "@/lib/city-data";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { channelInfoToTribe } from "@/lib/tribe";
+
+const CHANNEL_KIND_CITY = 2;
+
+const DEFAULT_CITY_IMAGE =
+  "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&h=800&fit=crop";
+
+function channelToCity(channel: ChannelInfo): City {
+  const curated = curatedCities.find((c) => c.id === channel.id);
+  return {
+    id: channel.id,
+    name: channel.name?.trim() || curated?.name || channel.id,
+    country: curated?.country || "Protocol",
+    countryCode: curated?.countryCode || "UN",
+    imageUrl: curated?.imageUrl || DEFAULT_CITY_IMAGE,
+    coordinates: {
+      latitude: channel.latitude ?? curated?.coordinates.latitude ?? 0,
+      longitude: channel.longitude ?? curated?.coordinates.longitude ?? 0,
+    },
+    accentColor: curated?.accentColor || "#6366F1",
+    emoji: curated?.emoji,
+  };
+}
 
 export default function TribesPage() {
   const { currentCity } = useTribeStore();
   const { tid } = useAuth();
   const [search, setSearch] = useState("");
 
-  // The protocol's channel list is the single source of truth.
-  // Two reads: the global directory and the user's joined set; the
-  // latter only fires once the caller has signed in.
-  const { channels: hubChannels } = useHubChannels({});
+  const { channels: hubChannels, loading: channelsLoading } = useHubChannels({});
   const { channels: joinedHubChannels } = useHubChannels({
     memberOf: tid ?? null,
     enabled: tid != null,
   });
 
-  const allTribes = useMemo<Tribe[]>(() => {
-    const joinedIds = new Set(joinedHubChannels.map((c) => c.id));
-    return hubChannels.map((c) =>
-      channelInfoToTribe(c, {
-        cityId: currentCity?.id ?? "",
-        isJoined: joinedIds.has(c.id),
-      })
-    );
-  }, [hubChannels, joinedHubChannels, currentCity?.id]);
-
-  const filtered = allTribes.filter((t) =>
-    t.name.toLowerCase().includes(search.toLowerCase())
+  // Split channels into city channels and interest channels.
+  const cityChannels = useMemo(
+    () => hubChannels.filter((c) => Number(c.kind) === CHANNEL_KIND_CITY),
+    [hubChannels]
+  );
+  const interestChannels = useMemo(
+    () => hubChannels.filter((c) => Number(c.kind) !== CHANNEL_KIND_CITY),
+    [hubChannels]
   );
 
-  const joinedTribes = filtered.filter((t) => t.isJoined);
-  const discoverTribes = filtered.filter((t) => !t.isJoined);
+  const joinedIds = useMemo(
+    () => new Set(joinedHubChannels.map((c) => c.id)),
+    [joinedHubChannels]
+  );
 
-  const [cityFilter, setCityFilter] = useState<"india" | "international">("india");
+  const allInterestTribes = useMemo<Tribe[]>(
+    () =>
+      interestChannels.map((c) =>
+        channelInfoToTribe(c, {
+          cityId: currentCity?.id ?? "",
+          isJoined: joinedIds.has(c.id),
+        })
+      ),
+    [interestChannels, joinedIds, currentCity?.id]
+  );
 
-  const filteredCities = cities.filter(c => {
-    const isCurrent = c.id === currentCity?.id;
-    if (isCurrent) return false;
-    if (cityFilter === "india") return c.country === "India";
-    return c.country !== "India";
-  });
+  // Search filters both city channels and interest tribes.
+  const q = search.toLowerCase();
+  const filteredCityChannels = cityChannels.filter(
+    (c) =>
+      !search ||
+      (c.name ?? c.id).toLowerCase().includes(q)
+  );
+  const filteredInterestTribes = allInterestTribes.filter(
+    (t) => !search || t.name.toLowerCase().includes(q)
+  );
+
+  const joinedTribes = filteredInterestTribes.filter((t) => t.isJoined);
+  const discoverTribes = filteredInterestTribes.filter((t) => !t.isJoined);
+
+  const nothingFound =
+    !channelsLoading &&
+    filteredCityChannels.length === 0 &&
+    filteredInterestTribes.length === 0;
 
   return (
     <div className="bg-[#fcfcfc] min-h-screen">
@@ -76,39 +124,38 @@ export default function TribesPage() {
       </div>
 
       <div className="px-6 py-8 max-w-2xl mx-auto space-y-10">
-        {/* City Channels */}
+        {/* City Channels — from the protocol */}
         <section>
           <div className="flex items-center justify-between mb-6">
             <div className="flex flex-col">
               <h2 className="text-xl font-bold tracking-tight">City Channels</h2>
-              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1">Farcaster Powered</p>
-            </div>
-            <div className="flex bg-[#f3f3f3] p-1 rounded-xl">
-              <button
-                onClick={() => setCityFilter("india")}
-                className={cn(
-                  "px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
-                  cityFilter === "india" ? "bg-white text-black shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                India
-              </button>
-              <button
-                onClick={() => setCityFilter("international")}
-                className={cn(
-                  "px-4 py-1.5 rounded-lg text-[11px] font-black uppercase tracking-widest transition-all",
-                  cityFilter === "international" ? "bg-white text-black shadow-sm" : "text-muted-foreground"
-                )}
-              >
-                Intl
-              </button>
+              <p className="text-[11px] font-bold text-muted-foreground uppercase tracking-widest mt-1">
+                {channelsLoading
+                  ? "Loading…"
+                  : `${filteredCityChannels.length} on protocol`}
+              </p>
             </div>
           </div>
-          <div className="grid grid-cols-1 gap-4">
-            {filteredCities.map((city) => (
-              <ChannelCard key={city.id} city={city} />
-            ))}
-          </div>
+
+          {channelsLoading && cityChannels.length === 0 ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            </div>
+          ) : filteredCityChannels.length === 0 ? (
+            <div className="rounded-[32px] bg-white border border-[#f0f0f0] p-8 text-center text-sm font-medium text-muted-foreground">
+              {search ? "No city channels match your search." : "No city channels on this hub yet."}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 gap-4">
+              {filteredCityChannels.map((channel) => (
+                <CityChannelCard
+                  key={channel.id}
+                  channel={channel}
+                  isCurrentCity={channel.id === currentCity?.id}
+                />
+              ))}
+            </div>
+          )}
         </section>
 
         {/* Your Tribes */}
@@ -129,9 +176,23 @@ export default function TribesPage() {
         )}
 
         {/* Discover */}
-        {discoverTribes.length > 0 && (DiscoverTribesSection(discoverTribes))}
+        {discoverTribes.length > 0 && (
+          <section>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-xl font-bold tracking-tight">Discover</h2>
+              <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                Local Communities
+              </span>
+            </div>
+            <div className="flex flex-col gap-4">
+              {discoverTribes.map((tribe) => (
+                <TribeCard key={tribe.id} tribe={tribe} />
+              ))}
+            </div>
+          </section>
+        )}
 
-        {filtered.length === 0 && (
+        {nothingFound && (
           <div className="flex h-[40vh] flex-col items-center justify-center space-y-4 text-center">
             <div className="rounded-[32px] bg-muted/30 p-8">
               <Users className="h-10 w-10 text-muted-foreground" />
@@ -144,22 +205,78 @@ export default function TribesPage() {
   );
 }
 
-function DiscoverTribesSection(tribes: Tribe[]) {
+function CityChannelCard({
+  channel,
+  isCurrentCity,
+}: {
+  channel: ChannelInfo;
+  isCurrentCity: boolean;
+}) {
+  const { switchCity } = useTribeStore();
+  const router = useRouter();
+  const curated = curatedCities.find((c) => c.id === channel.id);
+
+  const handleJump = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    try {
+      const city = channelToCity(channel);
+      localStorage.setItem("tribe-selected-city", city.id);
+      const data = await loadCityData(city);
+      switchCity(city, data);
+      router.push("/home");
+    } catch (err) {
+      console.error("Failed to jump to city:", err);
+    }
+  };
+
+  const city = channelToCity(channel);
+
   return (
-    <section>
-      <div className="flex items-center justify-between mb-6">
-        <h2 className="text-xl font-bold tracking-tight">Discover</h2>
-        <span className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
-          Local Communities
+    <button
+      onClick={handleJump}
+      className="group flex items-center gap-5 rounded-[32px] bg-white border border-[#f0f0f0] p-5 transition-all hover:shadow-xl hover:shadow-black/[0.03] active:scale-[0.98] text-left w-full"
+    >
+      <div className="relative h-16 w-16 rounded-[20px] overflow-hidden shrink-0 shadow-lg shadow-black/5">
+        <Image src={city.imageUrl} alt={city.name} fill className="object-cover" />
+        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+          <Globe className="h-6 w-6 text-white animate-pulse" />
+        </div>
+      </div>
+
+      <div className="flex-1 min-w-0">
+        <div className="flex items-center gap-1.5 mb-0.5">
+          <span className="text-[17px] font-bold tracking-tight truncate">{city.name}</span>
+          {isCurrentCity && (
+            <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-md font-black uppercase">
+              Current
+            </span>
+          )}
+        </div>
+        <div className="flex items-center gap-2 text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
+          <MapPin className="h-3 w-3" />
+          {curated?.country ?? "Protocol"}
+          {(channel.member_count ?? 0) > 0 && (
+            <>
+              <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
+              {formatNumber(channel.member_count ?? 0)} Members
+            </>
+          )}
+        </div>
+      </div>
+
+      {isCurrentCity ? (
+        <span className="h-11 px-5 rounded-full bg-emerald-50 text-emerald-700 text-[13px] font-bold flex items-center shrink-0">
+          Here
         </span>
-      </div>
-      <div className="flex flex-col gap-4">
-        {tribes.map((tribe) => (
-          <TribeCard key={tribe.id} tribe={tribe} />
-        ))}
-      </div>
-    </section>
-  )
+      ) : (
+        <div className="h-11 px-6 rounded-full bg-purple-600 text-white text-[13px] font-bold flex items-center gap-2 group-hover:bg-purple-700 transition-colors shrink-0">
+          Jump
+          <ArrowRight className="h-4 w-4" />
+        </div>
+      )}
+    </button>
+  );
 }
 
 function TribeCard({ tribe }: { tribe: Tribe }) {
@@ -173,7 +290,9 @@ function TribeCard({ tribe }: { tribe: Tribe }) {
     >
       <div
         className="flex h-16 w-16 items-center justify-center rounded-[20px] text-white shrink-0 shadow-lg shadow-black/5"
-        style={{ backgroundColor: tribe.imageUrl ? 'transparent' : `#${tribe.color}` }}
+        style={{
+          backgroundColor: tribe.imageUrl ? "transparent" : `#${tribe.color}`,
+        }}
       >
         {tribe.imageUrl ? (
           <div className="relative h-full w-full rounded-[20px] overflow-hidden">
@@ -191,8 +310,6 @@ function TribeCard({ tribe }: { tribe: Tribe }) {
         </div>
         <div className="flex items-center gap-2 text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
           {formatNumber(tribe.members)} Members
-          <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-          Active Now
         </div>
       </div>
 
@@ -203,12 +320,16 @@ function TribeCard({ tribe }: { tribe: Tribe }) {
           if (tribe.isJoined) {
             leaveTribe(tribe.id);
             if (ready) {
-              try { await leaveChannel(tribe.id); } catch {}
+              try {
+                await leaveChannel(tribe.id);
+              } catch {}
             }
           } else {
             joinTribe(tribe.id);
             if (ready) {
-              try { await joinChannel(tribe.id); } catch {}
+              try {
+                await joinChannel(tribe.id);
+              } catch {}
             }
           }
         }}
@@ -228,52 +349,3 @@ function TribeCard({ tribe }: { tribe: Tribe }) {
     </Link>
   );
 }
-
-function ChannelCard({ city }: { city: City }) {
-  const { switchCity } = useTribeStore();
-  const router = useRouter();
-
-  const handleJump = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    try {
-      localStorage.setItem("tribe-selected-city", city.id);
-      const data = await loadCityData(city);
-      switchCity(city, data);
-      router.push("/home");
-    } catch (err) {
-      console.error("Failed to jump to city:", err);
-    }
-  };
-
-  return (
-    <button
-      onClick={handleJump}
-      className="group flex items-center gap-5 rounded-[32px] bg-white border border-[#f0f0f0] p-5 transition-all hover:shadow-xl hover:shadow-black/[0.03] active:scale-[0.98] text-left w-full"
-    >
-      <div className="relative h-16 w-16 rounded-[20px] overflow-hidden shrink-0 shadow-lg shadow-black/5">
-        <Image src={city.imageUrl} alt={city.name} fill className="object-cover" />
-        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <Globe className="h-6 w-6 text-white animate-pulse" />
-        </div>
-      </div>
-
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-[17px] font-bold tracking-tight truncate">{city.name}</span>
-          <span className="text-[10px] bg-purple-100 text-purple-600 px-1.5 py-0.5 rounded-md font-black uppercase">Live</span>
-        </div>
-        <div className="flex items-center gap-2 text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
-          <MapPin className="h-3 w-3" />
-          {city.country}
-        </div>
-      </div>
-
-      <div className="h-11 px-6 rounded-full bg-purple-600 text-white text-[13px] font-bold flex items-center gap-2 group-hover:bg-purple-700 transition-colors">
-        Jump
-        <ArrowRight className="h-4 w-4" />
-      </div>
-    </button>
-  );
-}
-
