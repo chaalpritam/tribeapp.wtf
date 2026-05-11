@@ -24,8 +24,8 @@ export const cities: City[] = [
     name: "Bengaluru",
     country: "India",
     countryCode: "IN",
-    // Lalbagh Glass House
-    imageUrl: "https://images.unsplash.com/photo-1543906965-f9520aa2ed8a?w=800&h=800&fit=crop",
+    // Vidhana Soudha with jacaranda blossoms
+    imageUrl: "https://images.unsplash.com/photo-1741375870964-093181f9993a?w=800&h=800&fit=crop",
     coordinates: { latitude: 12.9716, longitude: 77.5946 },
     accentColor: "#6366F1",
     emoji: "🇮🇳",
@@ -68,8 +68,8 @@ export const cities: City[] = [
     name: "Hyderabad",
     country: "India",
     countryCode: "IN",
-    // Charminar at dusk
-    imageUrl: "https://images.unsplash.com/photo-1568495248636-6432b97bd949?w=800&h=800&fit=crop",
+    // Charminar illuminated at night
+    imageUrl: "https://images.unsplash.com/photo-1753068863517-a38273f2d7bd?w=800&h=800&fit=crop",
     coordinates: { latitude: 17.385, longitude: 78.4867 },
     accentColor: "#EC4899",
     emoji: "🇮🇳",
@@ -79,8 +79,8 @@ export const cities: City[] = [
     name: "Kolkata",
     country: "India",
     countryCode: "IN",
-    // Victoria Memorial lit up
-    imageUrl: "https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=800&h=800&fit=crop",
+    // Victoria Memorial at dusk
+    imageUrl: "https://images.unsplash.com/photo-1749834776348-7cf1b8a13e75?w=800&h=800&fit=crop",
     coordinates: { latitude: 22.5726, longitude: 88.3639 },
     accentColor: "#F43F5E",
     emoji: "🇮🇳",
@@ -91,7 +91,7 @@ export const cities: City[] = [
     country: "India",
     countryCode: "IN",
     // Hawa Mahal — the Pink City's iconic facade
-    imageUrl: "https://images.unsplash.com/photo-1477587458883-47145ed6979e?w=800&h=800&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1524230507669-5ff97982bb5e?w=800&h=800&fit=crop",
     coordinates: { latitude: 26.9124, longitude: 75.7873 },
     accentColor: "#F97316",
     emoji: "🇮🇳",
@@ -102,7 +102,7 @@ export const cities: City[] = [
     country: "India",
     countryCode: "IN",
     // Fort Kochi Chinese fishing nets at sunset
-    imageUrl: "https://images.unsplash.com/photo-1602216056096-3b40cc0c9944?w=800&h=800&fit=crop",
+    imageUrl: "https://images.unsplash.com/photo-1714931862306-7abe321b6b5f?w=800&h=800&fit=crop",
     coordinates: { latitude: 9.9312, longitude: 76.2673 },
     accentColor: "#14B8A6",
     emoji: "🇮🇳",
@@ -112,8 +112,8 @@ export const cities: City[] = [
     name: "Ahmedabad",
     country: "India",
     countryCode: "IN",
-    // Adalaj Stepwell (Vav) — UNESCO heritage site
-    imageUrl: "https://images.unsplash.com/photo-1599030052890-d7e4a2c1c8e2?w=800&h=800&fit=crop",
+    // Rani ki Vav / Adalaj Stepwell — UNESCO heritage site
+    imageUrl: "https://images.unsplash.com/photo-1593844311291-2ec0164643c8?w=800&h=800&fit=crop",
     coordinates: { latitude: 23.0225, longitude: 72.5714 },
     accentColor: "#D97706",
     emoji: "🇮🇳",
@@ -123,8 +123,8 @@ export const cities: City[] = [
     name: "Puducherry",
     country: "India",
     countryCode: "IN",
-    // French Quarter coloured colonial buildings
-    imageUrl: "https://images.unsplash.com/photo-1621501123347-f0e7ec909bfe?w=800&h=800&fit=crop",
+    // French Quarter yellow colonial building (Consulat de France)
+    imageUrl: "https://images.unsplash.com/photo-1662572594228-3aca8503b782?w=800&h=800&fit=crop",
     coordinates: { latitude: 11.9416, longitude: 79.8083 },
     accentColor: "#8B5CF6",
     emoji: "🇮🇳",
