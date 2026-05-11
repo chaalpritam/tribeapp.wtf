@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
-  Hash, Loader2, Search, User, MapPin,
+  Hash, Loader2, Search, User,
   Calendar, BarChart3, CheckCircle, Banknote, Users,
   MessageSquare, Heart, Repeat2, ArrowRight,
 } from "lucide-react";
@@ -19,15 +19,10 @@ import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
 import { formatNumber, formatHandle } from "@/lib/utils";
 import { tribeTweetToTweet } from "@/lib/tribe";
-import { cities as curatedCities } from "@/lib/cities";
 import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds } from "@/lib/dummy-data";
 import type { Poll, Task, Crowdfund, ExploreItem } from "@/types";
 
-const CHANNEL_KIND_CITY     = 2;
 const CHANNEL_KIND_INTEREST = 3;
-
-const DEFAULT_CITY_IMAGE =
-  "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=400&h=400&fit=crop";
 
 export default function ExplorePage() {
   const { currentCity } = useTribeStore();
@@ -42,10 +37,6 @@ export default function ExplorePage() {
 
   const interestChannels = useMemo(
     () => allHubChannels.filter((c) => Number(c.kind) === CHANNEL_KIND_INTEREST),
-    [allHubChannels]
-  );
-  const cityChannels = useMemo(
-    () => allHubChannels.filter((c) => Number(c.kind) === CHANNEL_KIND_CITY),
     [allHubChannels]
   );
 
@@ -66,7 +57,6 @@ export default function ExplorePage() {
   const crowdfunds = !fundsLoading  && onchainFunds.length  === 0 ? dummyCrowdfunds : onchainFunds;
 
   // Filtered lists
-  const visibleCities   = !search ? cityChannels     : cityChannels.filter((c)   => (c.name ?? c.id).toLowerCase().includes(q));
   const visibleChannels = !search ? interestChannels : interestChannels.filter((c) => (c.name ?? c.id).toLowerCase().includes(q));
   const visibleTweets   = !search ? adaptedTweets    : adaptedTweets.filter((t)  => t.caption.toLowerCase().includes(q) || (t.user.username + t.user.displayName).toLowerCase().includes(q));
   const visibleEvents   = !search ? (events as ExploreItem[])   : (events as ExploreItem[]).filter((e) => e.title.toLowerCase().includes(q));
@@ -120,49 +110,6 @@ export default function ExplorePage() {
                 );
               })}
             </div>
-          </Section>
-        )}
-
-        {/* ── Cities ── */}
-        {(visibleCities.length > 0 || channelsLoading) && (
-          <Section title="Cities" icon={MapPin} accent="bg-emerald-500">
-            {channelsLoading && cityChannels.length === 0 ? (
-              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                {[1,2,3].map((i) => <div key={i} className="w-40 h-52 rounded-[28px] bg-[#ececec] animate-pulse shrink-0" />)}
-              </div>
-            ) : (
-              <div className="flex gap-3 overflow-x-auto no-scrollbar pb-1">
-                {visibleCities.map((c) => {
-                  const curated = curatedCities.find((x) => x.id === c.id);
-                  const img = curated?.imageUrl || DEFAULT_CITY_IMAGE;
-                  const isCurrent = c.id === currentCity?.id;
-                  return (
-                    <Link key={c.id} href={`/tribes/${c.id}`}
-                      className="relative w-40 h-52 rounded-[28px] overflow-hidden shrink-0 group shadow-sm hover:shadow-xl transition-all active:scale-95"
-                    >
-                      <Image src={img} alt={c.name || c.id} fill sizes="160px" className="object-cover group-hover:scale-105 transition-transform duration-500" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/10 to-transparent" />
-                      <div className="absolute bottom-0 left-0 right-0 p-4">
-                        <p className="text-white text-[14px] font-black leading-tight">{c.name?.trim() || c.id}</p>
-                        <p className="text-white/50 text-[10px] font-bold uppercase tracking-widest mt-1">
-                          {curated?.country ?? "Protocol"}
-                        </p>
-                        {(c.member_count ?? 0) > 0 && (
-                          <p className="text-white/70 text-[10px] font-bold mt-1">
-                            {formatNumber(c.member_count ?? 0)} members
-                          </p>
-                        )}
-                      </div>
-                      {isCurrent && (
-                        <div className="absolute top-3 left-3 bg-emerald-500 text-white text-[9px] font-black uppercase px-2 py-1 rounded-full shadow">
-                          Current
-                        </div>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
-            )}
           </Section>
         )}
 
@@ -320,7 +267,7 @@ export default function ExplorePage() {
 
         {/* Empty */}
         {!anythingLoading && !eventsLoading &&
-          visibleCities.length === 0 && visibleChannels.length === 0 &&
+          visibleChannels.length === 0 &&
           visibleTweets.length === 0 && visibleEvents.length === 0 &&
           visiblePolls.length === 0 && visibleTasks.length === 0 &&
           visibleFunds.length === 0 && visiblePeople.length === 0 && (
