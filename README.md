@@ -5,8 +5,8 @@ Hyperlocal flavor of the Tribe web client — the consumer-facing app at
 
 The app talks to the Tribe protocol end-to-end. Identity is a Solana TID +
 ed25519 app key, content lives in a tribe-hub mesh, fast follows ride the
-ER sequencer. There is no bundled demo dataset — every screen renders what
-the protocol has and nothing else.
+ER sequencer. There is no bundled demo dataset — every screen renders live
+protocol data and nothing else.
 
 ## What's in here
 
