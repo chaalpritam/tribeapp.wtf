@@ -474,7 +474,7 @@ export default function LandingPage() {
             {[
               { value: "12", label: "Solana programs" },
               { value: "100%", label: "Open source" },
-              { value: `${allCities.length}`, label: "Cities" },
+              { value: `${allCities.filter((c) => c.id !== "bangalore").length}`, label: "Cities" },
               { value: "MIT", label: "License" },
             ].map((s) => (
               <div key={s.label} className="rounded-[20px] bg-[#f5f5f5] px-5 py-4 text-center">
@@ -871,7 +871,7 @@ export default function LandingPage() {
           <div className="flex flex-col items-center gap-12 rounded-[48px] bg-black p-12 text-white sm:p-20">
             <div className="text-center">
               <h2 className="mb-6 text-[40px] font-bold tracking-[-1.5px] sm:text-[56px]">
-                {allCities.length} cities on the network.
+                {allCities.filter((c) => c.id !== "bangalore").length} cities on the network.
               </h2>
               <p className="mx-auto max-w-[560px] text-lg font-medium opacity-60">
                 Each city has its own channel on the protocol — scoped by latitude and longitude,
@@ -879,62 +879,29 @@ export default function LandingPage() {
               </p>
             </div>
 
-            {/* India */}
-            <div className="w-full">
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-widest opacity-40">India</p>
-              <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {allCities
-                  .filter((c) => c.countryCode === "IN")
-                  .map((city) => (
-                    <motion.div
-                      key={city.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      className="flex items-center gap-4 rounded-[20px] bg-white/5 p-5 transition-colors hover:bg-white/10"
+            <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+              {allCities
+                .filter((c) => c.id !== "bangalore")
+                .map((city) => (
+                  <motion.div
+                    key={city.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-4 rounded-[20px] bg-white/5 p-5 transition-colors hover:bg-white/10"
+                  >
+                    <div
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
+                      style={{ background: city.accentColor + "22" }}
                     >
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
-                        style={{ background: city.accentColor + "22" }}
-                      >
-                        {city.emoji}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-[15px] font-bold">{city.name}</div>
-                        <code className="text-[11px] font-mono opacity-40">{city.id}</code>
-                      </div>
-                    </motion.div>
-                  ))}
-              </div>
-            </div>
-
-            {/* International */}
-            <div className="w-full">
-              <p className="mb-4 text-[11px] font-bold uppercase tracking-widest opacity-40">International</p>
-              <div className="grid w-full gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-                {allCities
-                  .filter((c) => c.countryCode !== "IN")
-                  .map((city) => (
-                    <motion.div
-                      key={city.id}
-                      initial={{ opacity: 0, y: 10 }}
-                      whileInView={{ opacity: 1, y: 0 }}
-                      viewport={{ once: true }}
-                      className="flex items-center gap-4 rounded-[20px] bg-white/5 p-5 transition-colors hover:bg-white/10"
-                    >
-                      <div
-                        className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl text-lg"
-                        style={{ background: city.accentColor + "22" }}
-                      >
-                        {city.emoji}
-                      </div>
-                      <div className="min-w-0">
-                        <div className="truncate text-[15px] font-bold">{city.name}</div>
-                        <div className="text-[11px] font-medium opacity-40">{city.country}</div>
-                      </div>
-                    </motion.div>
-                  ))}
-              </div>
+                      {city.emoji}
+                    </div>
+                    <div className="min-w-0">
+                      <div className="truncate text-[15px] font-bold">{city.name}</div>
+                      <div className="text-[11px] font-medium opacity-40">{city.country}</div>
+                    </div>
+                  </motion.div>
+                ))}
             </div>
           </div>
         </section>
