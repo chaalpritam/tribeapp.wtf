@@ -15,9 +15,7 @@ import { useTribeOnchainKarma } from "@/hooks/use-tribe-onchain-karma";
 import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useTribeFollowList, type FollowListKind } from "@/hooks/use-tribe-follow-list";
 import { resolveMediaUrl, tribeTweetToTweet } from "@/lib/tribe";
-import { karmaLevelConfig, getKarmaProgress } from "@/lib/theme";
 import { cn, formatNumber, formatHandle } from "@/lib/utils";
-import { Progress } from "@/components/ui/progress";
 import { useShare } from "@/hooks/use-share";
 import { AppHeader } from "@/components/layout/app-header";
 
@@ -386,33 +384,6 @@ export default function ProfilePage() {
           </div>
         </div>
 
-        {/* Karma Pulse Section */}
-        {karma && levelConfig && (
-          <div className="px-3 sm:px-6 pb-6 sm:pb-8">
-            <div className="p-5 sm:p-8 rounded-[24px] sm:rounded-[40px] bg-indigo-50 border border-indigo-100 shadow-sm">
-              <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center gap-4">
-                  <div className="h-14 w-14 flex items-center justify-center rounded-[24px] bg-white text-indigo-500 shadow-lg shadow-indigo-500/10">
-                    <Zap className="h-7 w-7 fill-current" />
-                  </div>
-                  <div>
-                    <h3 className="text-xl font-black tracking-tight text-indigo-900 leading-none lowercase">{levelConfig.label}</h3>
-                    <p className="text-[11px] font-bold text-indigo-500/60 uppercase tracking-widest mt-2">Level {karma.level} Explorer</p>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <p className="text-2xl font-black text-indigo-900 leading-none">{formatNumber(karma.totalKarma)}</p>
-                  <p className="text-[10px] font-bold text-indigo-500/60 uppercase tracking-widest mt-2">Total Points</p>
-                </div>
-              </div>
-              <Progress value={progress} className="h-3 bg-indigo-900/10" />
-              <div className="mt-4 flex justify-between text-[11px] font-bold uppercase tracking-widest text-indigo-900/40">
-                <span>Recent Milestones</span>
-                <span>{Math.round(progress)}% to Level {karma.level + 1}</span>
-              </div>
-            </div>
-          </div>
-        )}
 
         {/* On-chain karma — populated only after the first tip received
             or task completed flips the KarmaAccount PDA into existence. */}
