@@ -26,8 +26,9 @@ export interface BackupData {
     tid: string | null;
     tidWallet: string | null;
     appKeySecret: string | null;
-    browserWallet: string | null;
     dmKeypair: string | null;
+    /** Legacy field from old browser-wallet backups; ignored on restore. */
+    browserWallet?: string | null;
   };
 }
 
@@ -60,9 +61,8 @@ export function getLastBackupAt(): number | null {
  * envelope. Reads the Zustand store directly so callers don't have
  * to thread the identity through.
  *
- * `browserWallet` is always emitted as null on this client — only
- * tribe-app supports an in-page Solana wallet. The field is retained
- * in the wire format for compatibility with files produced there.
+ * This client only needs Tribe identity + app key + DM key. Legacy
+ * browser-wallet material is intentionally not emitted.
  */
 export function createBackupPayload(): BackupData {
   const identity = useTribeIdentityStore.getState().identity;
@@ -77,7 +77,6 @@ export function createBackupPayload(): BackupData {
       tid: identity?.tid != null ? String(identity.tid) : null,
       tidWallet: identity?.custodyWallet ?? null,
       appKeySecret: identity?.appKeySecret ?? null,
-      browserWallet: null,
       dmKeypair,
     },
   };
@@ -199,9 +198,6 @@ export async function decryptBackup(
  *
  * - tid + appKeySecret + tidWallet → Zustand identity store
  * - dmKeypair → localStorage so the DM module picks it up on next read
- * - browserWallet → localStorage so the Browser Wallet adapter can load
- *   the keypair without going through BIP39 setup again
- *
  * Caller should disconnect any active wallet before calling this so
  * wallet-adapter-react doesn't overwrite the freshly-restored TID.
  */
@@ -253,13 +249,6 @@ export function applyBackup(backup: BackupData): void {
   if (typeof window !== "undefined") {
     if (data.dmKeypair) {
       localStorage.setItem(DM_KEYPAIR_STORAGE, data.dmKeypair);
-    }
-    if (data.browserWallet) {
-      localStorage.setItem(WALLET_STORAGE_KEY, data.browserWallet);
-      // Tell wallet-adapter-react to auto-select Browser Wallet on
-      // the next page load — otherwise it'd connect to whatever was
-      // previously selected (or pop the modal).
-      localStorage.setItem(WALLET_NAME_KEY, '"Browser Wallet"');
     }
   }
   useTribeIdentityStore.getState().setIdentity({

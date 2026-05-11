@@ -8,6 +8,7 @@ import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { TribeSignIn } from "@/components/auth/tribe-sign-in";
 import { ImportBackup } from "@/components/auth/import-backup";
+import { SignInFromMobilePanel } from "@/components/auth/sign-in-from-mobile-panel";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useMounted } from "@/hooks/use-mounted";
 
@@ -76,6 +77,9 @@ export default function ConnectPage() {
                 triggerVariant="link"
                 onSuccess={handleSignInSuccess}
               />
+            </div>
+            <div className="mt-5 text-left">
+              <SignInFromMobilePanel />
             </div>
           </>
         )}

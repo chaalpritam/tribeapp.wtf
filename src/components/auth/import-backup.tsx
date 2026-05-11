@@ -200,8 +200,8 @@ export function ImportBackup({
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 flex-none mt-0.5" />
               <span>
-                This backup is unencrypted — the seed phrase is in cleartext.
-                Only proceed if you trust the file&apos;s source.
+                This backup is unencrypted and contains your identity secrets in
+                cleartext. Only proceed if you trust the file&apos;s source.
               </span>
             </div>
           )}

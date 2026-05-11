@@ -24,8 +24,8 @@ import { Switch } from "@/components/ui/switch";
 
 /**
  * Dialog that builds a `.tribe` (plain JSON) or `.tribe.enc` (AES-GCM,
- * PBKDF2-derived) backup of the current identity + browser-wallet +
- * DM key, then triggers a download. Same wire format tribe-app and
+ * PBKDF2-derived) backup of the current identity + DM key, then
+ * triggers a download. Same wire format tribe-app and
  * tribe-ios produce, so the file round-trips.
  */
 export function ExportBackup() {
@@ -100,7 +100,7 @@ export function ExportBackup() {
         <DialogHeader>
           <DialogTitle>Export account</DialogTitle>
           <DialogDescription>
-            Saves your TID, app key, browser wallet, and DM key into one file.
+            Saves your TID, app key, and DM key into one file.
             tribe-app and tribe-ios can open the same file.
           </DialogDescription>
         </DialogHeader>
@@ -151,8 +151,8 @@ export function ExportBackup() {
             <div className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-200">
               <AlertTriangle className="h-4 w-4 flex-none mt-0.5" />
               <span>
-                Plain backup: the seed phrase + app-key are in cleartext. Keep
-                it offline.
+                Plain backup: your app-key and identity data are in cleartext.
+                Keep it offline.
               </span>
             </div>
           )}
