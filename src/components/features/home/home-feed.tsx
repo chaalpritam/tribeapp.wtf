@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo } from "react";
-import { Loader2, Calendar, BarChart3, CheckCircle, Banknote } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { useTribeFeed } from "@/hooks/use-tribe-feed";
 import { useOnchainEvents } from "@/hooks/use-onchain-events";
@@ -18,6 +18,13 @@ import { CrowdfundCard } from "./crowdfund-card";
 import { AppHeader } from "@/components/layout/app-header";
 import type { Tweet, Poll, Task, Crowdfund, ExploreItem } from "@/types";
 
+type FeedItem =
+  | { kind: "tweet";    id: string; data: Tweet }
+  | { kind: "event";    id: string; data: ExploreItem }
+  | { kind: "poll";     id: string; data: Poll }
+  | { kind: "task";     id: string; data: Task }
+  | { kind: "crowdfund";id: string; data: Crowdfund };
+
 function dedup<T extends { id: string }>(a: T[], b: T[]): T[] {
   const seen = new Set<string>();
   return [...a, ...b].filter((item) => {
@@ -27,16 +34,28 @@ function dedup<T extends { id: string }>(a: T[], b: T[]): T[] {
   });
 }
 
-function SectionHeading({ icon: Icon, label, color }: { icon: React.ElementType; label: string; color: string }) {
-  return (
-    <div className={`flex items-center gap-2 px-1 mt-8 mb-3`}>
-      <div className={`h-7 w-7 rounded-xl ${color} flex items-center justify-center shrink-0`}>
-        <Icon className="h-3.5 w-3.5 text-white" />
-      </div>
-      <span className="text-[13px] font-black uppercase tracking-widest text-[#222]">{label}</span>
-      <div className="flex-1 h-px bg-[#f0f0f0]" />
-    </div>
-  );
+/**
+ * Interleave content buckets into a single feed.
+ * Pattern: 2 tweets → 1 non-tweet → 2 tweets → 1 non-tweet …
+ * Any leftover items from either side are appended at the end.
+ */
+function interleaveFeed(
+  tweetItems: FeedItem[],
+  otherItems: FeedItem[],
+): FeedItem[] {
+  const result: FeedItem[] = [];
+  let ti = 0;
+  let oi = 0;
+  const TWEETS_PER_SLOT = 2;
+  while (ti < tweetItems.length || oi < otherItems.length) {
+    for (let i = 0; i < TWEETS_PER_SLOT && ti < tweetItems.length; i++) {
+      result.push(tweetItems[ti++]);
+    }
+    if (oi < otherItems.length) {
+      result.push(otherItems[oi++]);
+    }
+  }
+  return result;
 }
 
 export function HomeFeed() {
@@ -53,7 +72,6 @@ export function HomeFeed() {
   const { tasks: onchainTasks,      loading: tasksLoading }    = useOnchainTasks({ cityId });
   const { crowdfunds: onchainFunds, loading: fundsLoading }    = useOnchainCrowdfunds({ cityId });
 
-  // Fall back to dummy data when hub has returned nothing yet
   const mergedEvents     = useMemo(() => dedup(!eventsLoading && onchainEvents.length === 0 ? dummyEvents     : onchainEvents,     []), [onchainEvents, eventsLoading]);
   const mergedPolls      = useMemo(() => dedup(!pollsLoading  && onchainPolls.length  === 0 ? dummyPolls      : onchainPolls,      []), [onchainPolls,  pollsLoading]);
   const mergedTasks      = useMemo(() => dedup(!tasksLoading  && onchainTasks.length  === 0 ? dummyTasks      : onchainTasks,      []), [onchainTasks,  tasksLoading]);
@@ -64,10 +82,27 @@ export function HomeFeed() {
     [hubTweets, currentCity?.id]
   );
 
-  const tweetFeed = useMemo(() => {
+  const unifiedFeed = useMemo<FeedItem[]>(() => {
     const hubIds = new Set(adaptedHubTweets.map((t) => t.id));
-    return [...adaptedHubTweets, ...tweets.filter((t) => !hubIds.has(t.id))];
-  }, [adaptedHubTweets, tweets]);
+    const allTweets = [
+      ...adaptedHubTweets,
+      ...tweets.filter((t) => !hubIds.has(t.id)),
+    ];
+
+    const tweetItems: FeedItem[] = allTweets.map((t) => ({ kind: "tweet", id: t.id, data: t as Tweet }));
+
+    // Shuffle the non-tweet buckets together so the order varies naturally
+    const nonTweets: FeedItem[] = [];
+    const maxLen = Math.max(mergedEvents.length, mergedPolls.length, mergedTasks.length, mergedCrowdfunds.length);
+    for (let i = 0; i < maxLen; i++) {
+      if (i < mergedEvents.length)     nonTweets.push({ kind: "event",     id: mergedEvents[i].id,     data: mergedEvents[i] as ExploreItem });
+      if (i < mergedPolls.length)      nonTweets.push({ kind: "poll",      id: mergedPolls[i].id,      data: mergedPolls[i] as Poll });
+      if (i < mergedTasks.length)      nonTweets.push({ kind: "task",      id: mergedTasks[i].id,      data: mergedTasks[i] as Task });
+      if (i < mergedCrowdfunds.length) nonTweets.push({ kind: "crowdfund", id: mergedCrowdfunds[i].id, data: mergedCrowdfunds[i] as Crowdfund });
+    }
+
+    return interleaveFeed(tweetItems, nonTweets);
+  }, [adaptedHubTweets, tweets, mergedEvents, mergedPolls, mergedTasks, mergedCrowdfunds]);
 
   if (!currentCity) {
     return (
@@ -83,7 +118,6 @@ export function HomeFeed() {
 
       <div className="px-3 sm:px-6 pt-4 max-w-2xl mx-auto">
 
-        {/* ── Posts ── */}
         {hubLoading && adaptedHubTweets.length === 0 && (
           <div className="flex items-center gap-2 mb-3 text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
             <Loader2 className="h-3 w-3 animate-spin" />
@@ -91,66 +125,22 @@ export function HomeFeed() {
           </div>
         )}
 
-        {tweetFeed.length > 0 ? (
-          <div className="flex flex-col gap-4 sm:gap-6">
-            {tweetFeed.map((tweet) => (
-              <TweetCard key={tweet.id} tweet={tweet as Tweet} />
-            ))}
+        {unifiedFeed.length > 0 ? (
+          <div className="flex flex-col gap-4 sm:gap-5">
+            {unifiedFeed.map((item) => {
+              if (item.kind === "tweet")     return <TweetCard     key={item.id} tweet={item.data} />;
+              if (item.kind === "event")     return <EventCard     key={item.id} event={item.data} />;
+              if (item.kind === "poll")      return <PollCard      key={item.id} poll={item.data} />;
+              if (item.kind === "task")      return <TaskCard      key={item.id} task={item.data} />;
+              if (item.kind === "crowdfund") return <CrowdfundCard key={item.id} crowdfund={item.data} />;
+            })}
           </div>
         ) : !hubLoading ? (
-          <div className="flex h-40 flex-col items-center justify-center gap-1 text-muted-foreground">
+          <div className="flex h-64 flex-col items-center justify-center gap-1 text-muted-foreground">
             <p className="text-base font-bold tracking-tight">Quiet neighborhood…</p>
             <p className="text-sm font-medium">Be the first to share something in {currentCity.name}!</p>
           </div>
         ) : null}
-
-        {/* ── Events ── */}
-        {mergedEvents.length > 0 && (
-          <>
-            <SectionHeading icon={Calendar} label="Events" color="bg-teal-500" />
-            <div className="flex flex-col gap-4">
-              {mergedEvents.map((event) => (
-                <EventCard key={event.id} event={event as ExploreItem} />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ── Polls ── */}
-        {mergedPolls.length > 0 && (
-          <>
-            <SectionHeading icon={BarChart3} label="Polls" color="bg-violet-500" />
-            <div className="flex flex-col gap-4">
-              {mergedPolls.map((poll) => (
-                <PollCard key={poll.id} poll={poll as Poll} />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ── Tasks ── */}
-        {mergedTasks.length > 0 && (
-          <>
-            <SectionHeading icon={CheckCircle} label="Tasks" color="bg-amber-500" />
-            <div className="flex flex-col gap-4">
-              {mergedTasks.map((task) => (
-                <TaskCard key={task.id} task={task as Task} />
-              ))}
-            </div>
-          </>
-        )}
-
-        {/* ── Funds ── */}
-        {mergedCrowdfunds.length > 0 && (
-          <>
-            <SectionHeading icon={Banknote} label="Funds" color="bg-rose-500" />
-            <div className="flex flex-col gap-4">
-              {mergedCrowdfunds.map((cf) => (
-                <CrowdfundCard key={cf.id} crowdfund={cf as Crowdfund} />
-              ))}
-            </div>
-          </>
-        )}
 
       </div>
     </div>
