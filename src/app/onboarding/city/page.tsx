@@ -1,15 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import { motion } from "framer-motion";
-import { MapPin, Search, Globe } from "lucide-react";
+import { MapPin, Search, Globe, RefreshCw, AlertCircle } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useMounted } from "@/hooks/use-mounted";
 import type { City } from "@/types";
 import { listProtocolCities } from "@/lib/tribe/city-channels";
+import { cities as fallbackCities } from "@/lib/cities";
 import { cn } from "@/lib/utils";
 
 export default function CitySelectionPage() {
@@ -21,6 +22,8 @@ export default function CitySelectionPage() {
   const [selectedCityId, setSelectedCityId] = useState<string | null>(null);
   const [availableCities, setAvailableCities] = useState<City[]>([]);
   const [loadingCities, setLoadingCities] = useState(false);
+  const [fetchError, setFetchError] = useState<string | null>(null);
+  const [usingFallback, setUsingFallback] = useState(false);
   const [search, setSearch] = useState("");
 
   useEffect(() => {
@@ -29,34 +32,47 @@ export default function CitySelectionPage() {
     }
   }, [mounted, signedIn, router]);
 
-  useEffect(() => {
-    if (!mounted || !signedIn) return;
-    let cancelled = false;
+  const loadCities = useCallback(async () => {
     setLoadingCities(true);
-    listProtocolCities()
-      .then((cities) => {
-        if (cancelled) return;
+    setFetchError(null);
+    setUsingFallback(false);
+    try {
+      const cities = await listProtocolCities();
+      if (cities.length > 0) {
         setAvailableCities(cities);
         const saved = localStorage.getItem("tribe-selected-city");
-        if (saved && cities.some((city) => city.id === saved)) {
+        if (saved && cities.some((c) => c.id === saved)) {
           setSelectedCityId(saved);
-          return;
+        } else {
+          setSelectedCityId(cities[0]?.id ?? null);
         }
-        setSelectedCityId(cities[0]?.id ?? null);
-      })
-      .catch(() => {
-        if (!cancelled) {
-          setAvailableCities([]);
-          setSelectedCityId(null);
-        }
-      })
-      .finally(() => {
-        if (!cancelled) setLoadingCities(false);
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [mounted, signedIn]);
+      } else {
+        // Hub returned no city channels — use curated fallback
+        setUsingFallback(true);
+        setAvailableCities(fallbackCities);
+        const saved = localStorage.getItem("tribe-selected-city");
+        const match = saved && fallbackCities.some((c) => c.id === saved) ? saved : fallbackCities[0]?.id ?? null;
+        setSelectedCityId(match);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("[CitySelectionPage] failed to load protocol cities:", msg);
+      setFetchError(msg);
+      // Fall back to static list so onboarding isn't blocked
+      setUsingFallback(true);
+      setAvailableCities(fallbackCities);
+      const saved = localStorage.getItem("tribe-selected-city");
+      const match = saved && fallbackCities.some((c) => c.id === saved) ? saved : fallbackCities[0]?.id ?? null;
+      setSelectedCityId(match);
+    } finally {
+      setLoadingCities(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!mounted || !signedIn) return;
+    loadCities();
+  }, [mounted, signedIn, loadCities]);
 
   if (!mounted || !signedIn) return null;
 
@@ -102,6 +118,32 @@ export default function CitySelectionPage() {
             className="w-full rounded-2xl border border-[#f0f0f0] bg-white py-4 pl-12 pr-4 text-[15px] font-bold outline-none transition-all focus:ring-4 focus:ring-primary/5 placeholder:text-[#ccc]"
           />
         </div>
+
+        {/* Status banner */}
+        {!loadingCities && fetchError && (
+          <div className="mb-4 flex items-start gap-3 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm">
+            <AlertCircle className="h-4 w-4 text-amber-500 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="font-semibold text-amber-800">Hub unreachable — showing default cities</p>
+              <p className="mt-0.5 text-amber-700 break-all text-xs">{fetchError}</p>
+            </div>
+            <button
+              onClick={loadCities}
+              className="shrink-0 flex items-center gap-1 text-amber-700 hover:text-amber-900 font-semibold text-xs"
+            >
+              <RefreshCw className="h-3 w-3" /> Retry
+            </button>
+          </div>
+        )}
+        {!loadingCities && usingFallback && !fetchError && (
+          <div className="mb-4 flex items-center gap-2 rounded-2xl border border-muted bg-muted/30 px-4 py-3 text-sm text-muted-foreground">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <span>No city channels found on hub — showing default cities.</span>
+            <button onClick={loadCities} className="ml-auto shrink-0 flex items-center gap-1 font-semibold hover:text-foreground text-xs">
+              <RefreshCw className="h-3 w-3" /> Retry
+            </button>
+          </div>
+        )}
 
         <div className="grid grid-cols-1 gap-2 max-h-[45vh] overflow-y-auto no-scrollbar pr-1 mb-8">
           {loadingCities && (
@@ -158,20 +200,6 @@ export default function CitySelectionPage() {
               </button>
             );
           })}
-
-          {!loadingCities && filteredCities.length === 0 && (
-            <div className="py-20 text-center space-y-4">
-              <div className="h-20 w-20 bg-muted/30 rounded-full flex items-center justify-center mx-auto">
-                <MapPin className="h-10 w-10 text-muted-foreground/30" />
-              </div>
-              <p className="text-xl font-bold tracking-tight">
-                No city channels available
-              </p>
-              <p className="text-sm font-medium text-muted-foreground">
-                Ask your hub to create city channels first.
-              </p>
-            </div>
-          )}
         </div>
 
         <motion.button

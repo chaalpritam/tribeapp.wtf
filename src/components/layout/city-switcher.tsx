@@ -8,6 +8,7 @@ import { useTribeUserData } from "@/hooks/use-tribe-user-data";
 import { loadCityData } from "@/lib/city-data";
 import type { City } from "@/types";
 import { listProtocolCities } from "@/lib/tribe/city-channels";
+import { cities as fallbackCities } from "@/lib/cities";
 import {
     Dialog,
     DialogContent,
@@ -31,10 +32,10 @@ export function CitySwitcher({ isOpen, onOpenChange }: CitySwitcherProps) {
         let cancelled = false;
         listProtocolCities()
             .then((cities) => {
-                if (!cancelled) setAvailableCities(cities);
+                if (!cancelled) setAvailableCities(cities.length > 0 ? cities : fallbackCities);
             })
             .catch(() => {
-                if (!cancelled) setAvailableCities([]);
+                if (!cancelled) setAvailableCities(fallbackCities);
             });
         return () => {
             cancelled = true;

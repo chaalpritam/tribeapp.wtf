@@ -39,6 +39,9 @@ export async function listProtocolCities(limit = 200): Promise<City[]> {
   const cityChannels = channels.filter(
     (channel) => Number(channel.kind) === CHANNEL_KIND_CITY
   );
+  console.debug(
+    `[listProtocolCities] total=${channels.length} city=${cityChannels.length}`
+  );
   return cityChannels
     .map((channel) => toCity(channel, curatedById.get(channel.id)))
     .sort((a, b) => a.name.localeCompare(b.name));
