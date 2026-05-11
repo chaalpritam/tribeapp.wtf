@@ -27,6 +27,8 @@ import { useTribeRotateAppKey } from "@/hooks/use-tribe-rotate-key";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { ExportBackup } from "@/components/auth/export-backup";
 import { ImportBackup } from "@/components/auth/import-backup";
+import { MobilePairingPanel } from "@/components/auth/mobile-pairing-panel";
+import { SignInFromMobilePanel } from "@/components/auth/sign-in-from-mobile-panel";
 
 type ExpandedSection = null | "notifications" | "privacy" | "help" | "about";
 
@@ -247,6 +249,9 @@ export default function SettingsPage() {
             </p>
           </div>
         </div>
+
+        <MobilePairingPanel />
+        <SignInFromMobilePanel />
 
         <RotateDeviceKey />
 
