@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/hooks/use-auth";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
+import { useTribeUser } from "@/hooks/use-tribe-user";
 import { cn, formatHandle } from "@/lib/utils";
 
 interface WalletButtonProps {
@@ -16,14 +17,24 @@ export function WalletButton({ className, compact }: WalletButtonProps) {
   const resetTribe = useTribeIdentityStore((s) => s.reset);
   const router = useRouter();
 
+  // Fetch the hub profile so we always show the real registered username
+  const tid = profile?.tid ?? tribeIdentity?.tid ?? null;
+  const { user: hubUser } = useTribeUser(tid);
+
   const signedIn = isAuthenticated || tribeIdentity !== null;
 
   if (signedIn) {
-    const label = profile?.username
-      ? formatHandle(profile.username)
-      : tribeIdentity
-        ? formatHandle(tribeIdentity.username ?? `#${tribeIdentity.tid}`)
-        : "signed in";
+    // Priority: hub username → identity store username → TID fallback
+    const resolvedUsername =
+      hubUser?.username?.trim() ||
+      hubUser?.profile?.displayName?.trim() ||
+      profile?.username ||
+      tribeIdentity?.username ||
+      (tid != null ? `#${tid}` : null);
+
+    const label = resolvedUsername
+      ? formatHandle(resolvedUsername)
+      : "signed in";
 
     return (
       <button
