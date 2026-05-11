@@ -164,7 +164,7 @@ export default function TribesPage() {
               {search ? "No city channels match your search." : "No city channels on this hub yet."}
             </div>
           ) : (
-            <div className="grid grid-cols-2 gap-3 sm:gap-4">
+            <div className="grid grid-cols-3 gap-3">
               {filteredCityChannels.map((channel) => (
                 <CityChannelCard
                   key={channel.id}
@@ -258,7 +258,7 @@ function CityChannelCard({
         src={city.imageUrl}
         alt={city.name}
         fill
-        sizes="(max-width: 640px) 50vw, 300px"
+        sizes="(max-width: 640px) 33vw, 220px"
         className="object-cover group-hover:scale-105 transition-transform duration-500"
       />
 
@@ -267,32 +267,32 @@ function CityChannelCard({
 
       {/* Current badge */}
       {isCurrentCity && (
-        <div className="absolute top-3 left-3 flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">
-          <Navigation className="h-2.5 w-2.5" />
-          Current
+        <div className="absolute top-2 left-2 flex items-center gap-0.5 bg-emerald-500 text-white text-[8px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full shadow">
+          <Navigation className="h-2 w-2" />
+          Now
         </div>
       )}
 
       {/* Member count badge */}
       {(channel.member_count ?? 0) > 0 && (
-        <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm text-white text-[9px] font-black px-2 py-1 rounded-full">
-          {formatNumber(channel.member_count ?? 0)} members
+        <div className="absolute top-2 right-2 bg-black/40 backdrop-blur-sm text-white text-[8px] font-black px-1.5 py-0.5 rounded-full">
+          {formatNumber(channel.member_count ?? 0)}
         </div>
       )}
 
       {/* Bottom info */}
-      <div className="absolute bottom-0 left-0 right-0 p-4">
-        <p className="text-white text-[16px] font-black leading-tight tracking-tight">
+      <div className="absolute bottom-0 left-0 right-0 p-3">
+        <p className="text-white text-[13px] font-black leading-tight tracking-tight">
           {city.name}
         </p>
         <div className="flex items-center justify-between mt-1">
-          <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
-            <MapPin className="h-2.5 w-2.5" />
+          <p className="text-white/60 text-[9px] font-bold uppercase tracking-widest flex items-center gap-0.5">
+            <MapPin className="h-2 w-2" />
             {curated?.country ?? "Protocol"}
           </p>
           {!isCurrentCity && (
-            <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-black px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-black transition-all">
-              Jump <ArrowRight className="h-2.5 w-2.5" />
+            <div className="flex items-center gap-0.5 bg-white/20 backdrop-blur-sm text-white text-[9px] font-black px-2 py-0.5 rounded-full group-hover:bg-white group-hover:text-black transition-all">
+              Jump <ArrowRight className="h-2 w-2" />
             </div>
           )}
         </div>
