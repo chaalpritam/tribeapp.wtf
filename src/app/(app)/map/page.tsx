@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import { MapPin, Users, Star, Store, Calendar, Search, Navigation, ChevronRight } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
 import { AppHeader } from "@/components/layout/app-header";
-import { dummyPlaces, dummyPeople, dummyReviews, dummyEvents } from "@/lib/dummy-data";
+import { dummyPlaces, dummyPeople, dummyReviews, dummyEvents, matchesCity } from "@/lib/dummy-data";
 import { cn } from "@/lib/utils";
 
 type MapFilter = "all" | "people" | "places" | "events" | "reviews";
@@ -43,13 +43,14 @@ export default function MapPage() {
   const [filter, setFilter] = useState<MapFilter>("all");
   const [search, setSearch] = useState("");
 
-  const cityId = currentCity?.id ?? "";
+  const cityId   = currentCity?.id   ?? "";
+  const cityName = currentCity?.name ?? "";
   const q = search.toLowerCase();
 
-  const places  = useMemo(() => dummyPlaces.filter( (p) => p.cityId  === cityId && (!q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))), [cityId, q]);
-  const people  = useMemo(() => dummyPeople.filter( (p) => p.cityId  === cityId && (!q || p.displayName.toLowerCase().includes(q) || p.username.toLowerCase().includes(q))), [cityId, q]);
-  const events  = useMemo(() => dummyEvents.filter( (e) => e.cityId  === cityId && (!q || e.title.toLowerCase().includes(q))), [cityId, q]);
-  const reviews = useMemo(() => dummyReviews.filter((r) => r.cityId  === cityId && (!q || r.placeName.toLowerCase().includes(q) || r.text.toLowerCase().includes(q))), [cityId, q]);
+  const places  = useMemo(() => dummyPlaces.filter( (p) => matchesCity(p.cityId, cityId, cityName) && (!q || p.name.toLowerCase().includes(q) || p.category.toLowerCase().includes(q))), [cityId, cityName, q]);
+  const people  = useMemo(() => dummyPeople.filter( (p) => matchesCity(p.cityId, cityId, cityName) && (!q || p.displayName.toLowerCase().includes(q) || p.username.toLowerCase().includes(q))), [cityId, cityName, q]);
+  const events  = useMemo(() => dummyEvents.filter( (e) => matchesCity(e.cityId, cityId, cityName) && (!q || e.title.toLowerCase().includes(q))), [cityId, cityName, q]);
+  const reviews = useMemo(() => dummyReviews.filter((r) => matchesCity(r.cityId, cityId, cityName) && (!q || r.placeName.toLowerCase().includes(q) || r.text.toLowerCase().includes(q))), [cityId, cityName, q]);
 
   const showPeople  = filter === "all" || filter === "people";
   const showPlaces  = filter === "all" || filter === "places";

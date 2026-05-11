@@ -59,6 +59,7 @@ export interface Poll {
    * voteOnchain; absent → off-chain envelope vote.
    */
   onchainPollPda?: string;
+  cityId?: string;
 }
 
 export interface Task {
@@ -82,6 +83,7 @@ export interface Task {
   onchainTaskPda?: string;
   /** Reward amount in lamports — populated when onchainTaskPda is set. */
   onchainRewardLamports?: string;
+  cityId?: string;
 }
 
 export interface Crowdfund {
@@ -108,4 +110,5 @@ export interface Crowdfund {
    * Off-chain envelope path uses the original USD-denominated default.
    */
   onchainPledgeAmountSol?: number;
+  cityId?: string;
 }

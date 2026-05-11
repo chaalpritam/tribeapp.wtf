@@ -9,7 +9,7 @@ import {
   Lock,
   ArrowRight,
   MapPin,
-  Globe,
+  Navigation,
   Loader2,
 } from "lucide-react";
 import { useTribeStore } from "@/store/use-tribe-store";
@@ -32,8 +32,17 @@ const CHANNEL_KIND_CITY = 2;
 const DEFAULT_CITY_IMAGE =
   "https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=800&h=800&fit=crop";
 
+/** Match by ID or by normalised name so "Chennai" works even if the
+ *  protocol channel was registered with a numeric/different slug. */
+function findCurated(channel: ChannelInfo) {
+  const byId = curatedCities.find((c) => c.id === channel.id);
+  if (byId) return byId;
+  const nameLower = (channel.name ?? "").toLowerCase().trim();
+  return curatedCities.find((c) => c.name.toLowerCase() === nameLower);
+}
+
 function channelToCity(channel: ChannelInfo): City {
-  const curated = curatedCities.find((c) => c.id === channel.id);
+  const curated = findCurated(channel);
   return {
     id: channel.id,
     name: channel.name?.trim() || curated?.name || channel.id,
@@ -146,7 +155,7 @@ export default function TribesPage() {
               {search ? "No city channels match your search." : "No city channels on this hub yet."}
             </div>
           ) : (
-            <div className="grid grid-cols-1 gap-4">
+            <div className="grid grid-cols-2 gap-3 sm:gap-4">
               {filteredCityChannels.map((channel) => (
                 <CityChannelCard
                   key={channel.id}
@@ -214,11 +223,8 @@ function CityChannelCard({
 }) {
   const { switchCity } = useTribeStore();
   const router = useRouter();
-  const curated = curatedCities.find((c) => c.id === channel.id);
 
-  const handleJump = async (e: React.MouseEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
+  const handleJump = async () => {
     try {
       const city = channelToCity(channel);
       localStorage.setItem("tribe-selected-city", city.id);
@@ -231,50 +237,57 @@ function CityChannelCard({
   };
 
   const city = channelToCity(channel);
+  const curated = findCurated(channel);
 
   return (
     <button
       onClick={handleJump}
-      className="group flex items-center gap-5 rounded-[32px] bg-white border border-[#f0f0f0] p-5 transition-all hover:shadow-xl hover:shadow-black/[0.03] active:scale-[0.98] text-left w-full"
+      className="group relative aspect-[3/4] rounded-[28px] overflow-hidden w-full shadow-sm hover:shadow-xl transition-all duration-300 active:scale-[0.97] text-left"
     >
-      <div className="relative h-16 w-16 rounded-[20px] overflow-hidden shrink-0 shadow-lg shadow-black/5">
-        <Image src={city.imageUrl} alt={city.name} fill className="object-cover" />
-        <div className="absolute inset-0 bg-black/20 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
-          <Globe className="h-6 w-6 text-white animate-pulse" />
-        </div>
-      </div>
+      {/* Full-bleed city photo */}
+      <Image
+        src={city.imageUrl}
+        alt={city.name}
+        fill
+        sizes="(max-width: 640px) 50vw, 300px"
+        className="object-cover group-hover:scale-105 transition-transform duration-500"
+      />
 
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-1.5 mb-0.5">
-          <span className="text-[17px] font-bold tracking-tight truncate">{city.name}</span>
-          {isCurrentCity && (
-            <span className="text-[10px] bg-emerald-100 text-emerald-600 px-1.5 py-0.5 rounded-md font-black uppercase">
-              Current
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-2 text-[12px] font-bold text-muted-foreground uppercase tracking-widest">
-          <MapPin className="h-3 w-3" />
-          {curated?.country ?? "Protocol"}
-          {(channel.member_count ?? 0) > 0 && (
-            <>
-              <span className="h-1 w-1 rounded-full bg-muted-foreground/30" />
-              {formatNumber(channel.member_count ?? 0)} Members
-            </>
-          )}
-        </div>
-      </div>
+      {/* Gradient overlay */}
+      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
 
-      {isCurrentCity ? (
-        <span className="h-11 px-5 rounded-full bg-emerald-50 text-emerald-700 text-[13px] font-bold flex items-center shrink-0">
-          Here
-        </span>
-      ) : (
-        <div className="h-11 px-6 rounded-full bg-purple-600 text-white text-[13px] font-bold flex items-center gap-2 group-hover:bg-purple-700 transition-colors shrink-0">
-          Jump
-          <ArrowRight className="h-4 w-4" />
+      {/* Current badge */}
+      {isCurrentCity && (
+        <div className="absolute top-3 left-3 flex items-center gap-1 bg-emerald-500 text-white text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-full shadow">
+          <Navigation className="h-2.5 w-2.5" />
+          Current
         </div>
       )}
+
+      {/* Member count badge */}
+      {(channel.member_count ?? 0) > 0 && (
+        <div className="absolute top-3 right-3 bg-black/40 backdrop-blur-sm text-white text-[9px] font-black px-2 py-1 rounded-full">
+          {formatNumber(channel.member_count ?? 0)} members
+        </div>
+      )}
+
+      {/* Bottom info */}
+      <div className="absolute bottom-0 left-0 right-0 p-4">
+        <p className="text-white text-[16px] font-black leading-tight tracking-tight">
+          {city.name}
+        </p>
+        <div className="flex items-center justify-between mt-1">
+          <p className="text-white/60 text-[10px] font-bold uppercase tracking-widest flex items-center gap-1">
+            <MapPin className="h-2.5 w-2.5" />
+            {curated?.country ?? "Protocol"}
+          </p>
+          {!isCurrentCity && (
+            <div className="flex items-center gap-1 bg-white/20 backdrop-blur-sm text-white text-[10px] font-black px-2.5 py-1 rounded-full group-hover:bg-white group-hover:text-black transition-all">
+              Jump <ArrowRight className="h-2.5 w-2.5" />
+            </div>
+          )}
+        </div>
+      </div>
     </button>
   );
 }

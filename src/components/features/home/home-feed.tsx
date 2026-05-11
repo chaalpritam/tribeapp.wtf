@@ -9,7 +9,7 @@ import { useOnchainPolls } from "@/hooks/use-onchain-polls";
 import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
 import { tribeTweetToTweet } from "@/lib/tribe";
-import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds } from "@/lib/dummy-data";
+import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds, matchesCity } from "@/lib/dummy-data";
 import { TweetCard } from "./tweet-card";
 import { PollCard } from "./poll-card";
 import { EventCard } from "./event-card";
@@ -72,10 +72,14 @@ export function HomeFeed() {
   const { tasks: onchainTasks,      loading: tasksLoading }    = useOnchainTasks({ cityId });
   const { crowdfunds: onchainFunds, loading: fundsLoading }    = useOnchainCrowdfunds({ cityId });
 
-  const mergedEvents     = useMemo(() => dedup(!eventsLoading && onchainEvents.length === 0 ? dummyEvents     : onchainEvents,     []), [onchainEvents, eventsLoading]);
-  const mergedPolls      = useMemo(() => dedup(!pollsLoading  && onchainPolls.length  === 0 ? dummyPolls      : onchainPolls,      []), [onchainPolls,  pollsLoading]);
-  const mergedTasks      = useMemo(() => dedup(!tasksLoading  && onchainTasks.length  === 0 ? dummyTasks      : onchainTasks,      []), [onchainTasks,  tasksLoading]);
-  const mergedCrowdfunds = useMemo(() => dedup(!fundsLoading  && onchainFunds.length  === 0 ? dummyCrowdfunds : onchainFunds,      []), [onchainFunds,  fundsLoading]);
+  const cid   = currentCity?.id   ?? "";
+  const cname = currentCity?.name ?? "";
+
+  // Fall back to city-filtered dummy data when hub has returned nothing yet
+  const mergedEvents     = useMemo(() => dedup(!eventsLoading && onchainEvents.length === 0 ? dummyEvents.filter((e)     => matchesCity(e.cityId,   cid, cname)) : onchainEvents,     []), [onchainEvents, eventsLoading, cid, cname]);
+  const mergedPolls      = useMemo(() => dedup(!pollsLoading  && onchainPolls.length  === 0 ? dummyPolls.filter((p)      => matchesCity(p.cityId,   cid, cname)) : onchainPolls,      []), [onchainPolls,  pollsLoading,  cid, cname]);
+  const mergedTasks      = useMemo(() => dedup(!tasksLoading  && onchainTasks.length  === 0 ? dummyTasks.filter((t)      => matchesCity(t.cityId,   cid, cname)) : onchainTasks,      []), [onchainTasks,  tasksLoading,  cid, cname]);
+  const mergedCrowdfunds = useMemo(() => dedup(!fundsLoading  && onchainFunds.length  === 0 ? dummyCrowdfunds.filter((f) => matchesCity(f.cityId,   cid, cname)) : onchainFunds,      []), [onchainFunds,  fundsLoading,  cid, cname]);
 
   const adaptedHubTweets = useMemo(
     () => hubTweets.map((t) => tribeTweetToTweet(t, { cityId: currentCity?.id ?? "" })),

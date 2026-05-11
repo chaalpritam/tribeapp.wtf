@@ -16,7 +16,7 @@ import { useOnchainPolls } from "@/hooks/use-onchain-polls";
 import { useOnchainTasks } from "@/hooks/use-onchain-tasks";
 import { useOnchainCrowdfunds } from "@/hooks/use-onchain-crowdfunds";
 import { formatNumber, formatHandle } from "@/lib/utils";
-import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds } from "@/lib/dummy-data";
+import { dummyEvents, dummyPolls, dummyTasks, dummyCrowdfunds, matchesCity } from "@/lib/dummy-data";
 import type { Poll, Task, Crowdfund, ExploreItem } from "@/types";
 
 const CHANNEL_KIND_INTEREST = 3;
@@ -40,11 +40,14 @@ export default function ExplorePage() {
   const { tasks: onchainTasks,   loading: tasksLoading }      = useOnchainTasks({ cityId: "" });
   const { crowdfunds: onchainFunds, loading: fundsLoading }   = useOnchainCrowdfunds({ cityId: "" });
 
-  // Fall back to dummy data when the hub has returned nothing yet
-  const events     = !eventsLoading && onchainEvents.length === 0 ? dummyEvents     : onchainEvents;
-  const polls      = !pollsLoading  && onchainPolls.length  === 0 ? dummyPolls      : onchainPolls;
-  const tasks      = !tasksLoading  && onchainTasks.length  === 0 ? dummyTasks      : onchainTasks;
-  const crowdfunds = !fundsLoading  && onchainFunds.length  === 0 ? dummyCrowdfunds : onchainFunds;
+  const cid   = currentCity?.id   ?? "";
+  const cname = currentCity?.name ?? "";
+
+  // Fall back to dummy data when the hub has returned nothing yet (city-filtered)
+  const events     = !eventsLoading && onchainEvents.length === 0 ? dummyEvents.filter((e)     => !cid || matchesCity(e.cityId,   cid, cname)) : onchainEvents;
+  const polls      = !pollsLoading  && onchainPolls.length  === 0 ? dummyPolls.filter((p)      => !cid || matchesCity(p.cityId,   cid, cname)) : onchainPolls;
+  const tasks      = !tasksLoading  && onchainTasks.length  === 0 ? dummyTasks.filter((t)      => !cid || matchesCity(t.cityId,   cid, cname)) : onchainTasks;
+  const crowdfunds = !fundsLoading  && onchainFunds.length  === 0 ? dummyCrowdfunds.filter((f) => !cid || matchesCity(f.cityId,   cid, cname)) : onchainFunds;
 
   // Filtered lists
   const visibleChannels = !search ? interestChannels : interestChannels.filter((c) => (c.name ?? c.id).toLowerCase().includes(q));
