@@ -25,6 +25,8 @@ import {
 } from "lucide-react";
 import { useTribeRotateAppKey } from "@/hooks/use-tribe-rotate-key";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
+import { ExportBackup } from "@/components/auth/export-backup";
+import { ImportBackup } from "@/components/auth/import-backup";
 
 type ExpandedSection = null | "notifications" | "privacy" | "help" | "about";
 
@@ -229,6 +231,21 @@ export default function SettingsPage() {
               </div>
             </div>
           )}
+        </div>
+
+        {/* Account backup */}
+        <div className="rounded-2xl border bg-background overflow-hidden shadow-sm">
+          <h2 className="px-4 pt-4 pb-2 text-xs font-black uppercase tracking-widest text-muted-foreground/60">
+            Backup
+          </h2>
+          <ExportBackup />
+          <div className="border-t px-4 py-3">
+            <ImportBackup triggerVariant="button" />
+            <p className="mt-2 text-[11px] text-muted-foreground leading-relaxed">
+              Restoring overwrites this profile&apos;s identity and reloads
+              the page.
+            </p>
+          </div>
         </div>
 
         <RotateDeviceKey />

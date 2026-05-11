@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { Shield } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { TribeSignIn } from "@/components/auth/tribe-sign-in";
+import { ImportBackup } from "@/components/auth/import-backup";
 import { useTribeIdentityStore } from "@/store/use-tribe-identity-store";
 import { useMounted } from "@/hooks/use-mounted";
 
@@ -68,7 +69,15 @@ export default function ConnectPage() {
             Continue with Tribe
           </motion.button>
         ) : (
-          <TribeSignIn onSuccess={handleSignInSuccess} />
+          <>
+            <TribeSignIn onSuccess={handleSignInSuccess} />
+            <div className="mt-4 text-center">
+              <ImportBackup
+                triggerVariant="link"
+                onSuccess={handleSignInSuccess}
+              />
+            </div>
+          </>
         )}
 
         <div className="mt-8 flex items-center justify-center gap-2 text-[11px] font-black uppercase tracking-widest text-[#999]">
