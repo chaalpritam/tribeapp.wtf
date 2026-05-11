@@ -211,9 +211,28 @@ export function applyBackup(backup: BackupData): void {
     throw new Error("Backup is missing the data section.");
   }
   const { data } = backup;
-  if (!data.tid || !data.appKeySecret) {
+
+  // Detect tribe-app backups that have a browserWallet but never
+  // completed TID registration. These can't be imported here because
+  // tribeapp.wtf is TID-native — there's no browser-wallet identity
+  // to fall back on.
+  if (!data.tid && !data.appKeySecret && data.browserWallet) {
     throw new Error(
-      "Backup is missing tid or app-key — restoring it would leave the account unrecoverable.",
+      "This backup was created before a Tribe ID was registered. " +
+      "Open tribe-app, complete onboarding (register a TID), export a fresh backup, then try again.",
+    );
+  }
+
+  if (!data.tid) {
+    throw new Error(
+      "Backup is missing a Tribe ID (tid). " +
+      "Export a new backup from the original device and try again.",
+    );
+  }
+  if (!data.appKeySecret) {
+    throw new Error(
+      "Backup is missing the app key (appKeySecret). " +
+      "Export a new backup from the original device and try again.",
     );
   }
   const tidNumber = Number(data.tid);

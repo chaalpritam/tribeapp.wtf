@@ -207,9 +207,24 @@ export function ImportBackup({
           )}
 
           {error && (
-            <p className="rounded-lg bg-red-50 p-2 text-sm text-red-600 dark:bg-red-950/30 dark:text-red-300">
-              {error}
-            </p>
+            <div className="rounded-lg bg-red-50 p-3 dark:bg-red-950/30">
+              <p className="text-sm text-red-600 dark:text-red-300 font-medium">
+                {error}
+              </p>
+              {(error.includes("Tribe ID") || error.includes("app key") || error.includes("before a Tribe ID")) && (
+                <p className="mt-2 text-xs text-red-500 dark:text-red-400">
+                  Need a fresh start?{" "}
+                  <a
+                    href="/onboarding/connect"
+                    className="underline underline-offset-2 font-semibold hover:text-red-700"
+                    onClick={() => setOpen(false)}
+                  >
+                    Create a new account
+                  </a>{" "}
+                  instead.
+                </p>
+              )}
+            </div>
           )}
 
           {success && (
