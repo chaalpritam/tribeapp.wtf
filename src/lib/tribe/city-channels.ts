@@ -35,7 +35,10 @@ function toCity(channel: ChannelInfo, curated?: City): City {
 export async function listProtocolCities(limit = 200): Promise<City[]> {
   const channels = await listChannels(limit, 0);
   const curatedById = new Map(curatedCities.map((city) => [city.id, city]));
-  const cityChannels = channels.filter((channel) => channel.kind === CHANNEL_KIND_CITY);
+  // Some hubs serialize kind as a string ("2") instead of number (2).
+  const cityChannels = channels.filter(
+    (channel) => Number(channel.kind) === CHANNEL_KIND_CITY
+  );
   return cityChannels
     .map((channel) => toCity(channel, curatedById.get(channel.id)))
     .sort((a, b) => a.name.localeCompare(b.name));
