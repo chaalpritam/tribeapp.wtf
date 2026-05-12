@@ -8,30 +8,6 @@ ed25519 app key, content lives in a tribe-hub mesh, fast follows ride the
 ER sequencer. There is no bundled demo dataset — every screen renders live
 protocol data and nothing else.
 
-## What's in here
-
-- **Landing page** (`/`) — pitch, feature tour, and a "the protocol is the
-  point" section linking to the underlying repos (tribe-protocol, tribe-sdk,
-  tribe-hub, tribe-er-server, tribe-app, root TribeEco).
-- **Onboarding** (`/onboarding/connect`, `/city`, `/signup`) — wallet connect
-  → register-or-recover TID on Solana → generate app key → optional username
-  → pick a city. Funnels into `/home`.
-- **App** (`/(app)/...`) — the in-app experience:
-
-  | Route             | Description                                                                 |
-  |-------------------|-----------------------------------------------------------------------------|
-  | `/home`           | Per-tab hub feed: All / City channel / Mine                                 |
-  | `/explore`        | Debounced cross-primitive hub search (tweets, users, channels)              |
-  | `/map`            | Geo-anchored city channels (kind = 2 with lat / lng)                        |
-  | `/tribes`         | Hub channels (`/v1/channels`); join state from `/v1/channels/member/:tid`   |
-  | `/channels`       | Sub-channel browser                                                         |
-  | `/chat`           | NaCl-box DMs over `/v1/dm/*`                                                |
-  | `/profile`        | Hub user + karma + on-chain karma + own posts; in-place USER_DATA editor    |
-  | `/notifications`  | `/v1/notifications/:tid` + locally-staged events                            |
-  | `/wallet`         | SOL balance from the connected wallet + on-chain tip ledger                 |
-  | `/create`         | Signed-envelope composer for tweets, events, polls, tasks, crowdfunds, channels |
-  | `/settings`       | Settings + theme                                                            |
-
 ## Screenshots
 
 ### Landing Page
@@ -90,6 +66,30 @@ protocol data and nothing else.
     <td></td>
   </tr>
 </table>
+
+## What's in here
+
+- **Landing page** (`/`) — pitch, feature tour, and a "the protocol is the
+  point" section linking to the underlying repos (tribe-protocol, tribe-sdk,
+  tribe-hub, tribe-er-server, tribe-app, root TribeEco).
+- **Onboarding** (`/onboarding/connect`, `/city`, `/signup`) — wallet connect
+  → register-or-recover TID on Solana → generate app key → optional username
+  → pick a city. Funnels into `/home`.
+- **App** (`/(app)/...`) — the in-app experience:
+
+  | Route             | Description                                                                 |
+  |-------------------|-----------------------------------------------------------------------------|
+  | `/home`           | Per-tab hub feed: All / City channel / Mine                                 |
+  | `/explore`        | Debounced cross-primitive hub search (tweets, users, channels)              |
+  | `/map`            | Geo-anchored city channels (kind = 2 with lat / lng)                        |
+  | `/tribes`         | Hub channels (`/v1/channels`); join state from `/v1/channels/member/:tid`   |
+  | `/channels`       | Sub-channel browser                                                         |
+  | `/chat`           | NaCl-box DMs over `/v1/dm/*`                                                |
+  | `/profile`        | Hub user + karma + on-chain karma + own posts; in-place USER_DATA editor    |
+  | `/notifications`  | `/v1/notifications/:tid` + locally-staged events                            |
+  | `/wallet`         | SOL balance from the connected wallet + on-chain tip ledger                 |
+  | `/create`         | Signed-envelope composer for tweets, events, polls, tasks, crowdfunds, channels |
+  | `/settings`       | Settings + theme                                                            |
 
 ## Stack
 
