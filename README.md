@@ -32,6 +32,65 @@ protocol data and nothing else.
   | `/create`         | Signed-envelope composer for tweets, events, polls, tasks, crowdfunds, channels |
   | `/settings`       | Settings + theme                                                            |
 
+## Screenshots
+
+### Landing Page
+
+<table>
+  <tr>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.49.27%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.50.35%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.50.40%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.50.46%E2%80%AFPM.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.50.54%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.07%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.14%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.20%E2%80%AFPM.png" width="100%"/></td>
+  </tr>
+</table>
+
+### Onboarding
+
+<table>
+  <tr>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.26%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.33%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.38%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.43%E2%80%AFPM.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.51.52%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.02%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.06%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.10%E2%80%AFPM.png" width="100%"/></td>
+  </tr>
+</table>
+
+### App
+
+<table>
+  <tr>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.18%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.24%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.29%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.36%E2%80%AFPM.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.40%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.48%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.52.55%E2%80%AFPM.png" width="100%"/></td>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.53.05%E2%80%AFPM.png" width="100%"/></td>
+  </tr>
+  <tr>
+    <td><img src="cover/Screenshot%202026-05-12%20at%2012.53.52%E2%80%AFPM.png" width="100%"/></td>
+    <td></td>
+    <td></td>
+    <td></td>
+  </tr>
+</table>
+
 ## Stack
 
 | Layer        | Tech                                                   |
