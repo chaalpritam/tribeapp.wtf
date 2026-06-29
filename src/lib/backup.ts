@@ -4,10 +4,10 @@ import { WALLET_STORAGE_KEY } from "@/lib/browser-wallet/keypair-store";
 
 /**
  * `.tribe` / `.tribe.enc` account backup. Wire format is identical to
- * tribe-app and tribe-twitter, so a file produced by any of the three
- * apps opens in the other two. tribe-app's wire-format constants
+ * tribe-twitter-app and tribe-twitter, so a file produced by any of the three
+ * apps opens in the other two. tribe-twitter-app's wire-format constants
  * (PBKDF2 + AES-GCM parameters, byte layout) live in
- * `tribe-app/src/lib/backup.ts` — keep this file in sync if they
+ * `tribe-twitter-app/src/lib/backup.ts` — keep this file in sync if they
  * ever change.
  *
  * tribeapp.wtf's identity lives in Zustand under
@@ -72,7 +72,7 @@ export function createBackupPayload(): BackupData {
       ? localStorage.getItem(DM_KEYPAIR_STORAGE)
       : null;
   // Include the browser-wallet JSON blob so a backup file restored into
-  // tribe-app or another tribeapp.wtf device reconnects without re-setup.
+  // tribe-twitter-app or another tribeapp.wtf device reconnects without re-setup.
   const browserWallet =
     typeof window !== "undefined"
       ? localStorage.getItem(WALLET_STORAGE_KEY)
@@ -117,7 +117,7 @@ export function downloadEncryptedBackup(encrypted: string, filename: string) {
 }
 
 // PBKDF2(SHA-256, 100k iters) → AES-256-GCM. Same parameters as
-// tribe-app, tribe-twitter, so encrypted files round-trip.
+// tribe-twitter-app, tribe-twitter, so encrypted files round-trip.
 export async function encryptBackup(
   payload: BackupData,
   password: string,
@@ -220,14 +220,14 @@ export function applyBackup(backup: BackupData): void {
   }
   const { data } = backup;
 
-  // Detect tribe-app backups that have a browserWallet but never
+  // Detect tribe-twitter-app backups that have a browserWallet but never
   // completed TID registration. These can't be imported here because
   // tribeapp.wtf is TID-native — there's no browser-wallet identity
   // to fall back on.
   if (!data.tid && !data.appKeySecret && data.browserWallet) {
     throw new Error(
       "This backup was created before a Tribe ID was registered. " +
-      "Open tribe-app, complete onboarding (register a TID), export a fresh backup, then try again.",
+      "Open tribe-twitter-app, complete onboarding (register a TID), export a fresh backup, then try again.",
     );
   }
 
@@ -247,7 +247,7 @@ export function applyBackup(backup: BackupData): void {
   if (!Number.isFinite(tidNumber)) {
     throw new Error(`Backup tid "${data.tid}" isn't a valid number.`);
   }
-  // Compute pubkey from secret. tribe-app / iOS write 64-byte
+  // Compute pubkey from secret. tribe-twitter-app / iOS write 64-byte
   // secretKey (seed || pubkey); the last 32 bytes are the pubkey.
   const secretBytes = Uint8Array.from(atob(data.appKeySecret), (c) =>
     c.charCodeAt(0),
@@ -279,7 +279,7 @@ export function applyBackup(backup: BackupData): void {
     }
     // Restore the browser-wallet keypair so BrowserWalletAdapter can
     // auto-connect on reload without showing the wallet-setup dialog.
-    // tribe-app stores the JSON as {mnemonic, secretKeyB58, accountIndex}.
+    // tribe-twitter-app stores the JSON as {mnemonic, secretKeyB58, accountIndex}.
     if (data.browserWallet) {
       localStorage.setItem(WALLET_STORAGE_KEY, data.browserWallet);
       // Tell wallet-adapter-react to auto-select "Browser Wallet" on reload.

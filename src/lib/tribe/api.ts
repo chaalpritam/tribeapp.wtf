@@ -177,7 +177,7 @@ export function mediaRef(hash: string): string {
  * Render-time helper: turn whatever was stored in an embed / pfpUrl
  * into a real URL for an `<Image>` src. Handles three input shapes:
  *
- *   1. `media:<hash>` — canonical form (written by tribe-app and
+ *   1. `media:<hash>` — canonical form (written by tribe-twitter-app and
  *      newer publishers).
  *   2. `http(s)://…/v1/media/<hash>` — legacy absolute URL stored by
  *      pre-`mediaRef` versions of the app. We re-extract the hash

@@ -143,7 +143,7 @@ export function ImportBackup({
           <DialogDescription>
             Open a <code className="text-xs">.tribe</code> or{" "}
             <code className="text-xs">.tribe.enc</code> file exported from
-            tribe-app, tribe-twitter, or this app.
+            tribe-twitter-app, tribe-twitter, or this app.
           </DialogDescription>
         </DialogHeader>
 

@@ -140,7 +140,7 @@ const architectureLayers = [
   {
     icon: Smartphone,
     name: "Applications",
-    repo: "tribe-app · tribeapp.wtf · tribe-twitter",
+    repo: "tribe-twitter-app · tribeapp.wtf · tribe-twitter",
     color: "#f5f5f5",
     description:
       "Next.js web clients and a native SwiftUI iOS app. All build signed envelopes locally — the hub never receives plaintext intent.",
