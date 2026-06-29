@@ -26,7 +26,7 @@ import { Switch } from "@/components/ui/switch";
  * Dialog that builds a `.tribe` (plain JSON) or `.tribe.enc` (AES-GCM,
  * PBKDF2-derived) backup of the current identity + DM key, then
  * triggers a download. Same wire format tribe-app and
- * tribe-ios produce, so the file round-trips.
+ * tribe-twitter produce, so the file round-trips.
  */
 export function ExportBackup() {
   const identity = useTribeIdentityStore((s) => s.identity);
@@ -101,7 +101,7 @@ export function ExportBackup() {
           <DialogTitle>Export account</DialogTitle>
           <DialogDescription>
             Saves your TID, app key, and DM key into one file.
-            tribe-app and tribe-ios can open the same file.
+            tribe-app and tribe-twitter can open the same file.
           </DialogDescription>
         </DialogHeader>
 

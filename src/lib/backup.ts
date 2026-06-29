@@ -4,7 +4,7 @@ import { WALLET_STORAGE_KEY } from "@/lib/browser-wallet/keypair-store";
 
 /**
  * `.tribe` / `.tribe.enc` account backup. Wire format is identical to
- * tribe-app and tribe-ios, so a file produced by any of the three
+ * tribe-app and tribe-twitter, so a file produced by any of the three
  * apps opens in the other two. tribe-app's wire-format constants
  * (PBKDF2 + AES-GCM parameters, byte layout) live in
  * `tribe-app/src/lib/backup.ts` — keep this file in sync if they
@@ -117,7 +117,7 @@ export function downloadEncryptedBackup(encrypted: string, filename: string) {
 }
 
 // PBKDF2(SHA-256, 100k iters) → AES-256-GCM. Same parameters as
-// tribe-app, tribe-ios, so encrypted files round-trip.
+// tribe-app, tribe-twitter, so encrypted files round-trip.
 export async function encryptBackup(
   payload: BackupData,
   password: string,

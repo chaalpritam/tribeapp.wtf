@@ -140,7 +140,7 @@ const architectureLayers = [
   {
     icon: Smartphone,
     name: "Applications",
-    repo: "tribe-app · tribeapp.wtf · tribe-ios",
+    repo: "tribe-app · tribeapp.wtf · tribe-twitter",
     color: "#f5f5f5",
     description:
       "Next.js web clients and a native SwiftUI iOS app. All build signed envelopes locally — the hub never receives plaintext intent.",
@@ -245,9 +245,9 @@ const repos = [
     url: "https://github.com/chaalpritam/tribe-er-server",
   },
   {
-    name: "tribe-ios",
+    name: "tribe-twitter",
     description: "Native SwiftUI iOS client with NaCl-box DMs and BLAKE3 signing.",
-    url: "https://github.com/chaalpritam/tribe-ios",
+    url: "https://github.com/chaalpritam/tribe-twitter",
   },
   {
     name: "tribeapp.wtf",
